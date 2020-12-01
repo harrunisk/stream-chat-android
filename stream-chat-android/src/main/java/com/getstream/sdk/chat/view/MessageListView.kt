@@ -1,11 +1,18 @@
 package com.getstream.sdk.chat.view
 
+import android.animation.Animator
+import android.animation.AnimatorListenerAdapter
+import android.animation.ObjectAnimator
 import android.content.Context
 import android.graphics.drawable.Drawable
 import android.util.AttributeSet
+import android.util.DisplayMetrics
 import android.view.Gravity
+import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
+import android.view.animation.AccelerateInterpolator
+import android.view.animation.DecelerateInterpolator
 import android.widget.FrameLayout
 import android.widget.ImageView
 import android.widget.TextView
@@ -38,6 +45,7 @@ import com.getstream.sdk.chat.view.MessageListView.ReactionViewClickListener
 import com.getstream.sdk.chat.view.MessageListView.ReadStateClickListener
 import com.getstream.sdk.chat.view.MessageListView.UserClickListener
 import com.getstream.sdk.chat.view.channels.ChannelsView
+import com.getstream.sdk.chat.view.common.activity
 import com.getstream.sdk.chat.view.dialog.MessageMoreActionDialog
 import com.getstream.sdk.chat.view.dialog.ReadUsersDialog
 import com.getstream.sdk.chat.view.messages.MessageListItemWrapper
@@ -62,6 +70,9 @@ public class MessageListView : ConstraintLayout {
     private var firstVisiblePosition = 0
 
     private lateinit var style: MessageListViewStyle
+    private var lastAnimatedView: View? = null
+    private var optionsAnimator: ObjectAnimator? = null
+    private var optionsState = 0
 
     private lateinit var binding: StreamMessageListViewBinding
 
@@ -375,7 +386,8 @@ public class MessageListView : ConstraintLayout {
                     hasScrolledUp = currentLastVisible < lastPosition()
                     firstVisiblePosition = currentFirstVisible
 
-                    val realLastVisibleMessage = min(max(currentLastVisible, lastSeenMessagePosition()), currentList.size)
+                    val realLastVisibleMessage =
+                        min(max(currentLastVisible, lastSeenMessagePosition()), currentList.size)
                     lastSeenMessage = currentList[realLastVisibleMessage]
 
                     val unseenItems = adapter.itemCount - 1 - realLastVisibleMessage
@@ -440,10 +452,85 @@ public class MessageListView : ConstraintLayout {
         messageViewHolderFactory.attachmentViewHolderFactory = attachmentViewHolderFactory
         messageViewHolderFactory.bubbleHelper = bubbleHelper
 
-        adapter = MessageListItemAdapter(channel, messageViewHolderFactory, style)
+        adapter = MessageListItemAdapter(channel, messageViewHolderFactory, style, ::showMessageOptions)
         adapter.setHasStableIds(true)
 
         setMessageListItemAdapter(adapter)
+    }
+
+    private fun showMessageOptions(messagePosition: Int) {
+        val view = layoutManager.findViewByPosition(messagePosition)
+
+        val displayMetrics = DisplayMetrics().apply {
+            activity?.windowManager?.defaultDisplay?.getMetrics(this)
+        }
+
+        val screenHeight: Int = displayMetrics.heightPixels
+
+        if (view!!.y + 800 > screenHeight) {
+            animateViewMovement(view, -500F)
+        } else {
+            showReactionsView(view)
+        }
+    }
+
+    override fun onInterceptTouchEvent(ev: MotionEvent?): Boolean {
+        return when {
+            ev?.actionMasked == MotionEvent.ACTION_UP && optionsState == 1 -> {
+                optionsState = 2
+                super.onInterceptTouchEvent(ev)
+            }
+
+            ev?.actionMasked == MotionEvent.ACTION_UP && optionsState == 2 -> {
+                optionsState = 0
+                hideReactionsView()
+                optionsAnimator?.run {
+                    interpolator = AccelerateInterpolator()
+                    removeAllListeners()
+                    reverse()
+                }
+
+                optionsAnimator = null
+
+                true
+            }
+
+            else -> super.onInterceptTouchEvent(ev)
+        }
+    }
+
+    private fun showReactionsView(view: View) {
+        optionsState = 1
+
+        binding.reactions.run {
+            y = view.y + view.height + 20
+            x = view.x + 30
+            visibility = View.VISIBLE
+        }
+    }
+
+    private fun hideReactionsView() {
+        binding.reactions.visibility = View.GONE
+    }
+
+    private fun animateViewMovement(view: View?, yTranslation: Float) {
+        lastAnimatedView = view
+
+        optionsState = 1
+
+        optionsAnimator = ObjectAnimator.ofFloat(view, "translationY", yTranslation).apply {
+            duration = 200
+            interpolator = DecelerateInterpolator()
+            addListener(object : AnimatorListenerAdapter() {
+                override fun onAnimationEnd(animation: Animator?) {
+                    super.onAnimationEnd(animation)
+
+                    view?.let(::showReactionsView)
+                }
+            })
+        }.apply {
+            start()
+        }
     }
 
     /**

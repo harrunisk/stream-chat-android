@@ -87,6 +87,10 @@ internal class MessageListItemViewHolder(
         userClickListener
     )
 
+    public fun setMessageLongClick(click: MessageListView.MessageLongClickListener) {
+        messageTextConfigurator.messageLongClickListener = click
+    }
+
     override fun bind(messageListItem: MessageItem, diff: MessageListItemPayloadDiff) {
         listOfNotNull(
             spaceConfigurator,
