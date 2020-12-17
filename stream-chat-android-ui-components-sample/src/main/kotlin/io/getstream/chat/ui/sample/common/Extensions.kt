@@ -2,6 +2,7 @@ package io.getstream.chat.ui.sample.common
 
 import android.app.Activity
 import android.content.Context
+import android.content.res.Configuration
 import android.view.ContextThemeWrapper
 import android.view.inputmethod.InputMethodManager
 import android.widget.EditText
@@ -12,6 +13,7 @@ import androidx.annotation.IdRes
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.Toolbar
 import androidx.core.content.ContextCompat
+import androidx.core.content.res.ResourcesCompat
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentManager
 import androidx.navigation.NavController
@@ -75,7 +77,19 @@ fun Fragment.initToolbar(toolbar: Toolbar) {
             setDisplayShowTitleEnabled(false)
             setDisplayShowHomeEnabled(true)
             setDisplayHomeAsUpEnabled(true)
-            toolbar.setNavigationIcon(R.drawable.ic_icon_left)
+
+            val mode = resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK
+
+            if (mode == Configuration.UI_MODE_NIGHT_YES) {
+                R.color.stream_ui_white
+            } else {
+                R.color.stream_ui_black
+            }.let { tintColor ->
+                ResourcesCompat.getDrawable(resources, R.drawable.ic_icon_left, null)?.apply {
+                    setTint(ContextCompat.getColor(requireContext(), tintColor))
+                }
+            }?.let(toolbar::setNavigationIcon)
+
             toolbar.setNavigationOnClickListener {
                 onBackPressed()
             }

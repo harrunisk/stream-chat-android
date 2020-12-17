@@ -1,6 +1,7 @@
 package io.getstream.chat.ui.sample.feature.channel.add
 
 import android.content.Context
+import android.content.res.Configuration
 import android.util.AttributeSet
 import android.view.Gravity
 import android.view.LayoutInflater
@@ -87,6 +88,12 @@ class AddChannelView : FrameLayout {
                 )
             ).root
         )
+
+        when (resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) {
+            Configuration.UI_MODE_NIGHT_NO -> R.color.stream_ui_white
+            Configuration.UI_MODE_NIGHT_YES -> R.color.stream_ui_black
+            else -> R.color.stream_ui_white
+        }.let(binding.createGroupContainer::setBackgroundResource)
     }
 
     fun setUsers(users: List<User>, usersSubmittedCallback: () -> Unit) {

@@ -29,7 +29,11 @@ internal fun getColorList(normalColor: Int, selectedColor: Int, disabledColor: I
     intArrayOf(normalColor, selectedColor, disabledColor)
 )
 
-internal fun getBackgroundColor(context: Context): Int {
+internal fun getBackgroundColor(
+    context: Context,
+    lightColor: Int = R.color.stream_ui_alabaster,
+    darkColor: Int = R.color.stream_ui_black
+): Int {
     return when (context.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) {
         Configuration.UI_MODE_NIGHT_NO -> R.color.stream_ui_alabaster
         Configuration.UI_MODE_NIGHT_YES -> R.color.stream_ui_black

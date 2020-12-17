@@ -1,5 +1,6 @@
 package io.getstream.chat.ui.sample.feature.channel.add
 
+import android.content.res.Configuration
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -35,6 +36,13 @@ class AddChannelFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         initToolbar(binding.toolbar)
+
+        when (requireContext().resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) {
+            Configuration.UI_MODE_NIGHT_NO -> R.color.stream_ui_white
+            Configuration.UI_MODE_NIGHT_YES -> R.color.stream_ui_dark_background
+            else -> R.color.stream_ui_white
+        }.let(binding.toolbar::setBackgroundResource)
+
         bindAddChannelView()
     }
 
