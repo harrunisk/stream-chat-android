@@ -560,7 +560,14 @@ internal class ChannelControllerImpl(
         } else {
             sendFile(file)
         }
-        val url = if (pathResult.isError) null else pathResult.data()
+
+        var url: String? = null
+        try {
+            url = if (pathResult.isError) null else pathResult.data()
+        } catch (e: Exception) {
+            //no op
+        }
+
         val uploadState =
             if (pathResult.isError) Attachment.UploadState.Failed(pathResult.error()) else Attachment.UploadState.Success
 
