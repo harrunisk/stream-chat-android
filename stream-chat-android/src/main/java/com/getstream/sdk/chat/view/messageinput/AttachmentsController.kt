@@ -27,15 +27,15 @@ class AttachmentsController(
     private val selectedFileAttachmentAdapter: FileAttachmentSelectedAdapter,
     private val showOpenAttachmentsMenuConfig: Boolean
 ) {
-    internal var selectedAttachments: Set<AttachmentMetaData> = emptySet()
+    var selectedAttachments: Set<AttachmentMetaData> = emptySet()
         private set
     private var totalAttachments: Set<AttachmentMetaData> = emptySet()
 
-    internal fun setSelectedAttachments(selectedAttachments: Set<AttachmentMetaData>) {
+    fun setSelectedAttachments(selectedAttachments: Set<AttachmentMetaData>) {
         this.selectedAttachments += selectedAttachments
     }
 
-    internal fun onClickCloseAttachmentSelectionMenu() {
+    fun onClickCloseAttachmentSelectionMenu() {
         view.hideAttachmentsMenu()
         totalAttachments = emptySet()
         totalMediaAttachmentAdapter.clear()
@@ -63,13 +63,13 @@ class AttachmentsController(
         }
     }
 
-    internal fun configAttachmentButtonVisible(visible: Boolean) {
+    fun configAttachmentButtonVisible(visible: Boolean) {
         if (!showOpenAttachmentsMenuConfig) return
         view.showOpenAttachmentsMenuButton(visible)
     }
 
     @VisibleForTesting
-    internal fun cancelAttachment(
+    fun cancelAttachment(
         attachment: AttachmentMetaData,
         messageInputType: MessageInputType?
     ) {
@@ -81,7 +81,7 @@ class AttachmentsController(
         }
     }
 
-    internal fun onCameraClick() {
+    fun onCameraClick() {
         if (!permissionChecker.isGrantedCameraPermissions(view.context)) {
             permissionChecker.checkCameraPermissions(view) { onCameraClick() }
         } else {
@@ -89,7 +89,7 @@ class AttachmentsController(
         }
     }
 
-    internal fun onClickOpenMediaSelectView(messageInputType: MessageInputType) {
+    fun onClickOpenMediaSelectView(messageInputType: MessageInputType) {
         if (!permissionChecker.isGrantedStoragePermissions(view.context)) {
             permissionChecker.checkStoragePermissions(view) {
                 onClickOpenMediaSelectView(messageInputType)
@@ -161,12 +161,12 @@ class AttachmentsController(
         }
     }
 
-    internal fun selectAttachmentFromCamera(attachment: AttachmentMetaData) {
+    fun selectAttachmentFromCamera(attachment: AttachmentMetaData) {
         setSelectedMediaAttachmentAdapter(null)
         selectMediaAttachment(attachment)
     }
 
-    internal fun selectAttachmentsFromUriList(uriList: List<Uri>) {
+    fun selectAttachmentsFromUriList(uriList: List<Uri>) {
         GlobalScope.launch(DispatcherProvider.Main) {
             setSelectedFileAttachmentAdapter()
             val attachments = withContext(DispatcherProvider.IO) {
@@ -188,7 +188,7 @@ class AttachmentsController(
         selectedFileAttachmentAdapter.setAttachments(selectedAttachments.toList())
     }
 
-    internal fun selectMediaAttachment(attachment: AttachmentMetaData) {
+    fun selectMediaAttachment(attachment: AttachmentMetaData) {
         if (attachment.size > AttachmentConstants.MAX_UPLOAD_FILE_SIZE) {
             view.showMessage(R.string.stream_large_size_file_error)
         } else {
@@ -220,7 +220,7 @@ class AttachmentsController(
         }
     }
 
-    internal fun clearState() {
+    fun clearState() {
         view.hideAttachmentsMenu()
         selectedAttachments = emptySet()
         totalMediaAttachmentAdapter.clear()

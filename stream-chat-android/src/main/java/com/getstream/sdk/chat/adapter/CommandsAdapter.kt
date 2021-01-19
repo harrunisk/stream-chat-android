@@ -9,7 +9,7 @@ import com.getstream.sdk.chat.databinding.StreamItemCommandBinding
 import com.getstream.sdk.chat.view.messageinput.MessageInputStyle
 import io.getstream.chat.android.client.models.Command
 
-internal class CommandsAdapter(
+class CommandsAdapter(
     private val style: MessageInputStyle,
     private val onCommandSelected: (Command) -> Unit
 ) : ListAdapter<Command, CommandViewHolder>(
@@ -32,7 +32,7 @@ internal class CommandsAdapter(
         holder.bind(getItem(position))
 }
 
-internal class CommandViewHolder(
+class CommandViewHolder(
     private val binding: StreamItemCommandBinding,
     private val style: MessageInputStyle,
     private val onCommandClicked: (Command) -> Unit

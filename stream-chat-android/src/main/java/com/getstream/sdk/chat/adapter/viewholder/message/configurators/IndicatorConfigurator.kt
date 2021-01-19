@@ -92,7 +92,7 @@ class IndicatorConfigurator(
         }
     }
 
-    internal fun configParamsReadIndicator(messageItem: MessageItem) {
+    fun configParamsReadIndicator(messageItem: MessageItem) {
         if (binding.readState.isGone) {
             return
         }
