@@ -7,7 +7,7 @@ import io.getstream.chat.android.client.models.User
 import io.getstream.chat.android.livedata.ChatDomain.Companion.instance
 import java.util.Date
 
-internal fun List<Member>.getLastActive(
+public fun List<Member>.getLastActive(
     currentUser: User = instance().currentUser
 ): Date {
     return filter { it.user.id != currentUser.id && it.user.lastActive != null }
@@ -15,7 +15,7 @@ internal fun List<Member>.getLastActive(
 }
 
 @JvmOverloads
-internal fun List<Member>.getOtherUsers(currentUser: User = instance().currentUser): List<User> {
+public fun List<Member>.getOtherUsers(currentUser: User = instance().currentUser): List<User> {
     return filterNot { it.getUserId() == currentUser.id }
         .map { it.user }
 }

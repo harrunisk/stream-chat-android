@@ -6,7 +6,7 @@ import com.getstream.sdk.chat.adapter.MessageListItem
 import com.getstream.sdk.chat.adapter.MessageListItem.MessageItem
 import com.getstream.sdk.chat.databinding.StreamItemMessageBinding
 
-internal class SpaceConfigurator(
+class SpaceConfigurator(
     private val binding: StreamItemMessageBinding
 ) : Configurator {
 

@@ -21,7 +21,7 @@ import com.getstream.sdk.chat.view.ReadStateStyle
 import io.getstream.chat.android.client.models.ChannelUserRead
 import io.getstream.chat.android.client.utils.SyncStatus
 
-internal class IndicatorConfigurator(
+class IndicatorConfigurator(
     private val binding: StreamItemMessageBinding,
     private val readStateStyle: ReadStateStyle,
     private val readStateClickListener: MessageListView.ReadStateClickListener

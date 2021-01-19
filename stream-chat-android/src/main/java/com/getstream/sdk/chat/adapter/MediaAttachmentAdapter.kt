@@ -12,7 +12,7 @@ import com.getstream.sdk.chat.model.AttachmentMetaData
 import com.getstream.sdk.chat.model.ModelType
 import com.getstream.sdk.chat.utils.AttachmentConstants
 
-internal class MediaAttachmentAdapter(
+class MediaAttachmentAdapter(
     private var attachments: List<AttachmentMetaData> = emptyList(),
     var listener: (attachmentMetaData: AttachmentMetaData) -> Unit = { }
 ) : RecyclerView.Adapter<MediaAttachmentAdapter.MyViewHolder>() {

@@ -9,7 +9,7 @@ import com.getstream.sdk.chat.databinding.StreamReplyToViewBinding
 import io.getstream.chat.android.client.models.Message
 import io.getstream.chat.android.client.models.name
 
-internal class PreviewMessageView @JvmOverloads constructor(
+class PreviewMessageView @JvmOverloads constructor(
     context: Context,
     attrs: AttributeSet? = null,
     defStyleAttr: Int = 0

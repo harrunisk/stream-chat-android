@@ -13,7 +13,7 @@ import com.getstream.sdk.chat.utils.extensions.isBottomPosition
 import com.getstream.sdk.chat.view.MessageListView
 import com.getstream.sdk.chat.view.MessageListViewStyle
 
-internal class UserAvatarConfigurator(
+class UserAvatarConfigurator(
     private val binding: StreamItemMessageBinding,
     private val context: Context,
     private val style: MessageListViewStyle,

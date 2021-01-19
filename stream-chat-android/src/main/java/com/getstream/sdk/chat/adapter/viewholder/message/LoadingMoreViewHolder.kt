@@ -6,7 +6,7 @@ import com.getstream.sdk.chat.adapter.MessageListItemPayloadDiff
 import com.getstream.sdk.chat.databinding.StreamItemLoadingMoreBinding
 import com.getstream.sdk.chat.utils.extensions.inflater
 
-internal class LoadingMoreViewHolder(
+class LoadingMoreViewHolder(
     parent: ViewGroup,
     binding: StreamItemLoadingMoreBinding = StreamItemLoadingMoreBinding.inflate(
         parent.inflater,

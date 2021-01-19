@@ -8,7 +8,7 @@ import com.getstream.sdk.chat.databinding.StreamItemMessageBinding
 import com.getstream.sdk.chat.utils.Utils
 import com.getstream.sdk.chat.view.MessageListViewStyle
 
-internal class MarginConfigurator(
+class MarginConfigurator(
     private val binding: StreamItemMessageBinding,
     private val style: MessageListViewStyle
 ) : Configurator {

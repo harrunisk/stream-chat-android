@@ -17,7 +17,7 @@ import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-internal class AttachmentsController(
+class AttachmentsController(
     private val rootController: MessageInputController,
     private val permissionChecker: PermissionChecker,
     private val storageHelper: StorageHelper,

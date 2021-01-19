@@ -16,7 +16,7 @@ import com.getstream.sdk.chat.utils.formatDate
 import com.getstream.sdk.chat.view.MessageListViewStyle
 import io.getstream.chat.android.client.models.name
 
-internal class UsernameAndDateConfigurator(
+class UsernameAndDateConfigurator(
     private val binding: StreamItemMessageBinding,
     private val style: MessageListViewStyle,
     private val dateFormatter: DateFormatter

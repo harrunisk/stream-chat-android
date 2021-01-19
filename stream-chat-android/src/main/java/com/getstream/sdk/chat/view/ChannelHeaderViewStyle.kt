@@ -11,7 +11,7 @@ import com.getstream.sdk.chat.R
 import com.getstream.sdk.chat.style.TextStyle
 import com.getstream.sdk.chat.view.messages.AvatarStyle
 
-internal class ChannelHeaderViewStyle(context: Context, attrs: AttributeSet?) {
+class ChannelHeaderViewStyle(context: Context, attrs: AttributeSet?) {
     var channelTitleText: TextStyle
     var lastActiveText: TextStyle
     val isBackButtonShow: Boolean

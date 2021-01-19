@@ -28,7 +28,7 @@ import com.getstream.sdk.chat.view.MessageListView
 import com.getstream.sdk.chat.view.MessageListViewStyle
 import io.getstream.chat.android.client.models.Message
 
-internal class MessageTextConfigurator(
+class MessageTextConfigurator(
     private val binding: StreamItemMessageBinding,
     private val context: Context,
     private val style: MessageListViewStyle,

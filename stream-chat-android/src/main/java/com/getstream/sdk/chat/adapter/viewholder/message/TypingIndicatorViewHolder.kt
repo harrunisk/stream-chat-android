@@ -13,7 +13,7 @@ import com.getstream.sdk.chat.utils.extensions.inflater
 import com.getstream.sdk.chat.view.AvatarView
 import com.getstream.sdk.chat.view.MessageListViewStyle
 
-internal class TypingIndicatorViewHolder(
+class TypingIndicatorViewHolder(
     parent: ViewGroup,
     private val style: MessageListViewStyle,
     private val binding: StreamItemTypeIndicatorBinding =

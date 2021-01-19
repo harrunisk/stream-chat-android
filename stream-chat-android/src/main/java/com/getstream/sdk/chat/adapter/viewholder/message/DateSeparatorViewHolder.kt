@@ -15,7 +15,7 @@ import com.getstream.sdk.chat.utils.extensions.inflater
 import com.getstream.sdk.chat.view.MessageListViewStyle
 import java.util.Date
 
-internal class DateSeparatorViewHolder(
+class DateSeparatorViewHolder(
     parent: ViewGroup,
     private val style: MessageListViewStyle,
     private val binding: StreamItemDateSeparatorBinding =

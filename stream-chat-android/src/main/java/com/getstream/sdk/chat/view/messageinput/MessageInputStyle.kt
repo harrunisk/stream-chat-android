@@ -19,7 +19,7 @@ import com.getstream.sdk.chat.view.messages.AvatarStyle
 /**
  * Style for MessageInputStyle customization by xml attributes
  */
-internal class MessageInputStyle(private val context: Context, attrs: AttributeSet?) {
+class MessageInputStyle(private val context: Context, attrs: AttributeSet?) {
     var inputText: TextStyle
     var inputBackgroundText: TextStyle
     val isShowAttachmentButton: Boolean

@@ -11,7 +11,7 @@ import com.getstream.sdk.chat.model.AttachmentMetaData
 import com.getstream.sdk.chat.utils.MediaStringUtil
 import com.getstream.sdk.chat.utils.UiUtils
 
-internal class FileAttachmentSelectedAdapter(
+class FileAttachmentSelectedAdapter(
     private var attachments: List<AttachmentMetaData>,
     private val localAttach: Boolean,
     var cancelListener: (AttachmentMetaData) -> Unit = { }

@@ -14,7 +14,7 @@ import com.getstream.sdk.chat.model.ModelType
 import com.getstream.sdk.chat.utils.MediaStringUtil
 import top.defaults.drawabletoolbox.DrawableBuilder
 
-internal class MediaAttachmentSelectedAdapter(
+class MediaAttachmentSelectedAdapter(
     private var selectedAttachments: List<AttachmentMetaData> = emptyList(),
     var cancelListener: (AttachmentMetaData) -> Unit = { }
 ) : RecyclerView.Adapter<MediaAttachmentSelectedAdapter.MyViewHolder>() {

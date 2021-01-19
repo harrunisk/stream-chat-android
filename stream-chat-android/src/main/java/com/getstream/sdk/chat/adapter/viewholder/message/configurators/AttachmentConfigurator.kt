@@ -10,7 +10,7 @@ import com.getstream.sdk.chat.databinding.StreamItemMessageBinding
 import com.getstream.sdk.chat.view.MessageListViewStyle
 import io.getstream.chat.android.client.logger.ChatLogger
 
-internal class AttachmentConfigurator(
+class AttachmentConfigurator(
     private val binding: StreamItemMessageBinding,
     private val style: MessageListViewStyle,
     private val viewHolderFactory: AttachmentViewHolderFactory

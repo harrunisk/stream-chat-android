@@ -24,7 +24,7 @@ import com.getstream.sdk.chat.view.MessageListViewStyle
 import io.getstream.chat.android.client.models.Channel
 import top.defaults.drawabletoolbox.DrawableBuilder
 
-internal class ReactionConfigurator(
+class ReactionConfigurator(
     private val binding: StreamItemMessageBinding,
     private val context: Context,
     private val style: MessageListViewStyle,

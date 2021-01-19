@@ -18,7 +18,7 @@ import com.getstream.sdk.chat.view.MessageListView
 import com.getstream.sdk.chat.view.MessageListViewStyle
 import io.getstream.chat.android.client.models.Channel
 
-internal class ReplyConfigurator(
+class ReplyConfigurator(
     private val binding: StreamItemMessageBinding,
     private val context: Context,
     private val style: MessageListViewStyle,

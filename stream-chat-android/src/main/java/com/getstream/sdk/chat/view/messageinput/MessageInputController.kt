@@ -26,7 +26,7 @@ import kotlin.properties.Delegates
 private val COMMAND_PATTERN = Pattern.compile("^/[a-z]*$")
 private val MENTION_PATTERN = Pattern.compile("^(.* )?@([a-zA-Z]+[0-9]*)*$")
 
-internal class MessageInputController(
+class MessageInputController(
     private val binding: StreamViewMessageInputBinding,
     private val view: MessageInputView,
     private val style: MessageInputStyle
@@ -90,7 +90,7 @@ internal class MessageInputController(
         }
     }
 
-    private fun sendNormalMessage(message: String) =
+    fun sendNormalMessage(message: String) =
         when (attachmentsController.selectedAttachments.isEmpty()) {
             true -> view.sendTextMessage(message)
             false -> view.sendAttachments(
