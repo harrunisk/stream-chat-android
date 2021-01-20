@@ -4,7 +4,7 @@ import androidx.annotation.StringRes
 import com.getstream.sdk.chat.ChatUI
 import com.getstream.sdk.chat.R
 
-enum class MessageInputType(@StringRes internal val labelId: Int) {
+enum class MessageInputType(@StringRes val labelId: Int) {
     EDIT_MESSAGE(R.string.stream_input_type_edit_message),
     ADD_FILE(R.string.stream_input_type_add_file),
     UPLOAD_MEDIA(R.string.stream_input_type_select_gallery),

@@ -34,7 +34,7 @@ class MessageInputController(
 
     private val storageHelper = StorageHelper()
 
-    internal val attachmentsController =
+    val attachmentsController =
         AttachmentsController(
             this,
             PermissionChecker(),
@@ -47,9 +47,9 @@ class MessageInputController(
         )
 
     private var messageInputType: MessageInputType? = null
-    internal var members: List<Member> = listOf()
-    internal var channelCommands: List<Command> = listOf()
-    internal var inputMode: InputMode by Delegates.observable(InputMode.Normal as InputMode) { _, _, newValue ->
+    var members: List<Member> = listOf()
+    var channelCommands: List<Command> = listOf()
+    var inputMode: InputMode by Delegates.observable(InputMode.Normal as InputMode) { _, _, newValue ->
         when (newValue) {
             is InputMode.Normal -> configureNormalInputMode()
             is InputMode.Thread -> configureThreadInputMode()
@@ -82,7 +82,7 @@ class MessageInputController(
         binding.cbSendAlsoToChannel.isVisible = false
     }
 
-    internal fun onSendMessageClick(message: String) = when (val im = inputMode) {
+    fun onSendMessageClick(message: String) = when (val im = inputMode) {
         is InputMode.Normal -> sendNormalMessage(message)
         is InputMode.Thread -> sendToThread(im.parentMessage, message)
         is InputMode.Edit -> editMessage(im.oldMessage, message).also {
@@ -124,12 +124,12 @@ class MessageInputController(
         view.editMessage(message, messageText)
     }
 
-    internal fun onClickCloseAttachmentSelectionMenu() {
+    fun onClickCloseAttachmentSelectionMenu() {
         messageInputType = null
         attachmentsController.onClickCloseAttachmentSelectionMenu()
     }
 
-    internal fun onClickOpenAttachmentSelectionMenu(type: MessageInputType) {
+    fun onClickOpenAttachmentSelectionMenu(type: MessageInputType) {
         attachmentsController.onClickOpenAttachmentSelectionMenu()
         when (type) {
             MessageInputType.EDIT_MESSAGE -> Unit
@@ -145,7 +145,7 @@ class MessageInputController(
         binding.tvTitle.text = type.label
     }
 
-    internal fun configSendButtonEnableState() {
+    fun configSendButtonEnableState() {
         if (binding.messageTextInput.text.toString().isNotBlank()) {
             binding.sendButton.isVisible = true
         } else {
@@ -153,21 +153,21 @@ class MessageInputController(
         }
     }
 
-    internal fun initSendMessage() {
+    fun initSendMessage() {
         binding.messageTextInput.setText("")
         attachmentsController.clearState()
         onClickCloseAttachmentSelectionMenu()
     }
 
-    internal fun onFileCaptured(file: File) {
+    fun onFileCaptured(file: File) {
         attachmentsController.selectAttachmentFromCamera(AttachmentMetaData(file))
     }
 
-    internal fun onFilesSelected(uriList: List<Uri>) {
+    fun onFilesSelected(uriList: List<Uri>) {
         attachmentsController.selectAttachmentsFromUriList(uriList)
     }
 
-    internal fun checkCommandsOrMentions(inputMessage: String) {
+    fun checkCommandsOrMentions(inputMessage: String) {
         when {
             inputMessage.isCommandMessage() -> {
                 view.showSuggestedCommand(channelCommands.matchName(inputMessage.removePrefix("/")))
@@ -186,11 +186,11 @@ class MessageInputController(
         view.showSuggestedCommand(listOf())
     }
 
-    internal fun onCommandSelected(command: Command) {
+    fun onCommandSelected(command: Command) {
         view.messageText = "/${command.name} "
     }
 
-    internal fun onUserSelected(currentMessage: String, user: User) {
+    fun onUserSelected(currentMessage: String, user: User) {
         view.messageText = "${currentMessage.substringBeforeLast("@")}@${user.name} "
     }
 
@@ -206,7 +206,7 @@ class MessageInputController(
         attachmentsController.setSelectedAttachments(attachments)
 }
 
-internal sealed class InputMode {
+sealed class InputMode {
     object Normal : InputMode()
     data class Thread(val parentMessage: Message) : InputMode()
     data class Edit(val oldMessage: Message) : InputMode()

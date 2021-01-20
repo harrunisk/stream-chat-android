@@ -7,7 +7,7 @@ import androidx.appcompat.app.AppCompatActivity
 /**
  * Ensures the context being accessed in a View can be cast to Activity
  */
-internal val View.activity: AppCompatActivity?
+val View.activity: AppCompatActivity?
     get() {
         var context = context
         while (context is ContextWrapper) {
