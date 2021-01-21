@@ -36,7 +36,7 @@ public class MessageListViewModel @JvmOverloads constructor(
     private var messageListData: MessageListItemLiveData? = null
     private var threadListData: MessageListItemLiveData? = null
     private val stateMerger = MediatorLiveData<State>()
-    private var currentMode: Mode by Delegates.observable(Mode.Normal as Mode) { _, _, newMode -> mode.postValue(newMode) }
+    var currentMode: Mode by Delegates.observable(Mode.Normal as Mode) { _, _, newMode -> mode.postValue(newMode) }
     private val _reads: MediatorLiveData<List<ChannelUserRead>> = MediatorLiveData()
     private val reads: LiveData<List<ChannelUserRead>> = _reads
     private val _loadMoreLiveData = MediatorLiveData<Boolean>()
