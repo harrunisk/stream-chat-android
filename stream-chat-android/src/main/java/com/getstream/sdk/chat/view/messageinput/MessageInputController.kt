@@ -26,12 +26,11 @@ import kotlin.properties.Delegates
 private val COMMAND_PATTERN = Pattern.compile("^/[a-z]*$")
 private val MENTION_PATTERN = Pattern.compile("^(.* )?@([a-zA-Z]+[0-9]*)*$")
 
-class MessageInputController<B>(
-    mBinding: B,
+class MessageInputController(
+    private val binding: StreamViewMessageInputBinding,
     private val view: MessageInputView,
-    private val style: MessageInputStyle,
+    private val style: MessageInputStyle
 ) {
-    val binding = mBinding as StreamViewMessageInputBinding
 
     private val storageHelper = StorageHelper()
 
