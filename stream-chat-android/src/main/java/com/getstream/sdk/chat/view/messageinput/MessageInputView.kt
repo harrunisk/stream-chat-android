@@ -44,7 +44,7 @@ import io.getstream.chat.android.client.models.User
 import net.yslibrary.android.keyboardvisibilityevent.KeyboardVisibilityEvent
 import java.io.File
 
-public class MessageInputView(context: Context, attrs: AttributeSet?) : RelativeLayout(context, attrs) {
+open class MessageInputView(context: Context, attrs: AttributeSet?) : RelativeLayout(context, attrs) {
     private val binding: StreamViewMessageInputBinding =
         StreamViewMessageInputBinding.inflate(LayoutInflater.from(context), this, true)
 
