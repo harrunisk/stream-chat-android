@@ -14,14 +14,16 @@ import com.getstream.sdk.chat.viewmodel.factory.ChannelViewModelFactory
 import io.getstream.chat.android.client.ChatClient
 import io.getstream.chat.android.client.events.NotificationChannelMutesUpdatedEvent
 import io.getstream.chat.android.client.subscribeFor
+import io.getstream.chat.android.livedata.utils.EventObserver
 import io.getstream.chat.android.ui.messages.header.bindView
 import io.getstream.chat.ui.sample.R
-import io.getstream.chat.ui.sample.common.getFragmentManager
 import io.getstream.chat.ui.sample.common.navigateSafely
 import io.getstream.chat.ui.sample.databinding.FragmentGroupChatInfoBinding
 import io.getstream.chat.ui.sample.feature.chat.ChatViewModelFactory
 import io.getstream.chat.ui.sample.feature.chat.info.ChatInfoItem
+import io.getstream.chat.ui.sample.feature.chat.info.group.member.GroupChatInfoMemberOptionsDialogFragment
 import io.getstream.chat.ui.sample.feature.chat.info.group.users.GroupChatInfoAddUsersDialogFragment
+import io.getstream.chat.ui.sample.feature.common.ConfirmationDialogFragment
 import io.getstream.chat.ui.sample.util.extensions.useAdjustResize
 
 class GroupChatInfoFragment : Fragment() {
@@ -37,7 +39,7 @@ class GroupChatInfoFragment : Fragment() {
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
-        savedInstanceState: Bundle?
+        savedInstanceState: Bundle?,
     ): View {
         _binding = FragmentGroupChatInfoBinding.inflate(inflater, container, false)
         return binding.root
@@ -54,10 +56,8 @@ class GroupChatInfoFragment : Fragment() {
             binding.addChannelButton.apply {
                 isVisible = true
                 setOnClickListener {
-                    context.getFragmentManager()?.let {
-                        GroupChatInfoAddUsersDialogFragment.newInstance(args.cid)
-                            .show(it, GroupChatInfoAddUsersDialogFragment.TAG)
-                    }
+                    GroupChatInfoAddUsersDialogFragment.newInstance(args.cid)
+                        .show(parentFragmentManager, GroupChatInfoAddUsersDialogFragment.TAG)
                 }
             }
         }
@@ -82,11 +82,24 @@ class GroupChatInfoFragment : Fragment() {
         subscribeForChannelMutesUpdatedEvents()
         setOnClickListeners()
 
-        viewModel.channelLeftState.observe(viewLifecycleOwner) { wasLeft ->
-            if (wasLeft) {
-                findNavController().popBackStack(R.id.homeFragment, false)
+        viewModel.events.observe(
+            viewLifecycleOwner,
+            EventObserver {
+                when (it) {
+                    is GroupChatInfoViewModel.UiEvent.ShowMemberOptions ->
+                        GroupChatInfoMemberOptionsDialogFragment.newInstance(
+                            args.cid,
+                            it.channelName,
+                            it.member.user,
+                        )
+                            .show(parentFragmentManager, GroupChatInfoMemberOptionsDialogFragment.TAG)
+                    GroupChatInfoViewModel.UiEvent.RedirectToHome -> findNavController().popBackStack(
+                        R.id.homeFragment,
+                        false,
+                    )
+                }
             }
-        }
+        )
 
         viewModel.state.observe(viewLifecycleOwner) { state ->
             val members = if (state.shouldExpandMembers != false) {
@@ -128,10 +141,20 @@ class GroupChatInfoFragment : Fragment() {
                 ChatInfoItem.Option.SharedFiles -> findNavController().navigateSafely(
                     GroupChatInfoFragmentDirections.actionGroupChatInfoFragmentToChatInfoSharedFilesFragment(args.cid)
                 )
-                ChatInfoItem.Option.LeaveGroup -> viewModel.onAction(GroupChatInfoViewModel.Action.LeaveChannelClicked)
+                ChatInfoItem.Option.LeaveGroup -> {
+                    val channelName = viewModel.state.value!!.channelName
+                    ConfirmationDialogFragment.newLeaveChannelInstance(requireContext(), channelName)
+                        .apply {
+                            confirmClickListener = ConfirmationDialogFragment.ConfirmClickListener {
+                                viewModel.onAction(GroupChatInfoViewModel.Action.LeaveChannelClicked)
+                            }
+                        }
+                        .show(parentFragmentManager, ConfirmationDialogFragment.TAG)
+                }
                 else -> throw IllegalStateException("Group chat info option $option is not supported!")
             }
         }
+        adapter.setMemberClickListener { viewModel.onAction(GroupChatInfoViewModel.Action.MemberClicked(it)) }
         adapter.setMembersSeparatorClickListener { viewModel.onAction(GroupChatInfoViewModel.Action.MembersSeparatorClicked) }
         adapter.setNameChangedListener { viewModel.onAction(GroupChatInfoViewModel.Action.NameChanged(it)) }
     }

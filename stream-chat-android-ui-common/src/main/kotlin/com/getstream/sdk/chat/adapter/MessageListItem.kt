@@ -3,15 +3,12 @@ package com.getstream.sdk.chat.adapter
 import com.getstream.sdk.chat.adapter.MessageListItem.DateSeparatorItem
 import com.getstream.sdk.chat.adapter.MessageListItem.LoadingMoreIndicatorItem
 import com.getstream.sdk.chat.adapter.MessageListItem.MessageItem
-import com.getstream.sdk.chat.adapter.MessageListItem.ReadStateItem
 import com.getstream.sdk.chat.adapter.MessageListItem.ThreadSeparatorItem
 import com.getstream.sdk.chat.adapter.MessageListItem.TypingItem
 import io.getstream.chat.android.client.models.ChannelUserRead
 import io.getstream.chat.android.client.models.Message
 import io.getstream.chat.android.client.models.User
 import java.util.Date
-import java.util.zip.CRC32
-import java.util.zip.Checksum
 
 /**
  * [MessageListItem] represents elements that are displayed in a [com.getstream.sdk.chat.view.MessageListView].
@@ -20,23 +17,18 @@ import java.util.zip.Checksum
  * - [MessageItem]
  * - [TypingItem]
  * - [ThreadSeparatorItem]
- * - [ReadStateItem]
  * - [LoadingMoreIndicatorItem]
  */
 public sealed class MessageListItem {
 
     public fun getStableId(): Long {
-        val checksum: Checksum = CRC32()
-        val plaintext = when (this) {
-            is TypingItem -> "id_typing"
-            is ThreadSeparatorItem -> "id_thread_separator"
-            is MessageItem -> message.id
-            is DateSeparatorItem -> date.toString()
-            is ReadStateItem -> "read_" + reads.map { it.user.id }.joinToString { "," }
-            is LoadingMoreIndicatorItem -> "id_loading_more_indicator"
+        return when (this) {
+            is TypingItem -> TYPING_ITEM_STABLE_ID
+            is ThreadSeparatorItem -> THREAD_SEPARATOR_ITEM_STABLE_ID
+            is MessageItem -> message.id.hashCode().toLong()
+            is DateSeparatorItem -> date.time
+            is LoadingMoreIndicatorItem -> LOADING_MORE_INDICATOR_STABLE_ID
         }
-        checksum.update(plaintext.toByteArray(), 0, plaintext.toByteArray().size)
-        return checksum.value
     }
 
     public data class DateSeparatorItem(
@@ -47,7 +39,9 @@ public sealed class MessageListItem {
         val message: Message,
         val positions: List<Position> = listOf(),
         val isMine: Boolean = false,
-        val messageReadBy: List<ChannelUserRead> = listOf()
+        val messageReadBy: List<ChannelUserRead> = listOf(),
+        val isThreadMode: Boolean = false,
+        val isMessageRead: Boolean = true,
     ) : MessageListItem() {
         public val isTheirs: Boolean
             get() = !isMine
@@ -55,10 +49,6 @@ public sealed class MessageListItem {
 
     public data class TypingItem(
         val users: List<User>,
-    ) : MessageListItem()
-
-    public data class ReadStateItem(
-        val reads: List<ChannelUserRead>,
     ) : MessageListItem()
 
     public data class ThreadSeparatorItem(
@@ -72,5 +62,11 @@ public sealed class MessageListItem {
         TOP,
         MIDDLE,
         BOTTOM,
+    }
+
+    private companion object {
+        private const val TYPING_ITEM_STABLE_ID = 1L
+        private const val THREAD_SEPARATOR_ITEM_STABLE_ID = 2L
+        private const val LOADING_MORE_INDICATOR_STABLE_ID = 3L
     }
 }

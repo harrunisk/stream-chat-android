@@ -64,10 +64,13 @@ internal class EventBatchUpdate private constructor(
     suspend fun execute() {
         // actually insert the data
         userMap -= domainImpl.currentUser.id
-        domainImpl.repos.users.insert(userMap.values.toList())
-        // we only cache messages for which we're receiving events
-        domainImpl.repos.messages.insert(messageMap.values.toList(), true)
-        domainImpl.repos.insertChannels(channelMap.values)
+
+        domainImpl.repos.storeStateForChannels(
+            users = userMap.values.toList(),
+            channels = channelMap.values,
+            messages = messageMap.values.toList(),
+            cacheForMessages = true
+        )
     }
 
     internal class Builder {
@@ -99,8 +102,7 @@ internal class EventBatchUpdate private constructor(
             val messageMap: Map<String, Message> =
                 domainImpl.repos.selectMessages(messagesToFetch.toList()).associateBy(Message::id)
             val channelMap: Map<String, Channel> =
-                domainImpl.repos.selectChannels(channelsToFetch.toList(), domainImpl.defaultConfig)
-                    .associateBy(Channel::cid)
+                domainImpl.repos.selectChannels(channelsToFetch.toList()).associateBy(Channel::cid)
             return EventBatchUpdate(
                 domainImpl,
                 channelMap.toMutableMap(),

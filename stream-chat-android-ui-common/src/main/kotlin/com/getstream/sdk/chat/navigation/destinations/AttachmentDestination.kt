@@ -14,9 +14,9 @@ import io.getstream.chat.android.client.models.Message
 import io.getstream.chat.android.ui.common.R
 
 public open class AttachmentDestination(
-    public val message: Message,
-    public val attachment: Attachment,
-    context: Context
+    public var message: Message,
+    public var attachment: Attachment,
+    context: Context,
 ) : ChatDestination(context) {
 
     override fun navigate() {
@@ -33,16 +33,23 @@ public open class AttachmentDestination(
                 return
             }
             ModelType.attach_image -> {
-                if (attachment.ogUrl != null) {
-                    url = attachment.ogUrl
-                    type = ModelType.attach_link
-                } else {
-                    showImageViewer(message, attachment)
-                    return
+                when {
+                    attachment.ogUrl != null -> {
+                        url = attachment.ogUrl
+                        type = ModelType.attach_link
+                    }
+                    attachment.isGif() -> {
+                        url = attachment.imageUrl
+                        type = ModelType.attach_giphy
+                    }
+                    else -> {
+                        showImageViewer(message, attachment)
+                        return
+                    }
                 }
             }
             ModelType.attach_video -> url = attachment.assetUrl
-            ModelType.attach_giphy -> url = attachment.assetUrl
+            ModelType.attach_giphy -> url = attachment.thumbUrl
             ModelType.attach_product -> url = attachment.url
         }
 
@@ -84,8 +91,9 @@ public open class AttachmentDestination(
             }
             mimeType == ModelType.attach_mime_doc ||
                 mimeType == ModelType.attach_mime_txt ||
-                mimeType == ModelType.attach_mime_pdf
-                || mimeType.contains("application/vnd") -> {
+                mimeType == ModelType.attach_mime_pdf ||
+                mimeType == ModelType.attach_mime_html ||
+                mimeType.contains("application/vnd") -> {
                 val intent = Intent(context, AttachmentDocumentActivity::class.java).apply {
                     putExtra("url", url)
                 }
@@ -96,7 +104,7 @@ public open class AttachmentDestination(
 
     protected open fun showImageViewer(
         message: Message,
-        attachment: Attachment
+        attachment: Attachment,
     ) {
         val imageUrls: List<String> = message.attachments
             .filter { it.type == ModelType.attach_image && !it.imageUrl.isNullOrEmpty() }
@@ -115,4 +123,6 @@ public open class AttachmentDestination(
             )
             .show()
     }
+
+    private fun Attachment.isGif() = mimeType?.contains("gif") ?: false
 }

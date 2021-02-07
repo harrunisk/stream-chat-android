@@ -1,8 +1,9 @@
 package io.getstream.chat.android.ui.messages.reactions
 
-import io.getstream.chat.android.client.models.Reaction
+import androidx.annotation.DrawableRes
 
-public data class ReactionItem(
-    val reaction: Reaction,
-    val isMine: Boolean
+internal data class ReactionItem(
+    val type: String,
+    val isMine: Boolean,
+    @DrawableRes val iconDrawableRes: Int,
 )

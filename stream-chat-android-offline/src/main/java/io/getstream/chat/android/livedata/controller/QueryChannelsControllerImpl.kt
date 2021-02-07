@@ -16,7 +16,7 @@ import io.getstream.chat.android.client.models.Channel
 import io.getstream.chat.android.client.utils.FilterObject
 import io.getstream.chat.android.client.utils.Result
 import io.getstream.chat.android.livedata.ChatDomainImpl
-import io.getstream.chat.android.livedata.entity.ChannelConfigEntity
+import io.getstream.chat.android.livedata.model.ChannelConfig
 import io.getstream.chat.android.livedata.request.QueryChannelsPaginationRequest
 import io.getstream.chat.android.livedata.request.toQueryChannelsRequest
 import kotlinx.coroutines.async
@@ -38,7 +38,7 @@ internal class QueryChannelsControllerImpl(
     override val filter: FilterObject,
     override val sort: QuerySort<Channel>,
     private val client: ChatClient,
-    private val domainImpl: ChatDomainImpl
+    private val domainImpl: ChatDomainImpl,
 ) : QueryChannelsController {
     override var newChannelEventFilter: (Channel, FilterObject) -> Boolean = { _, _ -> true }
     override var recoveryNeeded: Boolean = false
@@ -78,7 +78,7 @@ internal class QueryChannelsControllerImpl(
     fun loadMoreRequest(
         channelLimit: Int = CHANNEL_LIMIT,
         messageLimit: Int = MESSAGE_LIMIT,
-        memberLimit: Int = MEMBER_LIMIT
+        memberLimit: Int = MEMBER_LIMIT,
     ): QueryChannelsPaginationRequest {
         return QueryChannelsPaginationRequest(
             sort,
@@ -97,7 +97,7 @@ internal class QueryChannelsControllerImpl(
      * We allow you to specify a newChannelEventFilter callback to determine if this query matches the given channel
      */
     internal suspend fun addChannelIfFilterMatches(
-        channel: Channel
+        channel: Channel,
     ) {
         if (newChannelEventFilter(channel, filter)) {
             val channelControllerImpl = domainImpl.channel(channel)
@@ -147,7 +147,7 @@ internal class QueryChannelsControllerImpl(
 
     suspend fun loadMore(
         channelLimit: Int = CHANNEL_LIMIT,
-        messageLimit: Int = MESSAGE_LIMIT
+        messageLimit: Int = MESSAGE_LIMIT,
     ): Result<List<Channel>> {
         val pagination = loadMoreRequest(channelLimit, messageLimit)
         return runQuery(pagination)
@@ -156,7 +156,7 @@ internal class QueryChannelsControllerImpl(
     suspend fun query(
         channelLimit: Int = CHANNEL_LIMIT,
         messageLimit: Int = MESSAGE_LIMIT,
-        memberLimit: Int = MEMBER_LIMIT
+        memberLimit: Int = MEMBER_LIMIT,
     ): Result<List<Channel>> {
         return runQuery(
             QueryChannelsPaginationRequest(
@@ -170,7 +170,7 @@ internal class QueryChannelsControllerImpl(
     }
 
     suspend fun runQueryOffline(pagination: QueryChannelsPaginationRequest): List<Channel>? {
-        val query = domainImpl.repos.queryChannels.selectByFilterAndQuerySort(queryChannelsSpec)
+        val query = domainImpl.repos.querySelectByFilterAndQuerySort(queryChannelsSpec)
             ?: return null
 
         return domainImpl.selectAndEnrichChannels(query.cids.toList(), pagination).also {
@@ -187,21 +187,16 @@ internal class QueryChannelsControllerImpl(
             recoveryNeeded = false
 
             // store the results in the database
-            val channelsResponse = response.data()
+            val channelsResponse = response.data().toSet()
             if (channelsResponse.size < pagination.channelLimit) {
                 _endOfChannels.value = true
             }
             // first things first, store the configs
-            val configEntities = channelsResponse.associateBy { it.type }.values.map {
-                ChannelConfigEntity(
-                    it.type,
-                    it.config
-                )
-            }
-            domainImpl.repos.configs.insert(configEntities)
+            val channelConfigs = channelsResponse.map { ChannelConfig(it.type, it.config) }
+            domainImpl.repos.insertConfigChannel(channelConfigs)
             logger.logI("api call returned ${channelsResponse.size} channels")
             updateQueryChannelsSpec(channelsResponse, pagination.isFirstPage)
-            domainImpl.repos.queryChannels.insert(queryChannelsSpec)
+            domainImpl.repos.queryInsert(queryChannelsSpec)
             domainImpl.storeStateForChannels(channelsResponse)
         } else {
             logger.logI("Query with filter $filter failed, marking it as recovery needed")
@@ -211,33 +206,37 @@ internal class QueryChannelsControllerImpl(
         return response
     }
 
-    private fun updateQueryChannelsSpec(channels: List<Channel>, isFirstPage: Boolean) {
+    private fun updateQueryChannelsSpec(channels: Collection<Channel>, isFirstPage: Boolean) {
         val newCids = channels.map(Channel::cid)
         queryChannelsSpec.cids =
             if (isFirstPage) newCids else (queryChannelsSpec.cids + newCids).distinct()
     }
 
     suspend fun runQuery(pagination: QueryChannelsPaginationRequest): Result<List<Channel>> {
-        val loader = if (pagination.isFirstPage) {
+        val loading = if (pagination.isFirstPage) {
             _loading
         } else {
             _loadingMore
         }
-        if (loader.value) {
+
+        if (loading.value) {
             logger.logI("Another query channels request is in progress. Ignoring this request.")
             return Result(
                 ChatError("Another query channels request is in progress. Ignoring this request.")
             )
         }
-        loader.value = true
-        // start by getting the query results from offline storage
 
+        loading.value = true
+
+        // start by getting the query results from offline storage
         val queryOfflineJob = domainImpl.scope.async { runQueryOffline(pagination) }
+
         // start the query online job before waiting for the query offline job
         val queryOnlineJob = domainImpl.scope.async { runQueryOnline(pagination) }
+
         val channels = queryOfflineJob.await()?.also { offlineChannels ->
             updateChannelsAndQueryResults(offlineChannels, pagination.isFirstPage)
-            loader.value = false
+            loading.value = offlineChannels.isEmpty()
         }
 
         val output: Result<List<Channel>> = queryOnlineJob.await().let { onlineResult ->
@@ -247,7 +246,8 @@ internal class QueryChannelsControllerImpl(
                 channels?.let { Result(it) } ?: onlineResult
             }
         }
-        loader.value = false
+
+        loading.value = false
         return output
     }
 
@@ -261,7 +261,7 @@ internal class QueryChannelsControllerImpl(
      */
     internal suspend fun updateChannelsAndQueryResults(
         channels: List<Channel>?,
-        isFirstPage: Boolean
+        isFirstPage: Boolean,
     ) {
         if (channels != null) {
             val cIds = channels.map { it.cid }
@@ -283,9 +283,9 @@ internal class QueryChannelsControllerImpl(
         // Remove from queryChannelsSpec
         if (queryChannelsSpec.cids.contains(cid)) {
             queryChannelsSpec.cids = queryChannelsSpec.cids - cid
-            domainImpl.repos.queryChannels.insert(queryChannelsSpec)
+            domainImpl.repos.queryInsert(queryChannelsSpec)
             // Remove from channel repository
-            domainImpl.repos.removeChannel(cid)
+            domainImpl.repos.deleteChannel(cid)
 
             _channels.value = _channels.value.minus(cid)
         }

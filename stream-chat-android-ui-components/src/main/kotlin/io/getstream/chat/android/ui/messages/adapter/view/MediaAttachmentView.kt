@@ -7,7 +7,7 @@ import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.constraintlayout.widget.ConstraintSet
 import androidx.core.content.ContextCompat
 import androidx.core.view.isVisible
-import com.getstream.sdk.chat.ImageLoader.load
+import com.getstream.sdk.chat.images.load
 import com.getstream.sdk.chat.utils.extensions.constrainViewToParentBySide
 import com.getstream.sdk.chat.utils.extensions.updateConstraints
 import com.google.android.material.shape.MaterialShapeDrawable
@@ -77,7 +77,7 @@ internal class MediaAttachmentView : ConstraintLayout {
 
     private fun showImageByUrl(imageUrl: String, onCompleteCallback: () -> Unit) {
         binding.imageView.load(
-            uri = imageUrl,
+            data = imageUrl,
             placeholderResId = R.drawable.stream_ui_picture_placeholder,
             onStart = { showLoading(true) },
             onComplete = {
@@ -97,7 +97,7 @@ internal class MediaAttachmentView : ConstraintLayout {
         topLeft: Float,
         topRight: Float,
         bottomRight: Float,
-        bottomLeft: Float
+        bottomLeft: Float,
     ) {
         ShapeAppearanceModel.Builder().setTopLeftCornerSize(topLeft).setTopRightCornerSize(topRight)
             .setBottomRightCornerSize(bottomRight).setBottomLeftCornerSize(bottomLeft).build().let(this::setImageShape)
@@ -106,10 +106,10 @@ internal class MediaAttachmentView : ConstraintLayout {
     fun setImageShape(shapeAppearanceModel: ShapeAppearanceModel) {
         binding.imageView.shapeAppearanceModel = shapeAppearanceModel
         binding.loadImage.background = MaterialShapeDrawable(shapeAppearanceModel).apply {
-            setTint(ContextCompat.getColor(context, R.color.stream_ui_black_50))
+            setTint(ContextCompat.getColor(context, R.color.stream_ui_grey))
         }
         binding.moreCount.background = MaterialShapeDrawable(shapeAppearanceModel).apply {
-            setTint(ContextCompat.getColor(context, R.color.stream_ui_black_30))
+            setTint(ContextCompat.getColor(context, R.color.stream_ui_overlay))
         }
     }
 

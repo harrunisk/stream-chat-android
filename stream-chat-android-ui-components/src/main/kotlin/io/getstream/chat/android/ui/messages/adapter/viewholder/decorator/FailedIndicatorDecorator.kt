@@ -14,44 +14,54 @@ import io.getstream.chat.android.ui.messages.adapter.viewholder.PlainTextWithMed
 
 internal class FailedIndicatorDecorator : BaseDecorator() {
 
-    override fun decoratePlainTextMessage(viewHolder: MessagePlainTextViewHolder, data: MessageListItem.MessageItem) {
+    override fun decoratePlainTextMessage(
+        viewHolder: MessagePlainTextViewHolder,
+        data: MessageListItem.MessageItem,
+    ) {
         setupFailedIndicator(viewHolder.binding.deliveryFailedIcon, data)
     }
 
     override fun decoratePlainTextWithFileAttachmentsMessage(
         viewHolder: PlainTextWithFileAttachmentsViewHolder,
-        data: MessageListItem.MessageItem
+        data: MessageListItem.MessageItem,
     ) {
         setupFailedIndicator(viewHolder.binding.deliveryFailedIcon, data)
     }
 
     override fun decorateOnlyFileAttachmentsMessage(
         viewHolder: OnlyFileAttachmentsViewHolder,
-        data: MessageListItem.MessageItem
+        data: MessageListItem.MessageItem,
     ) {
         setupFailedIndicator(viewHolder.binding.deliveryFailedIcon, data)
     }
 
     override fun decoratePlainTextWithMediaAttachmentsMessage(
         viewHolder: PlainTextWithMediaAttachmentsViewHolder,
-        data: MessageListItem.MessageItem
+        data: MessageListItem.MessageItem,
     ) {
         setupFailedIndicator(viewHolder.binding.deliveryFailedIcon, data)
     }
 
     override fun decorateOnlyMediaAttachmentsMessage(
         viewHolder: OnlyMediaAttachmentsViewHolder,
-        data: MessageListItem.MessageItem
+        data: MessageListItem.MessageItem,
     ) {
         setupFailedIndicator(viewHolder.binding.deliveryFailedIcon, data)
     }
 
-    override fun decorateDeletedMessage(viewHolder: MessageDeletedViewHolder, data: MessageListItem.MessageItem) = Unit
-    override fun decorateGiphyMessage(viewHolder: GiphyViewHolder, data: MessageListItem.MessageItem) = Unit
+    override fun decorateDeletedMessage(
+        viewHolder: MessageDeletedViewHolder,
+        data: MessageListItem.MessageItem,
+    ) = Unit
+
+    override fun decorateGiphyMessage(
+        viewHolder: GiphyViewHolder,
+        data: MessageListItem.MessageItem,
+    ) = Unit
 
     private fun setupFailedIndicator(
         deliveryFailedIcon: ImageView,
-        data: MessageListItem.MessageItem
+        data: MessageListItem.MessageItem,
     ) {
         val isFailed = data.isMine && data.message.syncStatus == SyncStatus.FAILED_PERMANENTLY
         deliveryFailedIcon.isVisible = isFailed

@@ -18,6 +18,7 @@ import androidx.navigation.NavController
 import androidx.navigation.NavDirections
 import androidx.navigation.fragment.findNavController
 import com.google.android.material.bottomnavigation.BottomNavigationView
+import io.getstream.chat.android.client.models.Channel
 import io.getstream.chat.android.client.models.Member
 import io.getstream.chat.android.livedata.ChannelData
 import io.getstream.chat.ui.sample.R
@@ -81,7 +82,7 @@ fun Fragment.initToolbar(toolbar: Toolbar) {
             setDisplayHomeAsUpEnabled(true)
 
             ContextCompat.getDrawable(requireContext(), R.drawable.ic_icon_left)?.apply {
-                setTint(ContextCompat.getColor(requireContext(), R.color.stream_ui_text_color_strong))
+                setTint(ContextCompat.getColor(requireContext(), R.color.stream_ui_black))
             }?.let(toolbar::setNavigationIcon)
 
             toolbar.setNavigationOnClickListener {
@@ -92,14 +93,13 @@ fun Fragment.initToolbar(toolbar: Toolbar) {
 }
 
 fun BottomNavigationView.setBadgeNumber(@IdRes menuItemId: Int, badgeNumber: Int) {
-    val badge = getBadge(menuItemId)
-        ?: getOrCreateBadge(menuItemId).apply {
-            horizontalOffset = -context.getDimensionPixelSize(R.dimen.badge_horizontal_offset)
-            verticalOffset = context.getDimensionPixelSize(R.dimen.badge_vertical_offset)
-            backgroundColor = context.getColorFromRes(R.color.bottom_nav_badge_color)
-        }
-    badge.isVisible = badgeNumber > 0
-    badge.number = badgeNumber
+    getOrCreateBadge(menuItemId).apply {
+        horizontalOffset = -context.getDimensionPixelSize(R.dimen.badge_horizontal_offset)
+        verticalOffset = context.getDimensionPixelSize(R.dimen.badge_vertical_offset)
+        backgroundColor = context.getColorFromRes(R.color.stream_ui_accent_red)
+        isVisible = badgeNumber > 0
+        number = badgeNumber
+    }
 }
 
 fun Context?.getFragmentManager(): FragmentManager? {
@@ -115,3 +115,8 @@ val ChannelData.name: String
 
 val Member.isOwner: Boolean
     get() = role == "owner"
+
+const val CHANNEL_ARG_DRAFT = "draft"
+
+val Channel.isDraft: Boolean
+    get() = getExtraValue(CHANNEL_ARG_DRAFT, false)

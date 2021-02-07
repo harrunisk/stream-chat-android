@@ -3,27 +3,17 @@ package io.getstream.chat.android.ui.utils.extensions
 import android.content.Context
 import android.text.SpannableString
 import android.text.SpannableStringBuilder
+import com.getstream.sdk.chat.utils.extensions.getUsers
 import io.getstream.chat.android.client.models.Attachment
 import io.getstream.chat.android.client.models.Channel
 import io.getstream.chat.android.client.models.Message
-import io.getstream.chat.android.client.models.User
 import io.getstream.chat.android.client.models.name
 import io.getstream.chat.android.livedata.ChatDomain
 import io.getstream.chat.android.ui.R
-import io.getstream.chat.android.ui.channel.list.adapter.diff.ChannelDiff
+import io.getstream.chat.android.ui.channel.list.adapter.ChannelListPayloadDiff
 import io.getstream.chat.android.ui.utils.ModelType
 
-internal fun Channel.getUsers(excludeCurrentUser: Boolean = true): List<User> =
-    members
-        .map { it.user }
-        .let { users ->
-            when {
-                excludeCurrentUser -> users.withoutCurrentUser()
-                else -> users
-            }
-        }
-
-internal fun Channel.getDisplayName(context: Context): String =
+public fun Channel.getDisplayName(context: Context): String =
     name.takeIf { it.isNotEmpty() }
         ?: getUsers()
             .joinToString { it.name }
@@ -48,12 +38,13 @@ internal fun Channel.getLastMessageByUserId(userId: String): Message? =
             !it.isEphemeral()
     }
 
-internal fun Channel.diff(other: Channel): ChannelDiff =
-    ChannelDiff(
+internal fun Channel.diff(other: Channel): ChannelListPayloadDiff =
+    ChannelListPayloadDiff(
         nameChanged = name != other.name,
         avatarViewChanged = getUsers() != other.getUsers(),
         readStateChanged = read != other.read,
-        lastMessageChanged = getLastMessage() != other.getLastMessage()
+        lastMessageChanged = getLastMessage() != other.getLastMessage(),
+        unreadCountChanged = unreadCount != other.unreadCount,
     )
 
 internal fun Channel.getOnlineStateSubtitle(context: Context): String {
@@ -94,19 +85,17 @@ internal fun Channel.isMessageRead(message: Message): Boolean {
         .any { it.time >= message.getCreatedAtOrThrow().time }
 }
 
-internal fun Channel.isDirectMessaging(): Boolean = getUsers().size == 1
-
 // None of the strings used to assemble the preview message are translatable - concatenation here should be fine
 internal fun Channel.getLastMessagePreviewText(
     context: Context,
-    isDirectMessaging: Boolean = false
+    isDirectMessaging: Boolean = false,
 ): SpannableStringBuilder? {
     return getLastMessage()?.let { message ->
         val sender = message.getSenderDisplayName(context, isDirectMessaging)
 
         // bold mentions of the current user
         val currentUserMention = ChatDomain.instance().currentUser.asMention(context)
-        val previewText: SpannableString = message.text.trim().bold(currentUserMention.singletonList())
+        val previewText: SpannableString = message.text.trim().bold(currentUserMention.singletonList(), ignoreCase = true)
 
         val attachments: SpannableString? = message.attachments
             .takeIf { it.isNotEmpty() }

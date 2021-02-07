@@ -4,7 +4,6 @@ import android.content.Context
 import android.content.res.TypedArray
 import android.graphics.Typeface
 import android.util.AttributeSet
-import android.util.TypedValue
 import android.view.LayoutInflater
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.content.ContextCompat
@@ -14,7 +13,6 @@ import com.getstream.sdk.chat.style.TextStyle
 import io.getstream.chat.android.client.models.User
 import io.getstream.chat.android.ui.R
 import io.getstream.chat.android.ui.databinding.StreamUiChannelListHeaderViewBinding
-import io.getstream.chat.android.ui.utils.extensions.dpToPx
 import io.getstream.chat.android.ui.utils.extensions.getDimension
 
 public class ChannelListHeaderView : ConstraintLayout {
@@ -42,7 +40,7 @@ public class ChannelListHeaderView : ConstraintLayout {
             configUserAvatar(typedArray)
             configOnlineTitle(typedArray)
             configOfflineTitleContainer(typedArray)
-            configAddChannelButton(typedArray)
+            configActionButton(typedArray)
         }
     }
 
@@ -56,19 +54,10 @@ public class ChannelListHeaderView : ConstraintLayout {
 
     private fun configOnlineTitle(typedArray: TypedArray) {
         getOnlineTitleTextStyle(typedArray).apply(binding.onlineTextView)
-        binding.onlineTextView.text = typedArray.getString(R.styleable.ChannelListHeaderView_streamUiOnlineTitleText)
-            ?: context.getString(R.string.stream_ui_channels_header_view_online_title)
     }
 
     private fun configOfflineTitleContainer(typedArray: TypedArray) {
-        val textStyle = getOfflineTitleTextStyle(typedArray)
-        binding.offlineTextView.apply {
-            text = typedArray.getString(R.styleable.ChannelListHeaderView_streamUiOfflineTitleText)
-                ?: context.getString(R.string.stream_ui_channels_header_view_offline_title)
-            setTextSize(TypedValue.COMPLEX_UNIT_PX, textStyle.size.toFloat())
-            setTextColor(textStyle.color)
-            typeface = textStyle.font
-        }
+        getOfflineTitleTextStyle(typedArray).apply(binding.offlineTextView)
 
         binding.offlineProgressBar.apply {
             isVisible =
@@ -79,36 +68,26 @@ public class ChannelListHeaderView : ConstraintLayout {
 
     private fun getProgressBarTint(typedArray: TypedArray) =
         typedArray.getColorStateList(R.styleable.ChannelListHeaderView_streamUiOfflineProgressBarTint)
-            ?: ContextCompat.getColorStateList(context, R.color.stream_ui_blue)
+            ?: ContextCompat.getColorStateList(context, R.color.stream_ui_accent_blue)
 
-    private fun configAddChannelButton(typedArray: TypedArray) {
-        binding.addChannelButton.apply {
-            val showAddChannelButton = typedArray.getBoolean(R.styleable.ChannelListHeaderView_streamUiShowAddChannelButton, true)
+    private fun configActionButton(typedArray: TypedArray) {
+        binding.actionButton.apply {
+            val showActionButton =
+                typedArray.getBoolean(R.styleable.ChannelListHeaderView_streamUiShowActionButton, true)
 
-            isVisible = showAddChannelButton
-            isClickable = showAddChannelButton
+            isVisible = showActionButton
+            isClickable = showActionButton
 
-            layoutParams = layoutParams.apply {
-                height = typedArray.getDimensionPixelSize(
-                    R.styleable.ChannelListHeaderView_streamUiAddChannelButtonHeight,
-                    DEFAULT_ADD_CHANNEL_BUTTON_SIZE
-                )
-                width = typedArray.getDimensionPixelSize(
-                    R.styleable.ChannelListHeaderView_streamUiAddChannelButtonWidth,
-                    DEFAULT_ADD_CHANNEL_BUTTON_SIZE
-                )
-            }
-            iconTint = typedArray.getColorStateList(R.styleable.ChannelListHeaderView_streamUiAddChannelButtonTint)
-                ?: ContextCompat.getColorStateList(context, R.color.stream_ui_blue)
-            icon = typedArray.getDrawable(R.styleable.ChannelListHeaderView_streamUiAddChannelButtonIcon)
+            imageTintList = typedArray.getColorStateList(R.styleable.ChannelListHeaderView_streamUiActionButtonTint)
+                ?: ContextCompat.getColorStateList(context, R.color.stream_ui_accent_blue)
+            val drawable = typedArray.getDrawable(R.styleable.ChannelListHeaderView_streamUiActionButtonIcon)
                 ?: ContextCompat.getDrawable(context, R.drawable.stream_ui_ic_pen)
-            backgroundTintList = getBackgroundTint(typedArray)
+            setImageDrawable(drawable)
+            backgroundTintList =
+                typedArray.getColorStateList(R.styleable.ChannelListHeaderView_streamUiActionBackgroundTint)
+                ?: ContextCompat.getColorStateList(context, R.color.stream_ui_icon_button_background_selector)
         }
     }
-
-    private fun getBackgroundTint(typedArray: TypedArray) =
-        typedArray.getColorStateList(R.styleable.ChannelListHeaderView_streamUiAddChannelBackgroundTint)
-            ?: ContextCompat.getColorStateList(context, R.color.stream_ui_white)
 
     private fun getOnlineTitleTextStyle(typedArray: TypedArray): TextStyle {
         return TextStyle.Builder(typedArray).size(
@@ -117,7 +96,7 @@ public class ChannelListHeaderView : ConstraintLayout {
         )
             .color(
                 R.styleable.ChannelListHeaderView_streamUiOnlineTitleTextColor,
-                ContextCompat.getColor(context, R.color.stream_ui_text_color_strong)
+                ContextCompat.getColor(context, R.color.stream_ui_black)
             )
             .font(
                 R.styleable.ChannelListHeaderView_streamUiOnlineTitleFontAssets,
@@ -136,7 +115,7 @@ public class ChannelListHeaderView : ConstraintLayout {
         )
             .color(
                 R.styleable.ChannelListHeaderView_streamUiOfflineTitleTextColor,
-                ContextCompat.getColor(context, R.color.stream_ui_text_color_strong)
+                ContextCompat.getColor(context, R.color.stream_ui_black)
             )
             .font(
                 R.styleable.ChannelListHeaderView_streamUiOfflineTitleFontAssets,
@@ -162,28 +141,19 @@ public class ChannelListHeaderView : ConstraintLayout {
         binding.onlineTextView.isVisible = false
     }
 
-    public fun hideTitle() {
-        binding.offlineTitleContainer.isVisible = false
-        binding.onlineTextView.isVisible = false
-    }
-
     public fun setOnUserAvatarClickListener(listener: UserAvatarClickListener) {
         binding.userAvatar.setOnClickListener { listener.onUserAvatarClick() }
     }
 
-    public fun setOnAddChannelButtonClickListener(listener: AddChannelButtonClickListener) {
-        binding.addChannelButton.setOnClickListener { listener.onAddChannelClick() }
+    public fun setOnActionButtonClickListener(listener: ActionButtonClickListener) {
+        binding.actionButton.setOnClickListener { listener.onClick() }
     }
 
     public fun interface UserAvatarClickListener {
         public fun onUserAvatarClick()
     }
 
-    public fun interface AddChannelButtonClickListener {
-        public fun onAddChannelClick()
-    }
-
-    private companion object {
-        private val DEFAULT_ADD_CHANNEL_BUTTON_SIZE = 40.dpToPx()
+    public fun interface ActionButtonClickListener {
+        public fun onClick()
     }
 }

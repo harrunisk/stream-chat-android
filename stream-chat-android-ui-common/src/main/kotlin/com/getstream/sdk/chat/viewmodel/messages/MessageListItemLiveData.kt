@@ -32,11 +32,11 @@ import java.util.Date
  * - Improved test coverage
  *
  * @param currentUser the user who is currently authenticated
- * @param messageLd a livedata object with the messages
+ * @param messages a livedata object with the messages
  * @param readsLd a livedata object with the read state per user
  * @param typingLd a livedata object with the users who are currently typing
  * @param isThread if we are in a thread or not. if in a thread we add a threadSeperator in position 1 of the item list
- * @param dateSeparator function to compare previous and current message and return if we should insert a date separator
+ * @param dateSeparatorHandler function to compare previous and current message and return if we should insert a date separator
  *
  * Here's an example:
  *
@@ -55,7 +55,7 @@ class MessageListItemLiveData(
     private val readsLd: LiveData<List<ChannelUserRead>>,
     private val typingLd: LiveData<List<User>>? = null,
     private val isThread: Boolean = false,
-    private val dateSeparator: ((previous: Message?, current: Message) -> Boolean)? = null
+    private val dateSeparatorHandler: MessageListViewModel.DateSeparatorHandler? = null,
 ) : MediatorLiveData<MessageListItemWrapper>() {
 
     private var hasNewMessages: Boolean = false
@@ -166,10 +166,16 @@ class MessageListItemLiveData(
                 )
             }
 
+            // date separator
+            val shouldAddDateSeparator = dateSeparatorHandler?.shouldAddDateSeparator(previousMessage, message) ?: false
+            if (shouldAddDateSeparator) {
+                items.add(MessageListItem.DateSeparatorItem(message.getCreatedAtOrThrow()))
+            }
+
             // determine the position (top, middle, bottom)
             val user = message.user
             val positions = mutableListOf<MessageListItem.Position>()
-            if (previousMessage == null || previousMessage.user != user) {
+            if (previousMessage == null || previousMessage.user != user || shouldAddDateSeparator) {
                 positions.add(MessageListItem.Position.TOP)
             }
             if (nextMessage == null || nextMessage.user != user) {
@@ -180,14 +186,15 @@ class MessageListItemLiveData(
                     positions.add(MessageListItem.Position.MIDDLE)
                 }
             }
-            // date separators
-            dateSeparator?.let {
-                if (it(previousMessage, message)) {
-                    items.add(MessageListItem.DateSeparatorItem(message.getCreatedAtOrThrow()))
-                }
-            }
 
-            items.add(MessageListItem.MessageItem(message, positions, isMine = message.user.id == currentUser.id))
+            items.add(
+                MessageListItem.MessageItem(
+                    message,
+                    positions,
+                    isMine = message.user.id == currentUser.id,
+                    isThreadMode = isThread,
+                )
+            )
             previousMessage = message
         }
         return items.toList()
@@ -231,7 +238,41 @@ class MessageListItemLiveData(
             }
         }
 
-        return messagesCopy
+        return addMessageReadFlags(messagesCopy, reads)
+    }
+
+    /**
+     * Returns a list of [MessageListItem.MessageItem] with populated [MessageListItem.MessageItem.isMessageRead]
+     * field. A message is considered "read" if at least one user (except the current user) has read further in
+     * the channel than this message. Since the most common scenario is that someone read to the end,
+     * [MessageListItem.MessageItem] has [MessageListItem.MessageItem.isMessageRead] field set to "true" by default,
+     * which allows us to avoid excessive allocations.
+     */
+    private fun addMessageReadFlags(
+        messages: List<MessageListItem>,
+        reads: List<ChannelUserRead>,
+    ): List<MessageListItem> {
+        val lastRead = reads
+            .filter { it.user.id != currentUser.id }
+            .mapNotNull { it.lastRead }
+            .maxOrNull() ?: return messages
+
+        return messages.map { messageListItem ->
+            if (messageListItem is MessageListItem.MessageItem) {
+                val isMessageRead = messageListItem.message
+                    .createdAt
+                    ?.let { it <= lastRead }
+                    ?: false
+
+                if (messageListItem.isMessageRead != isMessageRead) {
+                    messageListItem.copy(isMessageRead = isMessageRead)
+                } else {
+                    messageListItem
+                }
+            } else {
+                messageListItem
+            }
+        }
     }
 
     private fun wrapMessages(

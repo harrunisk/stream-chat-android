@@ -26,7 +26,7 @@ import java.io.File
 import kotlin.properties.Delegates
 
 public class MessageInputFieldView : FrameLayout {
-    public val binding: StreamUiMessageInputFieldBinding =
+    internal val binding: StreamUiMessageInputFieldBinding =
         StreamUiMessageInputFieldBinding.inflate(LayoutInflater.from(context), this, true)
 
     private val attachmentModeHint: String = context.getString(R.string.stream_ui_message_input_field_attachment_hint)
@@ -152,14 +152,17 @@ public class MessageInputFieldView : FrameLayout {
     }
 
     public fun onReply(replyMessage: Message) {
-        mode = Mode.ReplyMessageMode(replyMessage, mode)
+        mode = Mode.ReplyMessageMode(replyMessage)
     }
 
     public fun onReplyDismissed() {
-        val currentMode = mode
-        if (currentMode is Mode.ReplyMessageMode) {
-            mode = currentMode.previousMode
+        if (mode is Mode.ReplyMessageMode) {
+            mode = Mode.MessageMode
         }
+    }
+
+    public fun onEdit(edit: Message) {
+        mode = Mode.EditMessageMode(edit)
     }
 
     private fun cancelAttachment(attachment: AttachmentMetaData) {
@@ -237,7 +240,9 @@ public class MessageInputFieldView : FrameLayout {
     private fun switchToEditMode(mode: Mode.EditMessageMode) {
         binding.messageEditText.hint = normalModeHint
 
-        messageText = mode.oldMessage.text
+        val oldMessage = mode.oldMessage
+
+        messageText = oldMessage.text
     }
 
     private fun switchToCommandMode(mode: Mode.CommandMode) {
@@ -301,6 +306,6 @@ public class MessageInputFieldView : FrameLayout {
         public data class CommandMode(val command: Command) : Mode()
         public data class FileAttachmentMode(val attachments: List<AttachmentMetaData>) : Mode()
         public data class MediaAttachmentMode(val attachments: List<AttachmentMetaData>) : Mode()
-        public data class ReplyMessageMode(val repliedMessage: Message, val previousMode: Mode) : Mode()
+        public data class ReplyMessageMode(val repliedMessage: Message) : Mode()
     }
 }

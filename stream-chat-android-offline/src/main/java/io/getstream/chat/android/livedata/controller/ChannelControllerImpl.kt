@@ -30,6 +30,7 @@ import io.getstream.chat.android.client.events.NotificationMarkReadEvent
 import io.getstream.chat.android.client.events.NotificationMessageNewEvent
 import io.getstream.chat.android.client.events.ReactionDeletedEvent
 import io.getstream.chat.android.client.events.ReactionNewEvent
+import io.getstream.chat.android.client.events.ReactionUpdateEvent
 import io.getstream.chat.android.client.events.TypingStartEvent
 import io.getstream.chat.android.client.events.TypingStopEvent
 import io.getstream.chat.android.client.events.UserPresenceChangedEvent
@@ -37,27 +38,32 @@ import io.getstream.chat.android.client.events.UserStartWatchingEvent
 import io.getstream.chat.android.client.events.UserStopWatchingEvent
 import io.getstream.chat.android.client.events.UserUpdatedEvent
 import io.getstream.chat.android.client.extensions.enrichWithCid
+import io.getstream.chat.android.client.extensions.uploadId
 import io.getstream.chat.android.client.logger.ChatLogger
 import io.getstream.chat.android.client.models.Attachment
 import io.getstream.chat.android.client.models.Channel
 import io.getstream.chat.android.client.models.ChannelUserRead
 import io.getstream.chat.android.client.models.Config
-import io.getstream.chat.android.client.models.EventType
 import io.getstream.chat.android.client.models.Member
 import io.getstream.chat.android.client.models.Message
 import io.getstream.chat.android.client.models.Reaction
 import io.getstream.chat.android.client.models.TypingEvent
 import io.getstream.chat.android.client.models.User
+import io.getstream.chat.android.client.uploader.ProgressTracker
+import io.getstream.chat.android.client.uploader.ProgressTrackerFactory
+import io.getstream.chat.android.client.uploader.toProgressCallback
+import io.getstream.chat.android.client.utils.ProgressCallback
 import io.getstream.chat.android.client.utils.Result
 import io.getstream.chat.android.client.utils.SyncStatus
 import io.getstream.chat.android.livedata.ChannelData
 import io.getstream.chat.android.livedata.ChatDomainImpl
 import io.getstream.chat.android.livedata.controller.helper.MessageHelper
-import io.getstream.chat.android.livedata.entity.ChannelConfigEntity
-import io.getstream.chat.android.livedata.extensions.addReaction
+import io.getstream.chat.android.livedata.extensions.addMyReaction
 import io.getstream.chat.android.livedata.extensions.isImageMimetype
 import io.getstream.chat.android.livedata.extensions.isPermanent
-import io.getstream.chat.android.livedata.extensions.removeReaction
+import io.getstream.chat.android.livedata.extensions.isVideoMimetype
+import io.getstream.chat.android.livedata.extensions.removeMyReaction
+import io.getstream.chat.android.livedata.model.ChannelConfig
 import io.getstream.chat.android.livedata.repository.mapper.toEntity
 import io.getstream.chat.android.livedata.request.QueryChannelPaginationRequest
 import io.getstream.chat.android.livedata.utils.computeUnreadCount
@@ -78,6 +84,7 @@ import wasCreatedBeforeOrAt
 import java.io.File
 import java.util.Calendar
 import java.util.Date
+import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.collections.set
 import kotlin.math.max
@@ -90,28 +97,31 @@ internal class ChannelControllerImpl(
     override val channelType: String,
     override val channelId: String,
     val client: ChatClient,
-    val domainImpl: ChatDomainImpl
+    val domainImpl: ChatDomainImpl,
 ) : ChannelController {
     private val editJobs = mutableMapOf<String, Job>()
 
     private val _messages = MutableStateFlow<Map<String, Message>>(emptyMap())
-    private val _watcherCount = MutableStateFlow<Int>(0)
+    private val _watcherCount = MutableStateFlow(0)
     private val _typing = MutableStateFlow<Map<String, ChatEvent>>(emptyMap())
     private val _reads = MutableStateFlow<Map<String, ChannelUserRead>>(emptyMap())
     private val _read = MutableStateFlow<ChannelUserRead?>(null)
-    private val _endOfNewerMessages = MutableStateFlow<Boolean>(false)
-    private val _endOfOlderMessages = MutableStateFlow<Boolean>(false)
-    private val _loading = MutableStateFlow<Boolean>(false)
-    private val _hidden = MutableStateFlow<Boolean>(false)
-    private val _muted = MutableStateFlow<Boolean>(false)
+    private val _endOfNewerMessages = MutableStateFlow(false)
+    private val _endOfOlderMessages = MutableStateFlow(false)
+    private val _loading = MutableStateFlow(false)
+    private val _hidden = MutableStateFlow(false)
+    private val _muted = MutableStateFlow(false)
     private val _watchers = MutableStateFlow<Map<String, User>>(emptyMap())
     private val _members = MutableStateFlow<Map<String, Member>>(emptyMap())
-    private val _loadingOlderMessages = MutableStateFlow<Boolean>(false)
-    private val _loadingNewerMessages = MutableStateFlow<Boolean>(false)
+    private val _loadingOlderMessages = MutableStateFlow(false)
+    private val _loadingNewerMessages = MutableStateFlow(false)
     private val _channelData = MutableStateFlow<ChannelData?>(null)
     private val _oldMessages = MutableStateFlow<Map<String, Message>>(emptyMap())
     private val lastMessageAt = MutableStateFlow<Date?>(null)
     private val _repliedMessage = MutableStateFlow<Message?>(null)
+    private val _unreadCount = MutableStateFlow(0)
+
+    private var uploadStatusMessage: Message? = null
 
     override val repliedMessage: LiveData<Message?> = _repliedMessage.asLiveData()
 
@@ -178,11 +188,6 @@ internal class ChannelControllerImpl(
     /** read status for the current user */
     override val read: LiveData<ChannelUserRead?> = _read.asLiveData()
 
-    private val _unreadCount =
-        _read.combine(_messages) { channelUserRead: ChannelUserRead?, messagesMap: Map<String, Message> ->
-            computeUnreadCount(domainImpl.currentUser, channelUserRead, messagesMap.values.toList())
-        }.stateIn(domainImpl.scope, SharingStarted.Eagerly, 0)
-
     /**
      * unread count for this channel, calculated based on read state (this works even if you're offline)
      */
@@ -224,6 +229,8 @@ internal class ChannelControllerImpl(
     private val channelClient = client.channel(channelType, channelId)
     override val cid = "%s:%s".format(channelType, channelId)
 
+    private var keystrokeParentMessageId: String? = null
+
     private val logger = ChatLogger.get("ChatDomain ChannelController")
 
     private val threadControllerMap: ConcurrentHashMap<String, ThreadControllerImpl> =
@@ -239,28 +246,44 @@ internal class ChannelControllerImpl(
         return domainImpl.getChannelConfig(channelType)
     }
 
-    fun keystroke(): Result<Boolean> {
+    fun keystroke(parentId: String?): Result<Boolean> {
         if (!getConfig().isTypingEvents) return Result(false)
         lastKeystrokeAt = Date()
         if (lastStartTypingEvent == null || lastKeystrokeAt!!.time - lastStartTypingEvent!!.time > 3000) {
             lastStartTypingEvent = lastKeystrokeAt
-            val result = client.sendEvent(EventType.TYPING_START, channelType, channelId).execute()
+
+            val channelClient = client.channel(channelType = channelType, channelId = channelId)
+            val result = if (parentId != null) {
+                channelClient.keystroke(parentId)
+            } else {
+                channelClient.keystroke()
+            }.execute()
+
             return if (result.isSuccess) {
+                keystrokeParentMessageId = parentId
                 Result(result.isSuccess)
             } else {
-                Result(result.isSuccess)
+                Result(result.error())
             }
         }
         return Result(false)
     }
 
-    fun stopTyping(): Result<Boolean> {
+    fun stopTyping(parentId: String?): Result<Boolean> {
         if (!getConfig().isTypingEvents) return Result(false)
         if (lastStartTypingEvent != null) {
             lastStartTypingEvent = null
             lastKeystrokeAt = null
-            val result = client.sendEvent(EventType.TYPING_STOP, channelType, channelId).execute()
+
+            val channelClient = client.channel(channelType = channelType, channelId = channelId)
+            val result = if (parentId != null) {
+                channelClient.stopTyping(parentId)
+            } else {
+                channelClient.stopTyping()
+            }.execute()
+
             return if (result.isSuccess) {
+                keystrokeParentMessageId = null
                 Result(result.isSuccess)
             } else {
                 Result(result.error())
@@ -274,7 +297,7 @@ internal class ChannelControllerImpl(
      *
      * @return whether the channel was marked as read or not
      */
-    internal suspend fun markRead(): Boolean {
+    internal fun markRead(): Boolean {
         if (!getConfig().isReadEvents) {
             return false
         }
@@ -319,7 +342,7 @@ internal class ChannelControllerImpl(
         return messages
     }
 
-    private suspend fun removeMessagesBefore(date: Date) {
+    private fun removeMessagesBefore(date: Date) {
         val copy = _messages.value
         // start off empty
         _messages.value = mutableMapOf()
@@ -332,17 +355,14 @@ internal class ChannelControllerImpl(
         setHidden(true)
         val result = channelClient.hide(clearHistory).execute()
         if (result.isSuccess) {
-            val channelEntity = domainImpl.repos.channels.select(cid)
-            channelEntity?.let {
-                it.hidden = true
-                if (clearHistory) {
-                    val now = Date()
-                    it.hideMessagesBefore = now
-                    hideMessagesBefore = now
-                    removeMessagesBefore(now)
-                    domainImpl.repos.messages.deleteChannelMessagesBefore(cid, now)
-                }
-                domainImpl.repos.channels.insert(it)
+            if (clearHistory) {
+                val now = Date()
+                hideMessagesBefore = now
+                removeMessagesBefore(now)
+                domainImpl.repos.deleteChannelMessagesBefore(cid, now)
+                domainImpl.repos.setHiddenForChannel(cid, true, now)
+            } else {
+                domainImpl.repos.setHiddenForChannel(cid, true)
             }
         }
         return result
@@ -352,11 +372,7 @@ internal class ChannelControllerImpl(
         setHidden(false)
         val result = channelClient.show().execute()
         if (result.isSuccess) {
-            val channelEntity = domainImpl.repos.channels.select(cid)
-            channelEntity?.let {
-                it.hidden = false
-                domainImpl.repos.channels.insert(it)
-            }
+            domainImpl.repos.setHiddenForChannel(cid, false)
         }
         return result
     }
@@ -385,7 +401,7 @@ internal class ChannelControllerImpl(
             }
             // Remove messages from repository
             val now = Date()
-            domainImpl.repos.messages.deleteChannelMessagesBefore(cid, now)
+            domainImpl.repos.deleteChannelMessagesBefore(cid, now)
             Result(Unit)
         } else {
             Result(result.error())
@@ -401,44 +417,86 @@ internal class ChannelControllerImpl(
         runChannelQuery(QueryChannelPaginationRequest(limit))
     }
 
-    private fun loadMoreMessagesRequest(
-        limit: Int = 30,
-        direction: Pagination
-    ): QueryChannelPaginationRequest {
+    private fun getLoadMoreBaseMessageId(direction: Pagination): String? {
         val messages = sortedMessages()
-        val request = QueryChannelPaginationRequest(limit)
-        if (messages.isNotEmpty()) {
-            val messageId: String = when (direction) {
-                Pagination.GREATER_THAN_OR_EQUAL, Pagination.GREATER_THAN -> {
+        return if (messages.isNotEmpty()) {
+            when (direction) {
+                Pagination.GREATER_THAN_OR_EQUAL,
+                Pagination.GREATER_THAN,
+                -> {
                     messages.last().id
                 }
-                Pagination.LESS_THAN, Pagination.LESS_THAN_OR_EQUAL -> {
+                Pagination.LESS_THAN,
+                Pagination.LESS_THAN_OR_EQUAL,
+                -> {
                     messages.first().id
                 }
             }
-            request.apply {
-                messageFilterDirection = direction
+        } else {
+            null
+        }
+    }
+
+    /**
+     *  Loads a list of messages before the oldest message in the current list.
+     */
+    suspend fun loadOlderMessages(limit: Int = 30): Result<Channel> {
+        return runChannelQuery(
+            QueryChannelPaginationRequest(limit).apply {
+                getLoadMoreBaseMessageId(Pagination.LESS_THAN)?.let {
+                    messageFilterDirection = Pagination.LESS_THAN
+                    messageFilterValue = it
+                }
+            }
+        )
+    }
+
+    /**
+     *  Loads a list of messages after the newest message in the current list.
+     */
+    suspend fun loadNewerMessages(limit: Int = 30): Result<Channel> {
+        return runChannelQuery(
+            QueryChannelPaginationRequest(limit).apply {
+                getLoadMoreBaseMessageId(Pagination.GREATER_THAN)?.let {
+                    messageFilterDirection = Pagination.GREATER_THAN
+                    messageFilterValue = it
+                }
+            }
+        )
+    }
+
+    /**
+     *  Loads a list of messages before the message with particular message id.
+     */
+    suspend fun loadOlderMessages(messageId: String, limit: Int): Result<Channel> {
+        return runChannelQuery(
+            QueryChannelPaginationRequest(limit).apply {
+                messageFilterDirection = Pagination.LESS_THAN
                 messageFilterValue = messageId
             }
-        }
-
-        return request
+        )
     }
 
-    suspend fun loadOlderMessages(limit: Int = 30): Result<Channel> {
-        return runChannelQuery(loadMoreMessagesRequest(limit, Pagination.LESS_THAN))
-    }
-
-    suspend fun loadNewerMessages(limit: Int = 30): Result<Channel> {
-        return runChannelQuery(loadMoreMessagesRequest(limit, Pagination.GREATER_THAN))
+    /**
+     *  Loads a list of messages after the message with particular message id.
+     */
+    suspend fun loadNewerMessages(messageId: String, limit: Int): Result<Channel> {
+        return runChannelQuery(
+            QueryChannelPaginationRequest(limit).apply {
+                messageFilterDirection = Pagination.GREATER_THAN
+                messageFilterValue = messageId
+            }
+        )
     }
 
     suspend fun runChannelQuery(pagination: QueryChannelPaginationRequest): Result<Channel> {
         val loader = when (pagination.messageFilterDirection) {
             Pagination.GREATER_THAN,
-            Pagination.GREATER_THAN_OR_EQUAL -> _loadingNewerMessages
+            Pagination.GREATER_THAN_OR_EQUAL,
+            -> _loadingNewerMessages
             Pagination.LESS_THAN,
-            Pagination.LESS_THAN_OR_EQUAL -> _loadingOlderMessages
+            Pagination.LESS_THAN_OR_EQUAL,
+            -> _loadingOlderMessages
             null -> _loading
         }
         if (loader.value) {
@@ -499,8 +557,7 @@ internal class ChannelControllerImpl(
                 }
             }
             // first thing here needs to be updating configs otherwise we have a race with receiving events
-            val configEntities = ChannelConfigEntity(channelResponse.type, channelResponse.config)
-            domainImpl.repos.configs.insert(listOf(configEntities))
+            domainImpl.repos.insertConfigChannel(ChannelConfig(channelResponse.type, channelResponse.config))
 
             domainImpl.storeStateForChannel(channelResponse)
         } else {
@@ -519,10 +576,11 @@ internal class ChannelControllerImpl(
 
     suspend fun sendMessage(
         message: Message,
-        attachmentTransformer: ((at: Attachment, file: File) -> Attachment)? = null
+        attachmentTransformer: ((at: Attachment, file: File) -> Attachment)? = null,
     ): Result<Message> {
         val online = domainImpl.isOnline()
         val newMessage = message.copy()
+        val hasAttachments = newMessage.attachments.isNotEmpty()
 
         // set defaults for id, cid and created at
         if (newMessage.id.isEmpty()) {
@@ -533,20 +591,30 @@ internal class ChannelControllerImpl(
         }
 
         newMessage.user = domainImpl.currentUser
-        // TODO: type should be a sealed/class or enum at the client level
-        newMessage.type = if (newMessage.text.startsWith("/")) {
-            "ephemeral"
-        } else {
-            "regular"
+
+        newMessage.attachments.forEach { attachment ->
+            attachment.uploadId = generateUploadId()
+            attachment.uploadState = Attachment.UploadState.InProgress
         }
+
+        newMessage.type = getMessageType(message)
         newMessage.createdLocallyAt = newMessage.createdAt ?: newMessage.createdLocallyAt ?: Date()
         newMessage.syncStatus = SyncStatus.IN_PROGRESS
         if (!online) {
             newMessage.syncStatus = SyncStatus.SYNC_NEEDED
         }
 
+        val attachmentProgressList = newMessage.attachments.map { attachment ->
+            ProgressTrackerFactory.getOrCreate(attachment.uploadId!!).apply {
+                maxValue = attachment.upload?.length() ?: 0L
+            }
+        }
+
         // TODO remove usage of MessageEntity
         val messageEntity = newMessage.toEntity()
+        if (hasAttachments) {
+            uploadStatusMessage = newMessage
+        }
 
         // Update livedata in channel controller
         upsertMessage(newMessage)
@@ -557,61 +625,110 @@ internal class ChannelControllerImpl(
         }
 
         // we insert early to ensure we don't lose messages
-        domainImpl.repos.messages.insert(newMessage)
-
-        val channelStateEntity = domainImpl.repos.channels.select(newMessage.cid)
-        channelStateEntity?.let {
-            // update channel lastMessage at and lastMessageAt
-            it.updateLastMessage(messageEntity)
-            domainImpl.repos.channels.insert(it)
-        }
+        domainImpl.repos.insertMessage(newMessage)
+        domainImpl.repos.updateLastMessageForChannel(newMessage.cid, newMessage)
 
         return if (online) {
             // upload attachments
-            logger.logI("Uploading attachments for message with id ${newMessage.id} and text ${newMessage.text}")
-            newMessage.attachments = newMessage.attachments.map {
-                var attachment: Attachment = it
-                if (it.upload != null) {
-                    val result = uploadAttachment(it, attachmentTransformer)
-                    if (result.isSuccess) {
-                        attachment = result.data()
-                    }
-                }
-                attachment
-            }.toMutableList()
+            if (hasAttachments) {
+                logger.logI("Uploading attachments for message with id ${newMessage.id} and text ${newMessage.text}")
+
+                newMessage.attachments = newMessage.attachments.mapIndexed { i, attach ->
+                    sendAttachment(attach, attachmentProgressList[i], attachmentTransformer)
+                }.toMutableList()
+
+                uploadStatusMessage?.let { cancelMessage(it) }
+                uploadStatusMessage = null
+            }
+
+            newMessage.type = "regular"
+            val result = domainImpl.runAndRetry { channelClient.sendMessage(newMessage) }
 
             logger.logI("Starting to send message with id ${newMessage.id} and text ${newMessage.text}")
 
-            val result = domainImpl.runAndRetry { channelClient.sendMessage(newMessage) }
             if (result.isSuccess) {
-                val processedMessage: Message = result.data()
-                processedMessage.apply {
-                    enrichWithCid(cid)
-                    syncStatus = SyncStatus.COMPLETED
-                    domainImpl.repos.messages.insert(this)
-                }
-
-                upsertMessage(processedMessage)
-                Result(processedMessage)
+                handleSendAttachmentSuccess(result)
             } else {
-
-                logger.logE(
-                    "Failed to send message with id ${newMessage.id} and text ${newMessage.text}: ${result.error()}",
-                    result.error()
-                )
-
-                if (result.error().isPermanent()) {
-                    newMessage.syncStatus = SyncStatus.FAILED_PERMANENTLY
-                } else {
-                    newMessage.syncStatus = SyncStatus.SYNC_NEEDED
-                }
-                upsertMessage(newMessage)
-                domainImpl.repos.messages.insert(newMessage)
-                Result(result.error())
+                handleSendAttachmentFail(newMessage, result)
             }
         } else {
+            uploadStatusMessage = null
             logger.logI("Chat is offline, postponing send message with id ${newMessage.id} and text ${newMessage.text}")
             Result(newMessage)
+        }
+    }
+
+    private fun generateUploadId(): String {
+        return "upload_id_${UUID.randomUUID()}"
+    }
+
+    private suspend fun sendAttachment(
+        attachment: Attachment,
+        attachmentProgress: ProgressTracker,
+        attachmentTransformer: ((at: Attachment, file: File) -> Attachment)?,
+    ): Attachment {
+        var newAttachment: Attachment = attachment
+
+        if (newAttachment.upload != null) {
+            val result = uploadAttachment(
+                newAttachment,
+                attachmentTransformer,
+                attachmentProgress.toProgressCallback()
+            )
+
+            if (result.isSuccess) {
+                newAttachment = result.data()
+                attachmentProgress.setComplete(true)
+                newAttachment.uploadState = Attachment.UploadState.Success
+            } else {
+                attachmentProgress.setComplete(false)
+                newAttachment.uploadState = Attachment.UploadState.Failed(result.error())
+            }
+        }
+
+        return newAttachment
+    }
+
+    private suspend fun handleSendAttachmentSuccess(result: Result<Message>): Result<Message> {
+        val processedMessage: Message = result.data()
+        processedMessage.apply {
+            enrichWithCid(cid)
+            syncStatus = SyncStatus.COMPLETED
+            domainImpl.repos.insertMessage(this)
+        }
+
+        upsertMessage(processedMessage)
+        return Result(processedMessage)
+    }
+
+    private suspend fun handleSendAttachmentFail(message: Message, result: Result<Message>): Result<Message> {
+        logger.logE(
+            "Failed to send message with id ${message.id} and text ${message.text}: ${result.error()}",
+            result.error()
+        )
+
+        if (result.error().isPermanent()) {
+            message.syncStatus = SyncStatus.FAILED_PERMANENTLY
+        } else {
+            message.syncStatus = SyncStatus.SYNC_NEEDED
+        }
+
+        upsertMessage(message)
+        domainImpl.repos.insertMessage(message)
+        return Result(result.error())
+    }
+
+    // TODO: type should be a sealed/class or enum at the client level
+    private fun getMessageType(message: Message): String {
+        val hasAttachments = message.attachments.isNotEmpty()
+        val hasAttachmentsToUpload = message.attachments.any { attachment ->
+            attachment.uploadState is Attachment.UploadState.InProgress
+        }
+
+        return if (message.text.startsWith("/") || (hasAttachments && hasAttachmentsToUpload)) {
+            "ephemeral"
+        } else {
+            "regular"
         }
     }
 
@@ -621,21 +738,27 @@ internal class ChannelControllerImpl(
      */
     internal suspend fun uploadAttachment(
         attachment: Attachment,
-        attachmentTransformer: ((at: Attachment, file: File) -> Attachment)? = null
+        attachmentTransformer: ((at: Attachment, file: File) -> Attachment)? = null,
+        progressCallback: ProgressCallback? = null,
     ): Result<Attachment> {
         val file =
             checkNotNull(attachment.upload) { "upload file shouldn't be called on attachment without a attachment.upload" }
         val mimeType = MimeTypeMap.getSingleton().getMimeTypeFromExtension(file.extension)
-        val attachmentType = if (mimeType.isImageMimetype()) {
-            TYPE_IMAGE
-        } else {
-            TYPE_FILE
+        val attachmentType: String = when {
+            mimeType.isImageMimetype() -> TYPE_IMAGE
+            mimeType.isVideoMimetype() -> TYPE_VIDEO
+            else -> TYPE_FILE
         }
-        val pathResult = if (attachmentType == TYPE_IMAGE) {
+        val pathResult: Result<String> = if (attachmentType == TYPE_IMAGE) {
             sendImage(file)
         } else {
-            sendFile(file)
+            if (progressCallback != null) {
+                sendFile(file, progressCallback)
+            } else {
+                sendFile(file)
+            }
         }
+
         val url = if (pathResult.isError) null else pathResult.data()
         val uploadState =
             if (pathResult.isError) Attachment.UploadState.Failed(pathResult.error()) else Attachment.UploadState.Success
@@ -662,7 +785,11 @@ internal class ChannelControllerImpl(
             newAttachment = attachmentTransformer(newAttachment, file)
         }
 
-        return Result(newAttachment, if (pathResult.isError) pathResult.error() else null)
+        return if (!pathResult.isError) {
+            Result(newAttachment)
+        } else {
+            Result(pathResult.error())
+        }
     }
 
     /**
@@ -674,7 +801,7 @@ internal class ChannelControllerImpl(
             throw IllegalArgumentException("Only ephemeral message can be canceled")
         }
 
-        domainImpl.repos.messages.deleteChannelMessage(message)
+        domainImpl.repos.deleteChannelMessage(message)
         removeLocalMessage(message)
         return Result(true)
     }
@@ -708,7 +835,7 @@ internal class ChannelControllerImpl(
             val processedMessage: Message = result.data()
             processedMessage.apply {
                 syncStatus = SyncStatus.COMPLETED
-                domainImpl.repos.messages.insert(this)
+                domainImpl.repos.insertMessage(this)
             }
             upsertMessage(processedMessage)
             Result(processedMessage)
@@ -717,12 +844,16 @@ internal class ChannelControllerImpl(
         }
     }
 
-    fun sendImage(file: File): Result<String> {
-        return client.sendImage(channelType, channelId, file).execute()
+    suspend fun sendImage(file: File): Result<String> {
+        return client.sendImage(channelType, channelId, file).await()
     }
 
-    fun sendFile(file: File): Result<String> {
-        return client.sendFile(channelType, channelId, file).execute()
+    suspend fun sendFile(file: File): Result<String> {
+        return client.sendFile(channelType, channelId, file).await()
+    }
+
+    private suspend fun sendFile(file: File, callback: ProgressCallback): Result<String> {
+        return client.sendFile(channelType, channelId, file, callback).await()
     }
 
     /**
@@ -732,32 +863,42 @@ internal class ChannelControllerImpl(
      * If you're online we make the API call to sync to the server
      * If the request fails we retry according to the retry policy set on the repo
      */
-    suspend fun sendReaction(reaction: Reaction): Result<Reaction> {
-        reaction.user = domainImpl.currentUser
+    suspend fun sendReaction(reaction: Reaction, enforceUnique: Boolean): Result<Reaction> {
+        val currentUser = domainImpl.currentUser
+        reaction.apply {
+            user = currentUser
+            userId = currentUser.id
+            syncStatus = SyncStatus.IN_PROGRESS
+            this.enforceUnique = enforceUnique
+        }
         val online = domainImpl.isOnline()
         // insert the message into local storage
 
-        reaction.syncStatus = SyncStatus.IN_PROGRESS
         if (!online) {
             reaction.syncStatus = SyncStatus.SYNC_NEEDED
         }
-        domainImpl.repos.reactions.insertReaction(reaction)
+        if (enforceUnique) {
+            // remove all user's reactions to the message
+            domainImpl.repos.updateReactionsForMessageByDeletedDate(
+                userId = currentUser.id,
+                messageId = reaction.messageId,
+                deletedAt = Date()
+            )
+        }
+        domainImpl.repos.insertReaction(reaction)
         // update livedata
-        val currentMessage = getMessage(reaction.messageId)
+        val currentMessage = getMessage(reaction.messageId)?.copy()
         currentMessage?.let {
-            it.addReaction(reaction, true)
+            it.addMyReaction(reaction, enforceUnique = enforceUnique)
             upsertMessage(it)
-            domainImpl.repos.messages.insert(it)
+            domainImpl.repos.insertMessage(it)
         }
 
         if (online) {
-            val runnable = {
-                client.sendReaction(reaction)
-            }
-            val result = domainImpl.runAndRetry(runnable)
+            val result = domainImpl.runAndRetry { client.sendReaction(reaction, enforceUnique) }
             return if (result.isSuccess) {
                 reaction.syncStatus = SyncStatus.COMPLETED
-                domainImpl.repos.reactions.insertReaction(reaction)
+                domainImpl.repos.insertReaction(reaction)
                 Result(result.data())
             } else {
                 logger.logE(
@@ -770,7 +911,7 @@ internal class ChannelControllerImpl(
                 } else {
                     reaction.syncStatus = SyncStatus.SYNC_NEEDED
                 }
-                domainImpl.repos.reactions.insertReaction(reaction)
+                domainImpl.repos.insertReaction(reaction)
                 Result(result.error())
             }
         }
@@ -779,32 +920,32 @@ internal class ChannelControllerImpl(
 
     suspend fun deleteReaction(reaction: Reaction): Result<Message> {
         val online = domainImpl.isOnline()
-        reaction.user = domainImpl.currentUser
-        reaction.syncStatus = SyncStatus.IN_PROGRESS
+        val currentUser = domainImpl.currentUser
+        reaction.apply {
+            user = currentUser
+            userId = currentUser.id
+            syncStatus = SyncStatus.IN_PROGRESS
+            deletedAt = Date()
+        }
         if (!online) {
             reaction.syncStatus = SyncStatus.SYNC_NEEDED
         }
 
-        val reactionEntity = reaction.toEntity()
-        reactionEntity.deletedAt = Date()
-        domainImpl.repos.reactions.insert(reactionEntity)
+        domainImpl.repos.insertReaction(reaction)
 
         // update livedata
-        val currentMessage = getMessage(reaction.messageId)
-        currentMessage?.let {
-            it.removeReaction(reaction, true)
-            upsertMessage(it)
-            domainImpl.repos.messages.insert(it)
-        }
+        val currentMessage = getMessage(reaction.messageId)?.copy()
+        currentMessage?.apply { removeMyReaction(reaction) }
+            ?.also {
+                upsertMessage(it)
+                domainImpl.repos.insertMessage(it)
+            }
 
         if (online) {
-            val runnable = {
-                client.deleteReaction(reaction.messageId, reaction.type)
-            }
-            val result = domainImpl.runAndRetry(runnable)
+            val result = domainImpl.runAndRetry { client.deleteReaction(reaction.messageId, reaction.type) }
             return if (result.isSuccess) {
                 reaction.syncStatus = SyncStatus.COMPLETED
-                domainImpl.repos.reactions.insertReaction(reaction)
+                domainImpl.repos.insertReaction(reaction)
                 Result(result.data())
             } else {
                 if (result.error().isPermanent()) {
@@ -812,7 +953,7 @@ internal class ChannelControllerImpl(
                 } else {
                     reaction.syncStatus = SyncStatus.SYNC_NEEDED
                 }
-                domainImpl.repos.reactions.insertReaction(reaction)
+                domainImpl.repos.insertReaction(reaction)
                 Result(result.error())
             }
         }
@@ -832,11 +973,11 @@ internal class ChannelControllerImpl(
 
     // This one needs to be public for flows such as running a message action
 
-    internal suspend fun upsertMessage(message: Message) {
+    internal fun upsertMessage(message: Message) {
         upsertMessages(listOf(message))
     }
 
-    private suspend fun upsertEventMessage(message: Message) {
+    private fun upsertEventMessage(message: Message) {
         // make sure we don't lose ownReactions
         getMessage(message.id)?.let {
             message.ownReactions = it.ownReactions
@@ -888,6 +1029,15 @@ internal class ChannelControllerImpl(
         val newMessages = parseMessages(messages)
         updateLastMessageAtByNewMessages(newMessages.values)
         _messages.value = newMessages
+        updateUnreadCount()
+    }
+
+    private fun updateUnreadCount() {
+        _unreadCount.value = computeUnreadCount(
+            currentUser = domainImpl.currentUser,
+            read = _read.value,
+            messages = _messages.value.values.toList()
+        )
     }
 
     private fun updateLastMessageAtByNewMessages(newMessages: Collection<Message>) {
@@ -914,7 +1064,7 @@ internal class ChannelControllerImpl(
         // cleanup your own typing state
         val now = Date()
         if (lastStartTypingEvent != null && now.time - lastStartTypingEvent!!.time > 5000) {
-            stopTyping()
+            stopTyping(keystrokeParentMessageId)
         }
 
         // Cleanup typing events that are older than 15 seconds
@@ -981,10 +1131,13 @@ internal class ChannelControllerImpl(
                 event.watcherCount?.let { setWatcherCount(it) }
             }
             is ReactionNewEvent -> {
-                upsertEventMessage(event.message)
+                upsertMessage(event.message)
+            }
+            is ReactionUpdateEvent -> {
+                upsertMessage(event.message)
             }
             is ReactionDeletedEvent -> {
-                upsertEventMessage(event.message)
+                upsertMessage(event.message)
             }
             is MemberRemovedEvent -> {
                 deleteMember(event.user.id)
@@ -998,15 +1151,12 @@ internal class ChannelControllerImpl(
             is NotificationAddedToChannelEvent -> {
                 upsertMembers(event.channel.members)
             }
-
             is UserPresenceChangedEvent -> {
                 upsertUserPresence(event.user)
             }
-
             is UserUpdatedEvent -> {
                 upsertUser(event.user)
             }
-
             is UserStartWatchingEvent -> {
                 upsertWatcher(event.user)
                 setWatcherCount(event.watcherCount)
@@ -1036,7 +1186,8 @@ internal class ChannelControllerImpl(
                 }
             }
             is ChannelTruncatedEvent,
-            is NotificationChannelTruncatedEvent -> {
+            is NotificationChannelTruncatedEvent,
+            -> {
                 removeMessagesBefore(event.createdAt)
             }
             is TypingStopEvent -> {
@@ -1048,12 +1199,10 @@ internal class ChannelControllerImpl(
             is MessageReadEvent -> {
                 updateRead(ChannelUserRead(event.user, event.createdAt))
             }
-
             is NotificationMarkReadEvent -> {
                 updateRead(ChannelUserRead(event.user, event.createdAt))
                 event.watcherCount?.let { setWatcherCount(it) }
             }
-
             is MarkAllReadEvent -> {
                 updateRead(ChannelUserRead(event.user, event.createdAt))
             }
@@ -1076,7 +1225,7 @@ internal class ChannelControllerImpl(
         }
     }
 
-    private suspend fun upsertUser(user: User) {
+    private fun upsertUser(user: User) {
         upsertUserPresence(user)
         // channels have users
         val userId = user.id
@@ -1164,6 +1313,8 @@ internal class ChannelControllerImpl(
             }
 
             _read.value = incomingRead
+
+            updateUnreadCount()
         }
 
         // always post the newly updated map
@@ -1171,18 +1322,18 @@ internal class ChannelControllerImpl(
     }
 
     private fun updateRead(
-        read: ChannelUserRead
+        read: ChannelUserRead,
     ) {
         updateReads(listOf(read))
     }
 
-    internal suspend fun updateLiveDataFromLocalChannel(localChannel: Channel) {
+    private fun updateLiveDataFromLocalChannel(localChannel: Channel) {
         localChannel.hidden?.let(::setHidden)
         hideMessagesBefore = localChannel.hiddenMessagesBefore
         updateLiveDataFromChannel(localChannel)
     }
 
-    internal suspend fun updateOldMessagesFromLocalChannel(localChannel: Channel) {
+    private fun updateOldMessagesFromLocalChannel(localChannel: Channel) {
         localChannel.hidden?.let(::setHidden)
         hideMessagesBefore = localChannel.hiddenMessagesBefore
         updateOldMessagesFromChannel(localChannel)
@@ -1246,7 +1397,7 @@ internal class ChannelControllerImpl(
         upsertMessage(editedMessage)
 
         // Update Room State
-        domainImpl.repos.messages.insert(editedMessage)
+        domainImpl.repos.insertMessage(editedMessage)
 
         if (online) {
             val runnable = {
@@ -1262,7 +1413,7 @@ internal class ChannelControllerImpl(
                 editedMessage = result.data()
                 editedMessage.syncStatus = SyncStatus.COMPLETED
                 upsertMessage(editedMessage)
-                domainImpl.repos.messages.insert(editedMessage)
+                domainImpl.repos.insertMessage(editedMessage)
 
                 return Result(editedMessage)
             } else {
@@ -1273,7 +1424,7 @@ internal class ChannelControllerImpl(
                 }
 
                 upsertMessage(editedMessage)
-                domainImpl.repos.messages.insert(editedMessage)
+                domainImpl.repos.insertMessage(editedMessage)
                 return Result(result.error())
             }
         }
@@ -1289,7 +1440,7 @@ internal class ChannelControllerImpl(
         upsertMessage(message)
 
         // Update Room State
-        domainImpl.repos.messages.insert(message)
+        domainImpl.repos.insertMessage(message)
 
         if (online) {
             val runnable = {
@@ -1299,7 +1450,7 @@ internal class ChannelControllerImpl(
             if (result.isSuccess) {
                 message.syncStatus = SyncStatus.COMPLETED
                 upsertMessage(message)
-                domainImpl.repos.messages.insert(message)
+                domainImpl.repos.insertMessage(message)
                 return Result(result.data())
             } else {
                 message.syncStatus = if (result.error().isPermanent()) {
@@ -1309,7 +1460,7 @@ internal class ChannelControllerImpl(
                 }
 
                 upsertMessage(message)
-                domainImpl.repos.messages.insert(message)
+                domainImpl.repos.insertMessage(message)
                 return Result(result.error())
             }
         }
@@ -1339,7 +1490,7 @@ internal class ChannelControllerImpl(
     internal fun loadOlderThreadMessages(
         threadId: String,
         limit: Int,
-        firstMessage: Message? = null
+        firstMessage: Message? = null,
     ): Result<List<Message>> {
         val result = if (firstMessage != null) {
             client.getRepliesMore(threadId, firstMessage.id, limit).execute()
@@ -1357,17 +1508,16 @@ internal class ChannelControllerImpl(
     internal suspend fun loadMessageById(
         messageId: String,
         newerMessagesOffset: Int,
-        olderMessagesOffset: Int
+        olderMessagesOffset: Int,
     ): Result<Message> {
         val result = client.getMessage(messageId).await()
         if (result.isError) {
             return Result(ChatError("Error while fetching message from backend. Message id: $messageId"))
         }
         val message = result.data()
-        _messages.value = emptyMap()
         upsertMessage(message)
-        loadNewerMessages(newerMessagesOffset)
-        loadOlderMessages(olderMessagesOffset)
+        loadOlderMessages(messageId, newerMessagesOffset)
+        loadNewerMessages(messageId, olderMessagesOffset)
         return Result(message)
     }
 
@@ -1377,6 +1527,7 @@ internal class ChannelControllerImpl(
 
     companion object {
         private const val TYPE_IMAGE = "image"
+        private const val TYPE_VIDEO = "video"
         private const val TYPE_FILE = "file"
     }
 }

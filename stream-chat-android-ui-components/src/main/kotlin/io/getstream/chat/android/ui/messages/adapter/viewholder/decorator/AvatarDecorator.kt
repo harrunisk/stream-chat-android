@@ -14,46 +14,50 @@ import io.getstream.chat.android.ui.messages.adapter.viewholder.PlainTextWithMed
 internal class AvatarDecorator : BaseDecorator() {
     override fun decorateOnlyMediaAttachmentsMessage(
         viewHolder: OnlyMediaAttachmentsViewHolder,
-        data: MessageListItem.MessageItem
+        data: MessageListItem.MessageItem,
     ) {
         setupAvatar(viewHolder.binding.avatarView, data)
     }
 
-    override fun decoratePlainTextMessage(viewHolder: MessagePlainTextViewHolder, data: MessageListItem.MessageItem) {
+    override fun decoratePlainTextMessage(
+        viewHolder: MessagePlainTextViewHolder,
+        data: MessageListItem.MessageItem,
+    ) {
         setupAvatar(viewHolder.binding.avatarView, data)
     }
 
     override fun decoratePlainTextWithMediaAttachmentsMessage(
         viewHolder: PlainTextWithMediaAttachmentsViewHolder,
-        data: MessageListItem.MessageItem
+        data: MessageListItem.MessageItem,
     ) {
         setupAvatar(viewHolder.binding.avatarView, data)
     }
 
     override fun decorateOnlyFileAttachmentsMessage(
         viewHolder: OnlyFileAttachmentsViewHolder,
-        data: MessageListItem.MessageItem
+        data: MessageListItem.MessageItem,
     ) {
         setupAvatar(viewHolder.binding.avatarView, data)
     }
 
     override fun decoratePlainTextWithFileAttachmentsMessage(
         viewHolder: PlainTextWithFileAttachmentsViewHolder,
-        data: MessageListItem.MessageItem
+        data: MessageListItem.MessageItem,
     ) {
         setupAvatar(viewHolder.binding.avatarView, data)
     }
 
-    override fun decorateGiphyMessage(viewHolder: GiphyViewHolder, data: MessageListItem.MessageItem) = Unit
+    override fun decorateGiphyMessage(
+        viewHolder: GiphyViewHolder,
+        data: MessageListItem.MessageItem,
+    ) = Unit
 
     private fun setupAvatar(avatarView: AvatarView, data: MessageListItem.MessageItem) {
-        if (data.isTheirs) {
+        if (data.isTheirs && data.isTheirs && data.isBottomPosition()) {
+            avatarView.isVisible = true
             avatarView.setUserData(data.message.user)
-        }
-
-        avatarView.isVisible = when {
-            data.isTheirs && data.isBottomPosition() -> true
-            else -> false
+        } else {
+            avatarView.isVisible = false
         }
     }
 }

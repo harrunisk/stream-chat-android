@@ -5,43 +5,41 @@ import com.getstream.sdk.chat.adapter.MessageListItem
 import com.getstream.sdk.chat.enums.GiphyAction
 import com.getstream.sdk.chat.utils.extensions.inflater
 import io.getstream.chat.android.ui.databinding.StreamUiItemMessageGiphyBinding
-import io.getstream.chat.android.ui.messages.adapter.BaseMessageItemViewHolder
+import io.getstream.chat.android.ui.messages.adapter.DecoratedBaseMessageItemViewHolder
 import io.getstream.chat.android.ui.messages.adapter.MessageListItemPayloadDiff
 import io.getstream.chat.android.ui.messages.adapter.MessageListListenerContainer
 import io.getstream.chat.android.ui.messages.adapter.viewholder.decorator.Decorator
 
-public class GiphyViewHolder(
+internal class GiphyViewHolder(
     parent: ViewGroup,
     decorators: List<Decorator>,
-    listenerContainer: MessageListListenerContainer?,
+    listeners: MessageListListenerContainer,
     internal val binding: StreamUiItemMessageGiphyBinding = StreamUiItemMessageGiphyBinding.inflate(
         parent.inflater,
         parent,
         false
-    )
-) : BaseMessageItemViewHolder<MessageListItem.MessageItem>(binding.root, decorators) {
+    ),
+) : DecoratedBaseMessageItemViewHolder<MessageListItem.MessageItem>(binding.root, decorators) {
 
     init {
-        listenerContainer?.also { listeners ->
-            binding.run {
-                cancelButton.setOnClickListener {
-                    listeners.giphySendListener.onGiphySend(data.message, GiphyAction.CANCEL)
-                }
-                sendButton.setOnClickListener {
-                    listeners.giphySendListener.onGiphySend(data.message, GiphyAction.SEND)
-                }
-                nextButton.setOnClickListener {
-                    listeners.giphySendListener.onGiphySend(data.message, GiphyAction.SHUFFLE)
-                }
+        binding.run {
+            cancelButton.setOnClickListener {
+                listeners.giphySendListener.onGiphySend(data.message, GiphyAction.CANCEL)
+            }
+            sendButton.setOnClickListener {
+                listeners.giphySendListener.onGiphySend(data.message, GiphyAction.SEND)
+            }
+            nextButton.setOnClickListener {
+                listeners.giphySendListener.onGiphySend(data.message, GiphyAction.SHUFFLE)
             }
         }
     }
 
     override fun bindData(data: MessageListItem.MessageItem, diff: MessageListItemPayloadDiff?) {
-        if (data.isMine) {
-            data.message.attachments.firstOrNull()?.let(binding.mediaAttachmentView::showAttachment)
-            binding.giphyTextLabel.text = trimText(data.message.text)
-        }
+        super.bindData(data, diff)
+
+        data.message.attachments.firstOrNull()?.let(binding.mediaAttachmentView::showAttachment)
+        binding.giphyTextLabel.text = trimText(data.message.text)
     }
 
     private fun trimText(text: String): String {

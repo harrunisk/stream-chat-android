@@ -14,10 +14,9 @@ import io.getstream.chat.android.client.models.Mute
 import io.getstream.chat.android.client.models.Reaction
 import io.getstream.chat.android.client.models.User
 import io.getstream.chat.android.client.utils.SyncStatus
-import io.getstream.chat.android.livedata.entity.ChannelEntity
-import io.getstream.chat.android.livedata.entity.ChannelUserReadEntity
-import io.getstream.chat.android.livedata.entity.MemberEntity
+import io.getstream.chat.android.livedata.entity.AttachmentEntity
 import io.getstream.chat.android.livedata.entity.MessageEntity
+import io.getstream.chat.android.livedata.entity.MessageInnerEntity
 import io.getstream.chat.android.livedata.entity.ReactionEntity
 import io.getstream.chat.android.livedata.entity.UserEntity
 import io.getstream.chat.android.test.positiveRandomInt
@@ -33,7 +32,7 @@ private val fixture = JFixture()
 
 internal fun randomAttachmentsWithFile(
     size: Int = positiveRandomInt(10),
-    creationFunction: (Int) -> Attachment = { Attachment(upload = randomFile()) }
+    creationFunction: (Int) -> Attachment = { Attachment(upload = randomFile()) },
 ): List<Attachment> = (1..size).map(creationFunction)
 
 internal fun randomUser(
@@ -52,7 +51,7 @@ internal fun randomUser(
     mutes: List<Mute> = mutableListOf(),
     teams: List<String> = listOf(),
     channelMutes: List<ChannelMute> = emptyList(),
-    extraData: MutableMap<String, Any> = mutableMapOf()
+    extraData: MutableMap<String, Any> = mutableMapOf(),
 ): User = User(
     id,
     role,
@@ -82,7 +81,7 @@ internal fun randomUserEntity(
     invisible: Boolean = randomBoolean(),
     banned: Boolean = randomBoolean(),
     mutes: List<String> = emptyList(),
-    extraData: Map<String, Any> = emptyMap()
+    extraData: Map<String, Any> = emptyMap(),
 ): UserEntity = UserEntity(id, originalId, role, createdAt, updatedAt, lastActive, invisible, banned, mutes, extraData)
 
 internal fun randomMessage(
@@ -109,7 +108,7 @@ internal fun randomMessage(
     createdLocallyAt: Date? = randomDate(),
     user: User = randomUser(),
     extraData: MutableMap<String, Any> = mutableMapOf(),
-    silent: Boolean = randomBoolean()
+    silent: Boolean = randomBoolean(),
 ): Message = Message(
     id,
     cid,
@@ -158,7 +157,7 @@ internal fun randomChannel(
     unreadCount: Int? = randomInt(),
     team: String = randomString(),
     hidden: Boolean? = randomBoolean(),
-    hiddenMessagesBefore: Date? = randomDate()
+    hiddenMessagesBefore: Date? = randomDate(),
 ): Channel = Channel(
     cid = cid,
     id = id,
@@ -183,52 +182,12 @@ internal fun randomChannel(
     hiddenMessagesBefore = hiddenMessagesBefore
 )
 
-internal fun randomChannelEntity(
-    type: String = randomString(),
-    channelId: String = randomString(),
-    cooldown: Int = randomInt(),
-    cid: String = randomCID(),
-    createdByUserId: String = randomString(),
-    frozen: Boolean = randomBoolean(),
-    hidden: Boolean? = randomBoolean(),
-    hideMessagesBefore: Date? = randomDate(),
-    mutedTill: Date? = randomDate(),
-    members: MutableMap<String, MemberEntity> = mutableMapOf(),
-    reads: MutableMap<String, ChannelUserReadEntity> = mutableMapOf(),
-    lastMessageAt: Date? = randomDate(),
-    lastMessage: MessageEntity? = randomMessageEntity(),
-    createdAt: Date? = randomDate(),
-    updatedAt: Date? = randomDate(),
-    deletedAt: Date? = randomDate(),
-    extraData: MutableMap<String, Any> = mutableMapOf(),
-    syncStatus: SyncStatus = SyncStatus.COMPLETED,
-): ChannelEntity = ChannelEntity(
-    type = type,
-    channelId = channelId,
-    cooldown = cooldown,
-    cid = cid,
-    createdByUserId = createdByUserId,
-    frozen = frozen,
-    hidden = hidden,
-    hideMessagesBefore = hideMessagesBefore,
-    mutedTill = mutedTill,
-    members = members,
-    reads = reads,
-    lastMessageAt = lastMessageAt,
-    lastMessage = lastMessage,
-    createdAt = createdAt,
-    updatedAt = updatedAt,
-    deletedAt = deletedAt,
-    extraData = extraData,
-    syncStatus = syncStatus,
-)
-
 internal fun randomMessageEntity(
     id: String = randomString(),
     cid: String = randomCID(),
     userId: String = randomString(),
     text: String = randomString(),
-    attachments: List<Attachment> = emptyList(),
+    attachments: List<AttachmentEntity> = emptyList(),
     type: String = randomString(),
     syncStatus: SyncStatus = SyncStatus.COMPLETED,
     replyCount: Int = randomInt(),
@@ -247,41 +206,35 @@ internal fun randomMessageEntity(
     shadowed: Boolean = randomBoolean(),
     extraData: Map<String, Any> = emptyMap(),
     replyToId: String? = randomString(),
+    threadParticipantsIds: List<String> = emptyList(),
 ) = MessageEntity(
-    id = id,
-    cid = cid,
-    userId = userId,
-    text = text,
+    messageInnerEntity = MessageInnerEntity(
+        id = id,
+        cid = cid,
+        userId = userId,
+        text = text,
+        type = type,
+        syncStatus = syncStatus,
+        replyCount = replyCount,
+        createdAt = createdAt,
+        createdLocallyAt = createdLocallyAt,
+        updatedAt = updatedAt,
+        updatedLocallyAt = updatedLocallyAt,
+        deletedAt = deletedAt,
+        mentionedUsersId = mentionedUsersId,
+        reactionCounts = reactionCounts,
+        reactionScores = reactionScores,
+        parentId = parentId,
+        command = command,
+        shadowed = shadowed,
+        extraData = extraData,
+        replyToId = replyToId,
+        threadParticipantsIds = threadParticipantsIds,
+    ),
     attachments = attachments,
-    type = type,
-    syncStatus = syncStatus,
-    replyCount = replyCount,
-    createdAt = createdAt,
-    createdLocallyAt = createdLocallyAt,
-    updatedAt = updatedAt,
-    updatedLocallyAt = updatedLocallyAt,
-    deletedAt = deletedAt,
     latestReactions = latestReactions,
     ownReactions = ownReactions,
-    mentionedUsersId = mentionedUsersId,
-    reactionCounts = reactionCounts,
-    reactionScores = reactionScores,
-    parentId = parentId,
-    command = command,
-    shadowed = shadowed,
-    extraData = extraData,
-    replyToId = replyToId,
 )
-
-internal fun randomReactionEntity(
-    messageId: String = randomString(),
-    userId: String = randomString(),
-    type: String = randomString()
-) = ReactionEntity(messageId, userId, type)
-
-internal fun randomMemberEntity(userId: String = randomString()) = MemberEntity(userId)
-
-internal fun randomChannelUserReadEntity(userId: String = randomString()) = ChannelUserReadEntity(userId)
 
 internal fun randomSyncStatus(): SyncStatus = SyncStatus.values().random()
 

@@ -11,6 +11,7 @@ import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.content.ContextCompat
 import androidx.core.content.res.use
 import androidx.core.view.forEach
+import androidx.core.view.isInvisible
 import androidx.core.view.isVisible
 import com.getstream.sdk.chat.style.TextStyle
 import io.getstream.chat.android.client.models.Channel
@@ -28,6 +29,11 @@ public class MessagesHeaderView : ConstraintLayout {
 
     private var subtitleState: SubtitleState = SubtitleState(emptyList(), OnlineState.NONE)
 
+    private var normalModeTitle: String? = null
+    private var normalModeSubTitle: String? = null
+
+    private var threadMode = false
+
     public constructor(context: Context) : super(context) {
         init(null)
     }
@@ -41,15 +47,6 @@ public class MessagesHeaderView : ConstraintLayout {
         attrs,
         defStyleAttr
     ) {
-        init(attrs)
-    }
-
-    public constructor(
-        context: Context,
-        attrs: AttributeSet?,
-        defStyleAttr: Int,
-        defStyleRes: Int
-    ) : super(context, attrs, defStyleAttr, defStyleRes) {
         init(attrs)
     }
 
@@ -77,9 +74,21 @@ public class MessagesHeaderView : ConstraintLayout {
     public fun setTitle(title: String?) {
         binding.title.text = title ?: String.EMPTY
         binding.title.isVisible = true
+
+        if (!threadMode) {
+            normalModeTitle = title
+        }
     }
 
     public fun setOnlineStateSubtitle(subtitle: String) {
+        binding.onlineLabel.text = subtitle
+
+        if (!threadMode) {
+            normalModeSubTitle = subtitle
+        }
+    }
+
+    public fun setThreadSubtitle(subtitle: String) {
         binding.onlineLabel.text = subtitle
     }
 
@@ -142,11 +151,23 @@ public class MessagesHeaderView : ConstraintLayout {
         binding.avatar.isVisible = false
     }
 
+    public fun setNormalMode() {
+        binding.title.text = normalModeTitle
+        binding.onlineLabel.text = normalModeSubTitle
+    }
+
+    public fun setThreadMode() {
+        val title = context.getString(R.string.stream_ui_title_thread_reply)
+        val subTitleComplement = normalModeTitle
+
+        binding.title.text = title
+        binding.onlineLabel.text =
+            String.format(context.getString(R.string.stream_ui_subtitle_thread), subTitleComplement)
+    }
+
     private fun configSearchingForNetworkLabel(attrs: TypedArray) {
         val textStyle = getSearchingForNetworkTextStyle(attrs)
         binding.searchingForNetworkText.apply {
-            text = attrs.getString(R.styleable.MessagesHeaderView_streamUiMessagesHeaderSearchingForNetworkLabelText)
-                ?: context.getString(R.string.stream_ui_message_list_header_searching_for_network)
             setTextSizePx(textStyle.size.toFloat())
             setTextColor(textStyle.color)
             typeface = textStyle.font
@@ -194,7 +215,7 @@ public class MessagesHeaderView : ConstraintLayout {
             attrs.getColorStateList(
                 R.styleable.MessagesHeaderView_streamUiMessagesHeaderSearchingForNetworkProgressBarTint
             )
-                ?: ContextCompat.getColorStateList(context, R.color.stream_ui_blue)
+                ?: ContextCompat.getColorStateList(context, R.color.stream_ui_accent_blue)
             )
     }
 
@@ -205,7 +226,7 @@ public class MessagesHeaderView : ConstraintLayout {
         )
             .color(
                 R.styleable.MessagesHeaderView_streamUiMessagesHeaderSearchingForNetworkLabelColor,
-                ContextCompat.getColor(context, R.color.stream_ui_text_color_light)
+                ContextCompat.getColor(context, R.color.stream_ui_grey)
             )
             .font(
                 R.styleable.MessagesHeaderView_streamUiMessagesHeaderSearchingForNetworkLabelFontAssets,
@@ -221,8 +242,6 @@ public class MessagesHeaderView : ConstraintLayout {
     private fun configOfflineLabel(attrs: TypedArray) {
         val textStyle = getOfflineTextStyle(attrs)
         binding.offlineText.apply {
-            text = attrs.getString(R.styleable.MessagesHeaderView_streamUiMessagesHeaderOfflineLabelText)
-                ?: context.getString(R.string.stream_ui_message_list_header_offline)
             setTextSizePx(textStyle.size.toFloat())
             setTextColor(textStyle.color)
             typeface = textStyle.font
@@ -240,7 +259,7 @@ public class MessagesHeaderView : ConstraintLayout {
         )
             .color(
                 R.styleable.MessagesHeaderView_streamUiMessagesHeaderOfflineLabelTextColor,
-                ContextCompat.getColor(context, R.color.stream_ui_text_color_light)
+                ContextCompat.getColor(context, R.color.stream_ui_grey)
             )
             .font(
                 R.styleable.MessagesHeaderView_streamUiMessagesHeaderOfflineLabelFontAssets,
@@ -256,7 +275,7 @@ public class MessagesHeaderView : ConstraintLayout {
     private fun configOnlineLabel(attrs: TypedArray) {
         val textStyle = getOnlineTextStyle(attrs)
         binding.onlineLabel.apply {
-            text = attrs.getString(R.styleable.MessagesHeaderView_streamUiMessagesHeaderDefaultLabelText) ?: ""
+            text = ""
             setTextSizePx(textStyle.size.toFloat())
             setTextColor(textStyle.color)
             typeface = textStyle.font
@@ -270,7 +289,7 @@ public class MessagesHeaderView : ConstraintLayout {
         )
             .color(
                 R.styleable.MessagesHeaderView_streamUiMessagesHeaderDefaultLabelTextColor,
-                ContextCompat.getColor(context, R.color.stream_ui_text_color_light)
+                ContextCompat.getColor(context, R.color.stream_ui_grey)
             )
             .font(
                 R.styleable.MessagesHeaderView_streamUiMessagesHeaderDefaultLabelFontAssets,
@@ -293,7 +312,7 @@ public class MessagesHeaderView : ConstraintLayout {
         binding.backButtonBadge.apply {
             isVisible =
                 attrs.getBoolean(R.styleable.MessagesHeaderView_streamUiMessagesHeaderShowBackButtonBadge, false)
-            val defaultColor = ContextCompat.getColor(context, R.color.stream_ui_light_red)
+            val defaultColor = ContextCompat.getColor(context, R.color.stream_ui_accent_red)
             val color = attrs.getColor(
                 R.styleable.MessagesHeaderView_streamUiMessagesHeaderBackButtonBadgeBackgroundColor,
                 defaultColor
@@ -316,7 +335,7 @@ public class MessagesHeaderView : ConstraintLayout {
         )
             .color(
                 R.styleable.MessagesHeaderView_streamUiMessagesHeaderTitleTextColor,
-                ContextCompat.getColor(context, R.color.stream_ui_text_color_strong)
+                ContextCompat.getColor(context, R.color.stream_ui_black)
             )
             .font(
                 R.styleable.MessagesHeaderView_streamUiMessagesHeaderTitleFontAssets,
@@ -332,7 +351,7 @@ public class MessagesHeaderView : ConstraintLayout {
         val showAvatar =
             attrs.getBoolean(R.styleable.MessagesHeaderView_streamUiMessagesHeaderShowUserAvatar, true)
         binding.avatar.apply {
-            isVisible = showAvatar
+            isInvisible = !showAvatar
             isClickable = showAvatar
         }
     }

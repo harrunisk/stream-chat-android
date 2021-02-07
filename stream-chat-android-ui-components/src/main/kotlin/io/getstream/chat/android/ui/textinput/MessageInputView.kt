@@ -13,13 +13,11 @@ import androidx.core.content.res.use
 import androidx.core.graphics.drawable.DrawableCompat
 import androidx.core.view.isVisible
 import com.getstream.sdk.chat.model.AttachmentMetaData
-import com.getstream.sdk.chat.utils.StorageHelper
 import com.getstream.sdk.chat.utils.extensions.focusAndShowKeyboard
 import io.getstream.chat.android.client.models.Command
 import io.getstream.chat.android.client.models.Member
 import io.getstream.chat.android.client.models.Message
 import io.getstream.chat.android.client.models.User
-import io.getstream.chat.android.core.internal.coroutines.DispatcherProvider
 import io.getstream.chat.android.ui.R
 import io.getstream.chat.android.ui.attachments.AttachmentDialogFragment
 import io.getstream.chat.android.ui.attachments.AttachmentSelectionListener
@@ -31,9 +29,6 @@ import io.getstream.chat.android.ui.utils.extensions.getColorCompat
 import io.getstream.chat.android.ui.utils.extensions.getDrawableCompat
 import io.getstream.chat.android.ui.utils.extensions.getFragmentManager
 import io.getstream.chat.android.ui.utils.getColorList
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import java.io.File
 import kotlin.properties.Delegates
 
@@ -66,23 +61,37 @@ public class MessageInputView : ConstraintLayout {
 
     public var inputMode: InputMode by Delegates.observable(InputMode.Normal) { _, previousValue, newValue ->
         configSendAlsoToChannelCheckbox()
-        configReplyMode(previousValue, newValue)
+        configInputMode(previousValue, newValue)
     }
 
-    private fun configReplyMode(previousValue: InputMode, newValue: InputMode) {
-        if (newValue is InputMode.Reply) {
-            binding.replyHeader.isVisible = true
-            binding.messageInputFieldView.onReply(newValue.repliedMessage)
-            binding.messageInputFieldView.binding.messageEditText.focusAndShowKeyboard()
-        } else {
-            binding.replyHeader.isVisible = false
-            if (previousValue is InputMode.Reply) {
-                binding.messageInputFieldView.onReplyDismissed()
+    private fun configInputMode(previousValue: InputMode, newValue: InputMode) {
+        when (newValue) {
+            is InputMode.Reply -> {
+                binding.inputModeHeader.isVisible = true
+                binding.headerLabel.text = context.getString(R.string.stream_ui_reply_to_message)
+                binding.inputModeIcon.setImageResource(R.drawable.stream_ui_ic_arrow_curve_left)
+                binding.messageInputFieldView.onReply(newValue.repliedMessage)
+                binding.messageInputFieldView.binding.messageEditText.focusAndShowKeyboard()
+            }
+
+            is InputMode.Edit -> {
+                binding.inputModeHeader.isVisible = true
+                binding.headerLabel.text = context.getString(R.string.stream_ui_message_option_edit)
+                binding.inputModeIcon.setImageResource(R.drawable.stream_ui_ic_edit)
+                binding.messageInputFieldView.onEdit(newValue.oldMessage)
+                binding.messageInputFieldView.binding.messageEditText.focusAndShowKeyboard()
+            }
+
+            else -> {
+                binding.inputModeHeader.isVisible = false
+                if (previousValue is InputMode.Reply) {
+                    binding.messageInputFieldView.onReplyDismissed()
+                }
             }
         }
     }
 
-    public var chatMode: ChatMode by Delegates.observable(ChatMode.GroupChat) { _, _, _ ->
+    public var chatMode: ChatMode by Delegates.observable(ChatMode.GROUP_CHAT) { _, _, _ ->
         configSendAlsoToChannelCheckbox()
     }
 
@@ -96,20 +105,14 @@ public class MessageInputView : ConstraintLayout {
             if (attachments.isNotEmpty()) {
                 when (attachmentSource) {
                     AttachmentSource.MEDIA,
-                    AttachmentSource.CAMERA -> {
+                    AttachmentSource.CAMERA,
+                    -> {
                         binding.messageInputFieldView.mode =
                             MessageInputFieldView.Mode.MediaAttachmentMode(attachments.toList())
                     }
                     AttachmentSource.FILE -> {
-                        GlobalScope.launch(DispatcherProvider.Main) {
-                            val attachments = withContext(DispatcherProvider.IO) {
-                                val uris = attachments.mapNotNull(AttachmentMetaData::uri)
-                                StorageHelper().getAttachmentsFromUriList(context, uris).toMutableList()
-                            }
-
-                            binding.messageInputFieldView.mode =
-                                MessageInputFieldView.Mode.FileAttachmentMode(attachments)
-                        }
+                        binding.messageInputFieldView.mode =
+                            MessageInputFieldView.Mode.FileAttachmentMode(attachments.toList())
                     }
                 }
             }
@@ -132,11 +135,11 @@ public class MessageInputView : ConstraintLayout {
         this.sendMessageHandler = handler
     }
 
-    public fun configureMembers(members: List<Member>) {
+    public fun setMembers(members: List<Member>) {
         suggestionListController?.users = members.map { it.user }
     }
 
-    public fun configureCommands(commands: List<Command>) {
+    public fun setCommands(commands: List<Command>) {
         suggestionListController?.commands = commands
     }
 
@@ -184,7 +187,15 @@ public class MessageInputView : ConstraintLayout {
         }
         configSendAlsoToChannelCheckbox()
         configSendButtonListener()
-        binding.dismissReply.setOnClickListener { sendMessageHandler.dismissReplay() }
+        binding.dismissInputMode.setOnClickListener { dismissInputMode(inputMode) }
+    }
+
+    private fun dismissInputMode(inputMode: InputMode) {
+        if (inputMode is InputMode.Reply) {
+            sendMessageHandler.dismissReply()
+        }
+
+        this.inputMode = InputMode.Normal
     }
 
     private fun configSendButtonListener() {
@@ -212,10 +223,10 @@ public class MessageInputView : ConstraintLayout {
         val shouldShowCheckbox = sendAlsoToChannelCheckBoxEnabled && isThreadModeActive
         if (shouldShowCheckbox) {
             val text = when (chatMode) {
-                ChatMode.GroupChat -> {
+                ChatMode.GROUP_CHAT -> {
                     context.getString(R.string.stream_ui_send_also_to_channel)
                 }
-                ChatMode.DirectChat -> {
+                ChatMode.DIRECT_CHAT -> {
                     context.getString(R.string.stream_ui_send_also_as_direct_message)
                 }
             }
@@ -240,23 +251,13 @@ public class MessageInputView : ConstraintLayout {
                     ),
                     selectedColor = typedArray.getColor(
                         R.styleable.MessageInputView_streamUiAttachButtonIconPressedColor,
-                        context.getColorCompat(R.color.stream_ui_blue)
+                        context.getColorCompat(R.color.stream_ui_accent_blue)
                     ),
                     disabledColor = typedArray.getColor(
                         R.styleable.MessageInputView_streamUiAttachButtonIconDisabledColor,
-                        context.getColorCompat(R.color.stream_ui_grey_medium_light)
+                        context.getColorCompat(R.color.stream_ui_grey_gainsboro)
                     )
                 )
-            )
-
-            layoutParams.width = typedArray.getDimensionPixelSize(
-                R.styleable.MessageInputView_streamUiAttachButtonWidth,
-                context.resources.getDimensionPixelSize(R.dimen.stream_ui_attachment_button_width)
-            )
-
-            layoutParams.height = typedArray.getDimensionPixelSize(
-                R.styleable.MessageInputView_streamUiAttachButtonHeight,
-                context.resources.getDimensionPixelSize(R.dimen.stream_ui_attachment_button_height)
             )
 
             setOnClickListener {
@@ -286,23 +287,13 @@ public class MessageInputView : ConstraintLayout {
                     ),
                     selectedColor = typedArray.getColor(
                         R.styleable.MessageInputView_streamUiLightningButtonIconPressedColor,
-                        context.getColorCompat(R.color.stream_ui_blue)
+                        context.getColorCompat(R.color.stream_ui_accent_blue)
                     ),
                     disabledColor = typedArray.getColor(
                         R.styleable.MessageInputView_streamUiLightningButtonIconDisabledColor,
-                        context.getColorCompat(R.color.stream_ui_grey_medium_light)
+                        context.getColorCompat(R.color.stream_ui_grey_gainsboro)
                     )
                 )
-            )
-
-            layoutParams.width = typedArray.getDimensionPixelSize(
-                R.styleable.MessageInputView_streamUiLightningButtonWidth,
-                context.resources.getDimensionPixelSize(R.dimen.stream_ui_attachment_button_width)
-            )
-
-            layoutParams.height = typedArray.getDimensionPixelSize(
-                R.styleable.MessageInputView_streamUiLightningButtonHeight,
-                context.resources.getDimensionPixelSize(R.dimen.stream_ui_attachment_button_height)
             )
 
             setOnClickListener {
@@ -364,14 +355,14 @@ public class MessageInputView : ConstraintLayout {
             setTextColor(
                 typedArray.getColor(
                     R.styleable.MessageInputView_streamUiMessageInputTextColor,
-                    context.getColorCompat(R.color.stream_ui_text_color_strong)
+                    context.getColorCompat(R.color.stream_ui_black)
                 )
             )
 
             setHintTextColor(
                 typedArray.getColor(
                     R.styleable.MessageInputView_streamUiMessageInputHintTextColor,
-                    context.getColorCompat(R.color.stream_ui_gray_dark)
+                    context.getColorCompat(R.color.stream_ui_grey)
                 )
             )
 
@@ -381,8 +372,6 @@ public class MessageInputView : ConstraintLayout {
                     context.resources.getDimensionPixelSize(R.dimen.stream_ui_text_size_input)
                 ).toFloat()
             )
-
-            typedArray.getText(R.styleable.MessageInputView_streamUiMessageInputHint)?.let(this::setHint)
 
             setInputFieldScrollBarEnabled(
                 typedArray.getBoolean(
@@ -424,11 +413,11 @@ public class MessageInputView : ConstraintLayout {
             getColorList(
                 normalColor = typedArray.getColor(
                     R.styleable.MessageInputView_streamUiSendButtonEnabledIconColor,
-                    context.getColorCompat(R.color.stream_ui_blue)
+                    context.getColorCompat(R.color.stream_ui_accent_blue)
                 ),
                 selectedColor = typedArray.getColor(
                     R.styleable.MessageInputView_streamUiSendButtonPressedIconColor,
-                    context.getColorCompat(R.color.stream_ui_blue)
+                    context.getColorCompat(R.color.stream_ui_accent_blue)
                 ),
                 disabledColor = typedArray.getColor(
                     R.styleable.MessageInputView_streamUiSendButtonDisabledIconColor,
@@ -442,15 +431,15 @@ public class MessageInputView : ConstraintLayout {
             getColorList(
                 normalColor = typedArray.getColor(
                     R.styleable.MessageInputView_streamUiSendButtonDisabledIconColor,
-                    context.getColorCompat(R.color.stream_ui_send_button)
+                    context.getColorCompat(R.color.stream_ui_accent_blue)
                 ),
                 selectedColor = typedArray.getColor(
                     R.styleable.MessageInputView_streamUiSendButtonPressedIconColor,
-                    context.getColorCompat(R.color.stream_ui_blue)
+                    context.getColorCompat(R.color.stream_ui_accent_blue)
                 ),
                 disabledColor = typedArray.getColor(
                     R.styleable.MessageInputView_streamUiSendButtonDisabledIconColor,
-                    context.getColorCompat(R.color.stream_ui_send_button_disabled)
+                    context.getColorCompat(R.color.stream_ui_grey_gainsboro)
                 )
             )
         )
@@ -508,6 +497,7 @@ public class MessageInputView : ConstraintLayout {
 
     private fun editMessage(oldMessage: Message) {
         sendMessageHandler.editMessage(oldMessage, binding.messageInputFieldView.messageText)
+        inputMode = InputMode.Normal
     }
 
     private companion object {
@@ -519,7 +509,7 @@ public class MessageInputView : ConstraintLayout {
             override fun sendMessageWithAttachments(
                 message: String,
                 attachmentsFiles: List<File>,
-                messageReplyTo: Message?
+                messageReplyTo: Message?,
             ) {
                 throw IllegalStateException("MessageInputView#messageSendHandler needs to be configured to send messages")
             }
@@ -527,7 +517,7 @@ public class MessageInputView : ConstraintLayout {
             override fun sendToThread(
                 parentMessage: Message,
                 messageText: String,
-                alsoSendToChannel: Boolean
+                alsoSendToChannel: Boolean,
             ) {
                 throw IllegalStateException("MessageInputView#messageSendHandler needs to be configured to send messages")
             }
@@ -536,7 +526,7 @@ public class MessageInputView : ConstraintLayout {
                 parentMessage: Message,
                 message: String,
                 alsoSendToChannel: Boolean,
-                attachmentsFiles: List<File>
+                attachmentsFiles: List<File>,
             ) {
                 throw IllegalStateException("MessageInputView#messageSendHandler needs to be configured to send messages")
             }
@@ -545,7 +535,7 @@ public class MessageInputView : ConstraintLayout {
                 throw IllegalStateException("MessageInputView#messageSendHandler needs to be configured to send messages")
             }
 
-            override fun dismissReplay() {
+            override fun dismissReply() {
                 throw IllegalStateException("MessageInputView#messageSendHandler needs to be configured to send messages")
             }
         }
@@ -559,28 +549,37 @@ public class MessageInputView : ConstraintLayout {
     }
 
     public enum class ChatMode {
-        DirectChat,
-        GroupChat
+        DIRECT_CHAT,
+        GROUP_CHAT,
     }
 
     public interface MessageSendHandler {
-        public fun sendMessage(messageText: String, messageReplyTo: Message? = null)
+        public fun sendMessage(
+            messageText: String,
+            messageReplyTo: Message? = null,
+        )
+
         public fun sendMessageWithAttachments(
             message: String,
             attachmentsFiles: List<File>,
-            messageReplyTo: Message? = null
+            messageReplyTo: Message? = null,
         )
 
-        public fun sendToThread(parentMessage: Message, messageText: String, alsoSendToChannel: Boolean)
+        public fun sendToThread(
+            parentMessage: Message,
+            messageText: String,
+            alsoSendToChannel: Boolean,
+        )
+
         public fun sendToThreadWithAttachments(
             parentMessage: Message,
             message: String,
             alsoSendToChannel: Boolean,
-            attachmentsFiles: List<File>
+            attachmentsFiles: List<File>,
         )
 
         public fun editMessage(oldMessage: Message, newMessageText: String)
-        public fun dismissReplay()
+        public fun dismissReply()
     }
 
     public fun interface OnMessageSendButtonClickListener {

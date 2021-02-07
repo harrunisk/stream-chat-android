@@ -59,16 +59,15 @@ import io.getstream.chat.android.client.events.UsersUnmutedEvent
 import io.getstream.chat.android.client.extensions.enrichWithCid
 import io.getstream.chat.android.client.logger.ChatLogger
 import io.getstream.chat.android.client.models.ChannelUserRead
+import io.getstream.chat.android.client.models.Message
 import io.getstream.chat.android.client.models.User
 import io.getstream.chat.android.core.internal.exhaustive
-import io.getstream.chat.android.livedata.extensions.addReaction
-import io.getstream.chat.android.livedata.extensions.removeReaction
 import io.getstream.chat.android.livedata.extensions.setMember
 import io.getstream.chat.android.livedata.extensions.updateReads
 import kotlinx.coroutines.launch
 
 internal class EventHandlerImpl(
-    private val domainImpl: ChatDomainImpl
+    private val domainImpl: ChatDomainImpl,
 ) {
     private var logger = ChatLogger.get("EventHandler")
     private var firstConnect = true
@@ -180,7 +179,8 @@ internal class EventHandlerImpl(
                 is UserStartWatchingEvent,
                 is UserStopWatchingEvent,
                 is ChannelUserUnbannedEvent,
-                is MarkAllReadEvent -> Unit
+                is MarkAllReadEvent,
+                -> Unit
                 is ReactionNewEvent -> batchBuilder.addToFetchMessages(event.reaction.messageId)
                 is ReactionDeletedEvent -> batchBuilder.addToFetchMessages(event.reaction.messageId)
                 is ChannelMuteEvent -> batchBuilder.addToFetchChannels(event.channelMute.channel.cid)
@@ -209,15 +209,18 @@ internal class EventHandlerImpl(
                 // note that many of these events should also update user information
                 is NewMessageEvent -> {
                     event.message.enrichWithCid(event.cid)
+                    event.message.enrichWithOwnReactions(batch, event.user)
                     event.totalUnreadCount?.let { domainImpl.setTotalUnreadCount(it) }
                     batch.addMessageData(event.cid, event.message)
                 }
                 is MessageDeletedEvent -> {
                     event.message.enrichWithCid(event.cid)
+                    event.message.enrichWithOwnReactions(batch, event.user)
                     batch.addMessageData(event.cid, event.message)
                 }
                 is MessageUpdatedEvent -> {
                     event.message.enrichWithCid(event.cid)
+                    event.message.enrichWithOwnReactions(batch, event.user)
                     batch.addMessageData(event.cid, event.message)
                 }
                 is NotificationMessageNewEvent -> {
@@ -229,10 +232,10 @@ internal class EventHandlerImpl(
                     batch.addChannel(event.channel)
                 }
                 is NotificationInvitedEvent -> {
-                    batch.addUser(event.user)
+                    event.user?.let { batch.addUser(it) }
                 }
                 is NotificationInviteAcceptedEvent -> {
-                    batch.addUser(event.user)
+                    event.user?.let { batch.addUser(it) }
                 }
                 is ChannelHiddenEvent -> {
                     batch.getCurrentChannel(event.cid)?.let {
@@ -256,31 +259,19 @@ internal class EventHandlerImpl(
                 }
 
                 is ReactionNewEvent -> {
-                    // get the message, update the reaction data, update the message
-                    // note that we need to use event.reaction and not event.message
-                    // event.message only has a subset of reactions
-                    batch.getCurrentMessage(event.reaction.messageId)?.let {
-                        val updatedMessage = it.apply {
-                            addReaction(event.reaction, domainImpl.currentUser.id == event.user.id)
-                        }
-                        batch.addMessage(updatedMessage)
-                    }
+                    event.message.enrichWithCid(event.cid)
+                    event.message.enrichWithOwnReactions(batch, event.user)
+                    batch.addMessage(event.message)
                 }
                 is ReactionDeletedEvent -> {
-                    // get the message, update the reaction data, update the message
-                    batch.getCurrentMessage(event.reaction.messageId)?.also {
-                        val updatedMessage = it.copy(reactionCounts = event.message.reactionCounts)
-                            .apply { removeReaction(event.reaction, false) }
-                        batch.addMessage(updatedMessage)
-                    }
+                    event.message.enrichWithCid(event.cid)
+                    event.message.enrichWithOwnReactions(batch, event.user)
+                    batch.addMessage(event.message)
                 }
                 is ReactionUpdateEvent -> {
-                    batch.getCurrentMessage(event.reaction.messageId)?.let {
-                        val updatedMessage = it.apply {
-                            addReaction(event.reaction, domainImpl.currentUser.id == event.user.id)
-                        }
-                        batch.addMessage(updatedMessage)
-                    }
+                    event.message.enrichWithCid(event.cid)
+                    event.message.enrichWithOwnReactions(batch, event.user)
+                    batch.addMessage(event.message)
                 }
                 is MemberAddedEvent -> {
                     batch.getCurrentChannel(event.cid)?.let {
@@ -298,8 +289,11 @@ internal class EventHandlerImpl(
                     }
                 }
                 is NotificationRemovedFromChannelEvent -> {
-                    batch.getCurrentChannel(event.cid)?.let {
-                        batch.addChannel(it.apply { setMember(event.user.id, null) })
+                    batch.getCurrentChannel(event.cid)?.let { channel ->
+                        event.user?.let { user ->
+                            channel.setMember(user.id, null)
+                        }
+                        batch.addChannel(channel)
                     }
                 }
                 is ChannelUpdatedEvent -> {
@@ -356,11 +350,9 @@ internal class EventHandlerImpl(
                     // only update sync state if the incoming "mark all read" date is newer
                     // this supports using event handler to restore mark all read state in setUser
                     // without redundant db writes.
-                    val syncStateRepo = domainImpl.repos.syncState
-
-                    syncStateRepo.select(event.user.id)?.let { state ->
-                        if (state.markedAllReadAt == null || state.markedAllReadAt?.before(event.createdAt) == true) {
-                            syncStateRepo.insert(state.copy(markedAllReadAt = event.createdAt))
+                    domainImpl.repos.selectSyncState(event.user.id)?.let { state ->
+                        if (state.markedAllReadAt == null || state.markedAllReadAt.before(event.createdAt)) {
+                            domainImpl.repos.insertSyncState(state.copy(markedAllReadAt = event.createdAt))
                         }
                     }
                 }
@@ -412,7 +404,8 @@ internal class EventHandlerImpl(
                 is UserDeletedEvent,
                 is UserPresenceChangedEvent,
                 is UserStartWatchingEvent,
-                is UserStopWatchingEvent -> Unit
+                is UserStopWatchingEvent,
+                -> Unit
             }.exhaustive
         }
 
@@ -423,16 +416,14 @@ internal class EventHandlerImpl(
         for (event in events) {
             when (event) {
                 is NotificationChannelTruncatedEvent -> {
-                    domainImpl.repos.messages.deleteChannelMessagesBefore(event.cid, event.createdAt)
+                    domainImpl.repos.deleteChannelMessagesBefore(event.cid, event.createdAt)
                 }
                 is ChannelTruncatedEvent -> {
-                    domainImpl.repos.messages.deleteChannelMessagesBefore(event.cid, event.createdAt)
+                    domainImpl.repos.deleteChannelMessagesBefore(event.cid, event.createdAt)
                 }
                 is ChannelDeletedEvent -> {
-                    domainImpl.repos.messages.deleteChannelMessagesBefore(event.cid, event.createdAt)
-                    domainImpl.repos.channels.select(event.cid)?.let {
-                        domainImpl.repos.channels.insert(it.apply { deletedAt = event.createdAt })
-                    }
+                    domainImpl.repos.deleteChannelMessagesBefore(event.cid, event.createdAt)
+                    domainImpl.repos.setChannelDeletedAt(event.cid, event.createdAt)
                 }
             }
         }
@@ -463,6 +454,14 @@ internal class EventHandlerImpl(
         // queryRepo mainly monitors for the notification added to channel event
         for (queryRepo in domainImpl.getActiveQueries()) {
             queryRepo.handleEvents(sortedEvents)
+        }
+    }
+
+    private fun Message.enrichWithOwnReactions(batch: EventBatchUpdate, user: User?) {
+        if (user != null && domainImpl.currentUser.id != user.id) {
+            ownReactions = batch.getCurrentMessage(id)?.ownReactions ?: mutableListOf()
+        } else {
+            // for events of current user we keep "ownReactions" from the event
         }
     }
 }

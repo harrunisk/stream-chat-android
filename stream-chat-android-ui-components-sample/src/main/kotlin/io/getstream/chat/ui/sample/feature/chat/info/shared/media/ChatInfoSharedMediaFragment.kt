@@ -1,52 +1,53 @@
 package io.getstream.chat.ui.sample.feature.chat.info.shared.media
 
-import android.graphics.Rect
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
-import androidx.fragment.app.activityViewModels
 import androidx.fragment.app.viewModels
-import androidx.navigation.fragment.findNavController
 import androidx.navigation.fragment.navArgs
-import androidx.recyclerview.widget.GridLayoutManager
-import androidx.recyclerview.widget.RecyclerView
+import com.getstream.sdk.chat.ChatUI
 import com.getstream.sdk.chat.utils.Utils
-import com.getstream.sdk.chat.view.EndlessScrollListener
-import io.getstream.chat.ui.sample.R
+import io.getstream.chat.android.livedata.ChatDomain
+import io.getstream.chat.android.ui.gallery.AttachmentGalleryDestination
+import io.getstream.chat.android.ui.gallery.AttachmentGalleryItem
 import io.getstream.chat.ui.sample.common.initToolbar
+import io.getstream.chat.ui.sample.common.showToast
 import io.getstream.chat.ui.sample.databinding.FragmentChatInfoSharedMediaBinding
 import io.getstream.chat.ui.sample.feature.chat.info.shared.ChatInfoSharedAttachmentsViewModel
 import io.getstream.chat.ui.sample.feature.chat.info.shared.ChatInfoSharedAttachmentsViewModelFactory
 import io.getstream.chat.ui.sample.feature.chat.info.shared.SharedAttachment
-import java.text.DateFormat
-import java.text.SimpleDateFormat
-import java.util.Locale
 
 class ChatInfoSharedMediaFragment : Fragment() {
 
     private val args: ChatInfoSharedMediaFragmentArgs by navArgs()
     private val factory: ChatInfoSharedAttachmentsViewModelFactory by lazy {
         ChatInfoSharedAttachmentsViewModelFactory(
-            args.cid,
+            args.cid!!,
             ChatInfoSharedAttachmentsViewModel.AttachmentsType.MEDIA
         )
     }
     private val viewModel: ChatInfoSharedAttachmentsViewModel by viewModels { factory }
-    private val sharedMediaViewModel: ChatInfoSharedMediaViewModel by activityViewModels()
-    private val adapter: ChatInfoSharedMediaAdapter = ChatInfoSharedMediaAdapter()
-    private val scrollListener = EndlessScrollListener(LOAD_MORE_THRESHOLD) {
-        viewModel.onAction(ChatInfoSharedAttachmentsViewModel.Action.LoadMoreRequested)
+
+    private val attachmentGalleryDestination by lazy {
+        AttachmentGalleryDestination(
+            requireContext(),
+            attachmentReplyOptionHandler = {
+                showToast("Reply")
+            },
+            attachmentShowInChatOptionHandler = {
+                showToast("Show in chat")
+            },
+            attachmentDownloadOptionHandler = {
+                showToast("Download")
+            },
+            attachmentDeleteOptionClickHandler = {
+                showToast("Delete")
+            },
+        )
     }
-    private val dateScrollListener by lazy {
-        MediaDateScrollListener(
-            spanCount = SPAN_COUNT,
-            positionChangeThreshold = { binding.mediaRecyclerView.top - binding.dateTextView.bottom }
-        ) { binding.dateTextView.text = getDateText(adapter.currentList) }
-    }
-    private val dateFormat: DateFormat = SimpleDateFormat("MMM yyyy", Locale.US)
 
     private var _binding: FragmentChatInfoSharedMediaBinding? = null
     private val binding get() = _binding!!
@@ -54,7 +55,7 @@ class ChatInfoSharedMediaFragment : Fragment() {
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
-        savedInstanceState: Bundle?
+        savedInstanceState: Bundle?,
     ): View {
         _binding = FragmentChatInfoSharedMediaBinding.inflate(inflater, container, false)
         return binding.root
@@ -63,21 +64,30 @@ class ChatInfoSharedMediaFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         initToolbar(binding.toolbar)
-        binding.mediaRecyclerView.apply {
-            adapter = this@ChatInfoSharedMediaFragment.adapter
-            addItemDecoration(SharedMediaSpaceItemDecorator())
-            addOnScrollListener(scrollListener)
-            addOnScrollListener(dateScrollListener)
+
+        activity?.activityResultRegistry?.let { registry ->
+            attachmentGalleryDestination.register(registry)
         }
-        adapter.setMediaClickListener {
-            sharedMediaViewModel.attachmentWithDate.value =
-                adapter.currentList.map { attachmentItem -> attachmentItem.attachmentWithDate }
-            findNavController().navigate(R.id.action_chatInfoSharedMediaFragment_to_chatInfoSharedMediaGalleryFragment)
+        binding.mediaAttachmentGridView.setMediaClickListener {
+            val attachmentGalleryItems = binding.mediaAttachmentGridView.getAttachments()
+            attachmentGalleryDestination.setData(attachmentGalleryItems, it)
+            ChatUI.instance()
+                .navigator
+                .navigate(attachmentGalleryDestination)
         }
-        bindViewModel()
+        binding.mediaAttachmentGridView.setOnLoadMoreListener {
+            viewModel.onAction(ChatInfoSharedAttachmentsViewModel.Action.LoadMoreRequested)
+        }
+
+        if (args.cid != null) {
+            bindViewModel()
+        } else {
+            showEmptyState()
+        }
     }
 
     override fun onDestroyView() {
+        attachmentGalleryDestination.unregister()
         _binding = null
         super.onDestroyView()
     }
@@ -87,120 +97,62 @@ class ChatInfoSharedMediaFragment : Fragment() {
             if (state.isLoading) {
                 showLoading()
             } else {
-                if (state.results.isEmpty()) {
+                val results = state.results.filterIsInstance<SharedAttachment.AttachmentItem>()
+                    .mapNotNull {
+                        if (!it.attachment.imageUrl.isNullOrEmpty() && it.attachment.titleLink.isNullOrEmpty()) {
+                            AttachmentGalleryItem(
+                                attachment = it.attachment,
+                                user = it.message.user,
+                                createdAt = it.createdAt,
+                                messageId = it.message.id,
+                                cid = it.message.cid,
+                                isMine = it.message.user.id == ChatDomain.instance().currentUser.id
+                            )
+                        } else {
+                            null
+                        }
+                    }
+                if (results.isEmpty()) {
                     showEmptyState()
                 } else {
-                    showResults(state.results.filterIsInstance<SharedAttachment.AttachmentItem>())
+                    showResults(results)
                 }
             }
         }
     }
 
     private fun showLoading() {
-        binding.toolbar.elevation = ACTION_BAR_ELEVATION
-        binding.progressBar.isVisible = true
-        binding.mediaRecyclerView.isVisible = false
-        binding.dateView.isVisible = false
-        binding.emptyStateView.isVisible = false
-        scrollListener.disablePagination()
-    }
-
-    private fun showResults(attachments: List<SharedAttachment.AttachmentItem>) {
-        binding.toolbar.elevation = 0f
-        binding.progressBar.isVisible = false
-        binding.mediaRecyclerView.isVisible = true
-        binding.dateView.isVisible = true
-        binding.emptyStateView.isVisible = false
-        scrollListener.enablePagination()
-        adapter.submitList(attachments)
-        binding.dateTextView.text = getDateText(attachments)
-    }
-
-    private fun getDateText(attachments: List<SharedAttachment.AttachmentItem>): String {
-        return dateFormat.format(attachments[dateScrollListener.lastVisibleItemPosition].attachmentWithDate.createdAt)
-    }
-
-    private fun showEmptyState() {
-        binding.toolbar.elevation = ACTION_BAR_ELEVATION
-        binding.progressBar.isVisible = false
-        binding.mediaRecyclerView.isVisible = false
-        binding.dateView.isVisible = false
-        binding.emptyStateView.isVisible = true
-        scrollListener.disablePagination()
-    }
-
-    private class MediaDateScrollListener(
-        private val spanCount: Int,
-        private val positionChangeThreshold: () -> Int,
-        private val onVisibleItemChanged: () -> Unit,
-    ) : RecyclerView.OnScrollListener() {
-        var lastVisibleItemPosition = 0
-            private set
-
-        override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
-            val adapter = requireNotNull(recyclerView.adapter)
-            val layoutManager = recyclerView.layoutManager as GridLayoutManager
-            val visibleItemPosition = layoutManager.findFirstVisibleItemPosition()
-
-            layoutManager.findViewByPosition(visibleItemPosition)?.let { view ->
-                val actualPosition = if (view.bottom < positionChangeThreshold()) {
-                    // Taking first element from next row
-                    val lastRowElementsCount = adapter.itemCount % spanCount
-                    val lastRowFirstElement = if (lastRowElementsCount == 0) {
-                        adapter.itemCount - 1
-                    } else {
-                        adapter.itemCount - lastRowElementsCount
-                    }
-                    minOf(visibleItemPosition + spanCount, lastRowFirstElement)
-                } else {
-                    visibleItemPosition
-                }
-
-                if (lastVisibleItemPosition != actualPosition) {
-                    lastVisibleItemPosition = actualPosition
-                    onVisibleItemChanged()
-                }
-            }
+        with(binding) {
+            toolbar.elevation = ACTION_BAR_ELEVATION
+            progressBar.isVisible = true
+            mediaAttachmentGridView.isVisible = false
+            emptyStateView.isVisible = false
+            mediaAttachmentGridView.disablePagination()
         }
     }
 
-    private class SharedMediaSpaceItemDecorator : RecyclerView.ItemDecoration() {
-        override fun getItemOffsets(outRect: Rect, view: View, parent: RecyclerView, state: RecyclerView.State) {
-            parent.adapter?.let { adapter ->
-                // Add spaces between elements
-                when {
-                    parent.getChildAdapterPosition(view) % SPAN_COUNT == 0 -> {
-                        outRect.top = MEDIA_ITEM_SPACE
-                        outRect.right = MEDIA_ITEM_SPACE / 2
-                    }
-                    parent.getChildAdapterPosition(view) % SPAN_COUNT == SPAN_COUNT - 1 -> {
-                        outRect.top = MEDIA_ITEM_SPACE
-                        outRect.left = MEDIA_ITEM_SPACE / 2
-                    }
-                    else -> {
-                        outRect.top = MEDIA_ITEM_SPACE
-                        outRect.right = MEDIA_ITEM_SPACE / 4
-                        outRect.left = MEDIA_ITEM_SPACE / 4
-                    }
-                }
+    private fun showResults(attachmentGalleryItems: List<AttachmentGalleryItem>) {
+        with(binding) {
+            toolbar.elevation = 0f
+            progressBar.isVisible = false
+            mediaAttachmentGridView.isVisible = true
+            emptyStateView.isVisible = false
+            mediaAttachmentGridView.enablePagination()
+            mediaAttachmentGridView.setAttachments(attachmentGalleryItems)
+        }
+    }
 
-                val lastRowCount = if (adapter.itemCount % SPAN_COUNT != 0) {
-                    adapter.itemCount % SPAN_COUNT
-                } else {
-                    SPAN_COUNT
-                }
-                // Add additional bottom margin for last row to enable scrolling to the top
-                if (parent.getChildAdapterPosition(view) >= adapter.itemCount - lastRowCount) {
-                    outRect.bottom = parent.height - (parent.width / SPAN_COUNT)
-                }
-            }
+    private fun showEmptyState() {
+        with(binding) {
+            toolbar.elevation = ACTION_BAR_ELEVATION
+            progressBar.isVisible = false
+            emptyStateView.isVisible = true
+            mediaAttachmentGridView.isVisible = false
+            mediaAttachmentGridView.disablePagination()
         }
     }
 
     companion object {
-        private const val LOAD_MORE_THRESHOLD = 10
-        private const val SPAN_COUNT = 3
-        private val MEDIA_ITEM_SPACE = Utils.dpToPx(2)
         private val ACTION_BAR_ELEVATION = Utils.dpToPx(4).toFloat()
     }
 }

@@ -4,33 +4,33 @@ import android.view.ViewGroup
 import androidx.recyclerview.widget.ListAdapter
 import com.getstream.sdk.chat.adapter.MessageListItem
 
-public class MessageListItemAdapter(
-    private val viewHolderFactory: MessageListItemViewHolderFactory
-) : ListAdapter<MessageListItem, BaseMessageItemViewHolder<*>>(MessageListItemDiffCallback) {
+internal class MessageListItemAdapter(
+    private val viewHolderFactory: MessageListItemViewHolderFactory,
+) : ListAdapter<MessageListItem, BaseMessageItemViewHolder<out MessageListItem>>(MessageListItemDiffCallback) {
 
-    public var isThread: Boolean = false
+    var isThread: Boolean = false
 
     override fun getItemId(position: Int): Long = getItem(position).getStableId()
 
     override fun getItemViewType(position: Int): Int {
-        return MessageListItemViewTypeMapper.getViewTypeValue(getItem(position))
+        return viewHolderFactory.getItemViewType(getItem(position))
     }
 
     override fun onCreateViewHolder(
         parent: ViewGroup,
-        viewType: Int
-    ): BaseMessageItemViewHolder<*> {
+        viewType: Int,
+    ): BaseMessageItemViewHolder<out MessageListItem> {
         return viewHolderFactory.createViewHolder(parent, viewType)
     }
 
-    override fun onBindViewHolder(holder: BaseMessageItemViewHolder<*>, position: Int) {
+    override fun onBindViewHolder(holder: BaseMessageItemViewHolder<out MessageListItem>, position: Int) {
         holder.bindListItem(getItem(position), FULL_MESSAGE_LIST_ITEM_PAYLOAD_DIFF)
     }
 
     override fun onBindViewHolder(
-        holder: BaseMessageItemViewHolder<*>,
+        holder: BaseMessageItemViewHolder<out MessageListItem>,
         position: Int,
-        payloads: MutableList<Any>
+        payloads: MutableList<Any>,
     ) {
         val diff = (
             payloads
@@ -45,7 +45,12 @@ public class MessageListItemAdapter(
         holder.bindListItem(getItem(position), diff)
     }
 
-    public companion object {
+    override fun onViewRecycled(holder: BaseMessageItemViewHolder<out MessageListItem>) {
+        super.onViewRecycled(holder)
+        holder.unbind()
+    }
+
+    companion object {
         private val FULL_MESSAGE_LIST_ITEM_PAYLOAD_DIFF = MessageListItemPayloadDiff(
             text = true,
             reactions = true,
@@ -54,7 +59,6 @@ public class MessageListItemAdapter(
             syncStatus = true,
             deleted = true,
             positions = true,
-            readBy = true
         )
         private val EMPTY_MESSAGE_LIST_ITEM_PAYLOAD_DIFF = MessageListItemPayloadDiff(
             text = false,
@@ -64,7 +68,6 @@ public class MessageListItemAdapter(
             syncStatus = false,
             deleted = false,
             positions = false,
-            readBy = false
         )
     }
 }

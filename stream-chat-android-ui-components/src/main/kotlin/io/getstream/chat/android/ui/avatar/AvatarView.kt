@@ -6,8 +6,8 @@ import android.graphics.Color
 import android.graphics.Paint
 import android.util.AttributeSet
 import androidx.appcompat.widget.AppCompatImageView
-import com.getstream.sdk.chat.ImageLoader
-import com.getstream.sdk.chat.ImageLoader.load
+import com.getstream.sdk.chat.images.StreamImageLoader.ImageTransformation.Circle
+import com.getstream.sdk.chat.images.load
 import io.getstream.chat.android.client.models.Channel
 import io.getstream.chat.android.client.models.User
 
@@ -45,11 +45,17 @@ public class AvatarView : AppCompatImageView {
     }
 
     public fun setChannelData(channel: Channel) {
-        load(Avatar.ChannelAvatar(channel, avatarStyle), ImageLoader.ImageTransformation.Circle)
+        load(
+            data = Avatar.ChannelAvatar(channel, avatarStyle),
+            transformation = Circle,
+        )
     }
 
     public fun setUserData(user: User) {
-        load(Avatar.UserAvatar(user, avatarStyle), ImageLoader.ImageTransformation.Circle)
+        load(
+            data = Avatar.UserAvatar(user, avatarStyle),
+            transformation = Circle,
+        )
         isOnline = user.online
     }
 
@@ -73,10 +79,12 @@ public class AvatarView : AppCompatImageView {
         setStyle(AvatarStyle(context, attrs))
     }
 
-    internal fun setStyle(avatarStyle: AvatarStyle) {
+    private fun setStyle(avatarStyle: AvatarStyle) {
         this.avatarStyle = avatarStyle
         borderPaint.color = avatarStyle.avatarBorderColor
         borderPaint.strokeWidth = avatarStyle.avatarBorderWidth.toFloat()
+        val padding = this.avatarStyle.avatarBorderWidth - 1
+        setPadding(padding, padding, padding, padding)
     }
 
     private fun drawOnlineStatus(canvas: Canvas) {
@@ -102,12 +110,12 @@ public class AvatarView : AppCompatImageView {
         }
     }
 
-    public enum class OnlineIndicatorPosition {
+    internal enum class OnlineIndicatorPosition {
         TOP,
         BOTTOM
     }
 
     internal companion object {
-        internal const val MAX_AVATAR_SECTIONS = 4
+        const val MAX_AVATAR_SECTIONS = 4
     }
 }

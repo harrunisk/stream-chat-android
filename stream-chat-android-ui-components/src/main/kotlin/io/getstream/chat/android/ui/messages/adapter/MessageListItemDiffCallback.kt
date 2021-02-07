@@ -13,29 +13,23 @@ internal object MessageListItemDiffCallback : DiffUtil.ItemCallback<MessageListI
         when (oldItem) {
             is MessageListItem.MessageItem -> {
                 newItem as MessageListItem.MessageItem
-                if (oldItem.message.text != newItem.message.text) {
-                    false
-                } else if (oldItem.message.reactionScores != newItem.message.reactionScores) {
-                    false
-                } else if (oldItem.message.reactionCounts != newItem.message.reactionCounts) {
-                    false
-                } else if (oldItem.message.attachments != newItem.message.attachments) {
-                    false
-                } else if (oldItem.message.replyCount != newItem.message.replyCount) {
-                    false
-                } else if (oldItem.message.syncStatus != newItem.message.syncStatus) {
-                    false
-                } else if (oldItem.message.deletedAt != newItem.message.deletedAt) {
-                    false
-                } else if (oldItem.positions != newItem.positions) {
-                    false
-                } else oldItem.messageReadBy.map { it.getUserId() } == newItem.messageReadBy.map { it.getUserId() }
+                oldItem.message.text == newItem.message.text &&
+                    oldItem.message.reactionScores == newItem.message.reactionScores &&
+                    oldItem.message.reactionCounts == newItem.message.reactionCounts &&
+                    oldItem.message.attachments == newItem.message.attachments &&
+                    oldItem.message.replyCount == newItem.message.replyCount &&
+                    oldItem.message.syncStatus == newItem.message.syncStatus &&
+                    oldItem.message.deletedAt == newItem.message.deletedAt &&
+                    oldItem.positions == newItem.positions &&
+                    oldItem.isMessageRead == newItem.isMessageRead &&
+                    oldItem.isThreadMode == newItem.isThreadMode
             }
             is MessageListItem.DateSeparatorItem -> oldItem.date == (newItem as? MessageListItem.DateSeparatorItem)?.date
             is MessageListItem.ThreadSeparatorItem -> oldItem == (newItem as? MessageListItem.ThreadSeparatorItem)
             is MessageListItem.LoadingMoreIndicatorItem -> true
-            is MessageListItem.TypingItem -> oldItem.users.map(User::id) == ((newItem) as? MessageListItem.TypingItem)?.users?.map(User::id)
-            is MessageListItem.ReadStateItem -> oldItem.reads.map { it.getUserId() } == ((newItem) as? MessageListItem.ReadStateItem)?.reads?.map { it.getUserId() }
+            is MessageListItem.TypingItem -> oldItem.users.map(User::id) == ((newItem) as? MessageListItem.TypingItem)?.users?.map(
+                User::id
+            )
         }
 
     override fun getChangePayload(oldItem: MessageListItem, newItem: MessageListItem): Any? {
@@ -49,7 +43,6 @@ internal object MessageListItemDiffCallback : DiffUtil.ItemCallback<MessageListI
                 syncStatus = oldItem.message.syncStatus != newItem.message.syncStatus,
                 deleted = oldItem.message.deletedAt != newItem.message.deletedAt,
                 positions = oldItem.positions != newItem.positions,
-                readBy = oldItem.messageReadBy.map { it.getUserId() } == newItem.messageReadBy.map { it.getUserId() }
             )
         } else {
             null

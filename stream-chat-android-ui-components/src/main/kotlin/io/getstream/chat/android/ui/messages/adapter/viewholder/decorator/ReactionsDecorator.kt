@@ -16,13 +16,13 @@ import io.getstream.chat.android.ui.messages.adapter.viewholder.PlainTextWithFil
 import io.getstream.chat.android.ui.messages.adapter.viewholder.PlainTextWithMediaAttachmentsViewHolder
 import io.getstream.chat.android.ui.messages.reactions.view.ViewReactionsView
 import io.getstream.chat.android.ui.utils.extensions.dpToPx
-import io.getstream.chat.android.ui.utils.extensions.isSingleReaction
+import io.getstream.chat.android.ui.utils.extensions.hasSingleReaction
 
 internal class ReactionsDecorator : BaseDecorator() {
 
     override fun decoratePlainTextMessage(
         viewHolder: MessagePlainTextViewHolder,
-        data: MessageListItem.MessageItem
+        data: MessageListItem.MessageItem,
     ) {
         with(viewHolder.binding) {
             setupReactionsView(root, messageContainer, reactionsSpace, reactionsView, data)
@@ -31,7 +31,7 @@ internal class ReactionsDecorator : BaseDecorator() {
 
     override fun decoratePlainTextWithMediaAttachmentsMessage(
         viewHolder: PlainTextWithMediaAttachmentsViewHolder,
-        data: MessageListItem.MessageItem
+        data: MessageListItem.MessageItem,
     ) {
         with(viewHolder.binding) {
             setupReactionsView(root, backgroundView, reactionsSpace, reactionsView, data)
@@ -40,7 +40,7 @@ internal class ReactionsDecorator : BaseDecorator() {
 
     override fun decorateOnlyMediaAttachmentsMessage(
         viewHolder: OnlyMediaAttachmentsViewHolder,
-        data: MessageListItem.MessageItem
+        data: MessageListItem.MessageItem,
     ) {
         with(viewHolder.binding) {
             setupReactionsView(root, backgroundView, reactionsSpace, reactionsView, data)
@@ -49,7 +49,7 @@ internal class ReactionsDecorator : BaseDecorator() {
 
     override fun decorateOnlyFileAttachmentsMessage(
         viewHolder: OnlyFileAttachmentsViewHolder,
-        data: MessageListItem.MessageItem
+        data: MessageListItem.MessageItem,
     ) {
         with(viewHolder.binding) {
             setupReactionsView(root, backgroundView, reactionsSpace, reactionsView, data)
@@ -58,23 +58,29 @@ internal class ReactionsDecorator : BaseDecorator() {
 
     override fun decoratePlainTextWithFileAttachmentsMessage(
         viewHolder: PlainTextWithFileAttachmentsViewHolder,
-        data: MessageListItem.MessageItem
+        data: MessageListItem.MessageItem,
     ) {
         with(viewHolder.binding) {
             setupReactionsView(root, backgroundView, reactionsSpace, reactionsView, data)
         }
     }
 
-    override fun decorateDeletedMessage(viewHolder: MessageDeletedViewHolder, data: MessageListItem.MessageItem) = Unit
+    override fun decorateDeletedMessage(
+        viewHolder: MessageDeletedViewHolder,
+        data: MessageListItem.MessageItem,
+    ) = Unit
 
-    override fun decorateGiphyMessage(viewHolder: GiphyViewHolder, data: MessageListItem.MessageItem) = Unit
+    override fun decorateGiphyMessage(
+        viewHolder: GiphyViewHolder,
+        data: MessageListItem.MessageItem,
+    ) = Unit
 
     private fun setupReactionsView(
         rootConstraintLayout: ConstraintLayout,
         contentView: View,
         reactionsSpace: View,
         reactionsView: ViewReactionsView,
-        data: MessageListItem.MessageItem
+        data: MessageListItem.MessageItem,
     ) {
         if (data.message.latestReactions.isNotEmpty()) {
             reactionsView.isVisible = true
@@ -88,7 +94,7 @@ internal class ReactionsDecorator : BaseDecorator() {
                     clear(reactionsSpace.id, ConstraintSet.END)
                 }
                 reactionsSpace.updateLayoutParams<ConstraintLayout.LayoutParams> {
-                    val offset = if (data.message.isSingleReaction()) {
+                    val offset = if (data.message.hasSingleReaction()) {
                         SINGLE_REACTION_OFFSET
                     } else {
                         MULTIPLE_REACTIONS_OFFSET

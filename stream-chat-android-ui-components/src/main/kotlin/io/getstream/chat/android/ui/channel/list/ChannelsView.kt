@@ -10,15 +10,14 @@ import android.widget.TextView
 import androidx.annotation.DrawableRes
 import androidx.core.content.res.use
 import androidx.core.view.isVisible
+import com.getstream.sdk.chat.utils.extensions.isDirectMessaging
 import io.getstream.chat.android.client.models.Member
 import io.getstream.chat.android.ui.R
 import io.getstream.chat.android.ui.channel.actions.ChannelActionsDialogFragment
 import io.getstream.chat.android.ui.channel.list.adapter.ChannelListItem
-import io.getstream.chat.android.ui.channel.list.adapter.ChannelListItemAdapter
 import io.getstream.chat.android.ui.channel.list.adapter.viewholder.ChannelListItemViewHolderFactory
 import io.getstream.chat.android.ui.utils.extensions.dpToPx
 import io.getstream.chat.android.ui.utils.extensions.getFragmentManager
-import io.getstream.chat.android.ui.utils.extensions.isDirectMessaging
 
 public class ChannelsView @JvmOverloads constructor(
     context: Context,
@@ -54,23 +53,13 @@ public class ChannelsView @JvmOverloads constructor(
             addView(loadingView, defaultChildLayoutParams)
         }
 
-        val adapter = channelListView.requireAdapter()
-
-        configureDefaultMoreOptionsListener(context, adapter)
+        configureDefaultMoreOptionsListener(context)
 
         parseAttrs(attrs)
     }
 
     private fun parseAttrs(attrs: AttributeSet?) {
         context.obtainStyledAttributes(attrs, R.styleable.ChannelsView, 0, 0).use {
-            it.getText(R.styleable.ChannelsView_streamUiChannelsEmptyStateLabelText)?.let { emptyStateText ->
-                emptyStateView.apply {
-                    if (this is TextView) {
-                        text = emptyStateText
-                    }
-                }
-            }
-
             it.getResourceId(
                 R.styleable.ChannelsView_streamUiChannelsItemSeparatorDrawable,
                 R.drawable.stream_ui_divider
@@ -116,6 +105,10 @@ public class ChannelsView @JvmOverloads constructor(
         channelListView.setItemSeparatorHeight(dp.dpToPx())
     }
 
+    public fun setShouldDrawItemSeparatorOnLastItem(shouldDrawOnLastItem: Boolean) {
+        channelListView.setShouldDrawItemSeparatorOnLastItem(shouldDrawOnLastItem)
+    }
+
     /**
      * Allows clients to set a custom implementation of [BaseChannelViewHolderFactory]
      *
@@ -139,7 +132,7 @@ public class ChannelsView @JvmOverloads constructor(
      *
      * @param listener the callback to be invoked on channel long click
      */
-    public fun setChannelLongClickListener(listener: ChannelListView.ChannelClickListener?) {
+    public fun setChannelLongClickListener(listener: ChannelListView.ChannelLongClickListener?) {
         channelListView.setChannelLongClickListener(listener)
     }
 
@@ -256,7 +249,6 @@ public class ChannelsView @JvmOverloads constructor(
 
     private fun configureDefaultMoreOptionsListener(
         context: Context,
-        adapter: ChannelListItemAdapter
     ) {
         setMoreOptionsClickListener { channel ->
             context.getFragmentManager()?.let { fragmentManager ->
@@ -264,25 +256,26 @@ public class ChannelsView @JvmOverloads constructor(
                     .newInstance(channel.cid, !channel.isDirectMessaging())
                     .apply {
                         channelActionListener = object : ChannelActionsDialogFragment.ChannelActionListener {
-
                             override fun onDeleteConversationClicked(cid: String) {
-                                with(adapter) {
-                                    listenerContainer.deleteClickListener.onClick(getChannel(cid))
-                                }
+                                channelListView.listenerContainer.deleteClickListener.onClick(
+                                    channelListView.getChannel(cid)
+                                )
                             }
 
                             override fun onLeaveChannelClicked(cid: String) {
-                                with(adapter) {
-                                    channelLeaveListener.onClick(getChannel(cid))
-                                }
+                                channelLeaveListener.onClick(
+                                    channelListView.getChannel(cid)
+                                )
                             }
 
                             override fun onMemberSelected(member: Member) {
-                                adapter.listenerContainer.userClickListener.onClick(member.user)
+                                channelListView.listenerContainer.userClickListener.onClick(member.user)
                             }
 
                             override fun onChannelInfoSelected(cid: String) {
-                                channelInfoListener.onClick(adapter.getChannel(cid))
+                                channelInfoListener.onClick(
+                                    channelListView.getChannel(cid)
+                                )
                             }
                         }
                     }

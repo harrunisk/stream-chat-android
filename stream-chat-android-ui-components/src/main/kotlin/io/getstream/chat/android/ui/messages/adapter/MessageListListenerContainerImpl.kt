@@ -4,11 +4,11 @@ import com.getstream.sdk.chat.utils.ListenerDelegate
 import io.getstream.chat.android.ui.messages.view.MessageListView.AttachmentClickListener
 import io.getstream.chat.android.ui.messages.view.MessageListView.AttachmentDownloadClickListener
 import io.getstream.chat.android.ui.messages.view.MessageListView.GiphySendListener
+import io.getstream.chat.android.ui.messages.view.MessageListView.LinkClickListener
 import io.getstream.chat.android.ui.messages.view.MessageListView.MessageClickListener
 import io.getstream.chat.android.ui.messages.view.MessageListView.MessageLongClickListener
 import io.getstream.chat.android.ui.messages.view.MessageListView.MessageRetryListener
 import io.getstream.chat.android.ui.messages.view.MessageListView.ReactionViewClickListener
-import io.getstream.chat.android.ui.messages.view.MessageListView.ReadStateClickListener
 import io.getstream.chat.android.ui.messages.view.MessageListView.ThreadClickListener
 import io.getstream.chat.android.ui.messages.view.MessageListView.UserClickListener
 
@@ -21,8 +21,8 @@ internal class MessageListListenerContainerImpl(
     attachmentDownloadClickListener: AttachmentDownloadClickListener = AttachmentDownloadClickListener(EmptyFunctions.ONE_PARAM),
     reactionViewClickListener: ReactionViewClickListener = ReactionViewClickListener(EmptyFunctions.ONE_PARAM),
     userClickListener: UserClickListener = UserClickListener(EmptyFunctions.ONE_PARAM),
-    readStateClickListener: ReadStateClickListener = ReadStateClickListener(EmptyFunctions.ONE_PARAM),
     giphySendListener: GiphySendListener = GiphySendListener(EmptyFunctions.TWO_PARAM),
+    linkClickListener: LinkClickListener = LinkClickListener(EmptyFunctions.ONE_PARAM),
 ) : MessageListListenerContainer {
     private object EmptyFunctions {
         val ONE_PARAM: (Any) -> Unit = { _ -> Unit }
@@ -93,19 +93,19 @@ internal class MessageListListenerContainerImpl(
         }
     }
 
-    override var readStateClickListener: ReadStateClickListener by ListenerDelegate(
-        readStateClickListener
-    ) { realListener ->
-        ReadStateClickListener { reads ->
-            realListener().onReadStateClick(reads)
-        }
-    }
-
     override var giphySendListener: GiphySendListener by ListenerDelegate(
         giphySendListener
     ) { realListener ->
         GiphySendListener { message, action ->
             realListener().onGiphySend(message, action)
+        }
+    }
+
+    override var linkClickListener: LinkClickListener by ListenerDelegate(
+        linkClickListener
+    ) { realListener ->
+        LinkClickListener { url ->
+            realListener().onLinkClick(url)
         }
     }
 }

@@ -1,3 +1,68 @@
+# Feb 5th, 2021 - 4.5.3
+## Common changes for all artifacts
+
+## stream-chat-android
+-. `ChatUtils::devToken` is not accessible anymore, it has been moved to `ChatClient::devToken`
+
+## stream-chat-android-client
+- **setUser deprecation**
+    - The `setUser`, `setGuestUser`, and `setAnonymousUser` methods on `ChatClient` are now deprecated.
+    - Prefer to use the `connectUser` (`connectGuestUser`, `connectAnonymousUser`) methods instead, which return `Call` objects.
+    - If you want the same async behaviour as with the old methods, use `client.setUser(user, token).enqueue { /* Handle result */ }`.
+- Add support for typing events in threads:
+    - Add `parentId` to `TypingStartEvent` and `TypingStopEvent`
+    - Add `parentId` to ``ChannelClient::keystroke` and `ChannelClient::stopTyping`
+- `ChatClient::sendFile` and `ChatClient::sendImage` each now have just one definition with `ProgressCallback` as an optional parameter. These methods both return `Call<String>`, allowing for sync/async execution, and error handling. The old overloads that were asynchronous and returned no value/error have been removed.
+- `FileUploader::sendFile` and `FileUploader::sendImages` variations with `ProgressCallback` are no longer async with no return type. Now they are synchronous with `String?` as return type
+
+## stream-chat-android-offline
+- Add support for typing events in threads:
+    - Add `parentId` to `Keystroke` and `StopTyping` use cases
+
+## stream-chat-android-ui-common
+- Add a new `isMessageRead` flag to the `MessageListItem.MessageItem` class, which indicates 
+  that a particular message is read by other members in this channel.
+- Add handling threads typing in `MessageInputViewModel`
+
+# Jan 31th, 2021 - 4.5.2
+## stream-chat-android-client
+- Use proper data on `ChatClient::reconnectSocket` to reconnect normal/anonymous user
+- Add `enforceUnique` parameter to `ChatClient::sendReaction` and `ChannelClient::sendReaction` methods .
+If reaction is sent with `enforceUnique` set to true, new reaction will replace all reactions the user has on this message.
+- Add suspending `setUserAndAwait` extension for `ChatClient`
+- Replace chat event listener Kotlin functions with ChatEventListener functional interface in order to promote
+a better integration experience for Java clients. Old methods that use the Kotlin function have been deprecated.
+Deprecated interfaces, such as ChannelController, have not been updated. ChannelClient, which inherits from ChannelController
+for the sake of backwards compatibility, has been updated.
+
+## stream-chat-android-offline
+- Add `enforceUnique` parameter to `SendReaction` use case. If reaction is sent with `enforceUnique` set to true,
+ new reaction will replace all reactions the user has on this message.
+- Fix updating `Message::ownReactions` and `Message:latestReactions` after sending or deleting reaction - add missing `userId` to `Reaction`
+- Fix Load Thread Replies process
+
+## stream-chat-android-ui-common
+- Add a new `isThreadMode` flag to the `MessageListItem.MessageItem` class.
+  It shows is a message item should be shown as part of thread mode in chat.
+- Add possibility to set `DateSeparatorHandler` via `MessageListViewModel::setDateSeparatorHandler`
+  and `MessageListViewModel::setThreadDateSeparatorHandler` which determines when to add date separator between messages
+- Add `MessageListViewModel.Event.ReplyAttachment`, `MessageListViewModel.Event.DownloadAttachment`, `MessageListViewModel.Event.ShowMessage`,
+  and `MessageListViewModel.Event.RemoveAttachment` classes.
+- Deprecate `MessageListViewModel.Event.AttachmentDownload`
+
+# Jan 18th, 2021 - 4.5.1
+## stream-chat-android
+- Fix `MessageListItemViewHolder::bind` behavior
+- Improve connection/reconnection with normal/anonymous user
+
+## stream-chat-android-client
+- Create `ChatClient::getMessagesWithAttachments` to filter message with attachments
+- Create `ChannelClient::getMessagesWithAttachments` to filter message with attachments
+- Add support for pinned messages:
+    - Add `pinMessage` and `unpinMessage` methods `ChatClient` and `ChannelClient`
+    - Add `Channel::pinnedMessages` property
+    - Add `Message:pinned`, `Message::pinnedAt`, `Message::pinExpires`, and `Message:pinnedBy` properties
+
 # Jan 7th, 2021 - 4.5.0
 ## stream-chat-android
 - Now depends explicitly on AndroidX Fragment (fixes a potential crash with result handling)

@@ -3,10 +3,10 @@
 package io.getstream.chat.android.ui.messages.header
 
 import androidx.lifecycle.LifecycleOwner
+import com.getstream.sdk.chat.utils.extensions.getUsers
 import com.getstream.sdk.chat.viewmodel.ChannelHeaderViewModel
 import io.getstream.chat.android.ui.utils.extensions.getDisplayName
 import io.getstream.chat.android.ui.utils.extensions.getOnlineStateSubtitle
-import io.getstream.chat.android.ui.utils.extensions.getUsers
 
 /**
  * Binds [MessagesHeaderView] with [ChannelHeaderViewModel], updating the view's state
@@ -33,4 +33,12 @@ public fun ChannelHeaderViewModel.bindView(view: MessagesHeaderView, lifecycle: 
         }
     }
     typingUsers.observe(lifecycle, view::showTypingStateLabel)
+
+    activeThread.observe(lifecycle) { message ->
+        if (message != null) {
+            view.setThreadMode()
+        } else {
+            view.setNormalMode()
+        }
+    }
 }

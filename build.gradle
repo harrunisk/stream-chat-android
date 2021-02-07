@@ -4,6 +4,7 @@ apply plugin: 'com.pascalwelsch.gitversioner'
 apply plugin: "com.github.ben-manes.versions"
 apply plugin: "org.jlleitschuh.gradle.ktlint"
 apply plugin: 'io.codearte.nexus-staging'
+apply plugin: 'binary-compatibility-validator'
 
 buildscript {
     repositories {
@@ -27,6 +28,7 @@ buildscript {
         classpath Dependencies.navigationSafeArgsGradlePlugin
         classpath Dependencies.gradleNexusStagingPlugin
         classpath Dependencies.dokka
+        classpath Dependencies.kotlinBinaryValidator
     }
 }
 
@@ -50,7 +52,7 @@ task clean(type: Delete) {
 }
 
 gitVersioner {
-    def branches = ['develop', 'master']
+    def branches = ['develop', 'main']
     baseBranch branchName in branches ? branchName : branches[0]
     yearFactor 100
     formatter = { gitVersioner ->
@@ -62,4 +64,22 @@ dependencyUpdates {
     rejectVersionIf {
         Dependencies.isStable(it.currentVersion) && Dependencies.isNonStable(it.candidate.version)
     }
+}
+
+apiValidation {
+    ignoredPackages += [
+            'com/getstream/sdk/chat/databinding',
+            'io/getstream/chat/android/ui/databinding',
+    ]
+
+    ignoredProjects += [
+            'stream-chat-android-docs',
+            'stream-chat-android-sample',
+            'stream-chat-android-ui-components-sample',
+            'stream-chat-android-test',
+    ]
+
+    nonPublicMarkers += [
+            'io.getstream.chat.android.core.internal.InternalStreamChatApi',
+    ]
 }

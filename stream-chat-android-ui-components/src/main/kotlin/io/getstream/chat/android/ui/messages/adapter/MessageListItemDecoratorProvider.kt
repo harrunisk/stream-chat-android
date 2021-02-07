@@ -1,43 +1,40 @@
 package io.getstream.chat.android.ui.messages.adapter
 
-import android.content.Context
 import com.getstream.sdk.chat.utils.DateFormatter
 import io.getstream.chat.android.client.models.User
 import io.getstream.chat.android.ui.messages.adapter.viewholder.decorator.AvatarDecorator
 import io.getstream.chat.android.ui.messages.adapter.viewholder.decorator.BackgroundDecorator
 import io.getstream.chat.android.ui.messages.adapter.viewholder.decorator.Decorator
 import io.getstream.chat.android.ui.messages.adapter.viewholder.decorator.DecoratorProvider
-import io.getstream.chat.android.ui.messages.adapter.viewholder.decorator.DeliveryStatusDecorator
 import io.getstream.chat.android.ui.messages.adapter.viewholder.decorator.FailedIndicatorDecorator
+import io.getstream.chat.android.ui.messages.adapter.viewholder.decorator.FootnoteDecorator
 import io.getstream.chat.android.ui.messages.adapter.viewholder.decorator.GapDecorator
-import io.getstream.chat.android.ui.messages.adapter.viewholder.decorator.GravityDecorator
 import io.getstream.chat.android.ui.messages.adapter.viewholder.decorator.LinkAttachmentDecorator
 import io.getstream.chat.android.ui.messages.adapter.viewholder.decorator.MaxPossibleWidthDecorator
-import io.getstream.chat.android.ui.messages.adapter.viewholder.decorator.MessageFooterDecorator
 import io.getstream.chat.android.ui.messages.adapter.viewholder.decorator.ReactionsDecorator
 import io.getstream.chat.android.ui.messages.adapter.viewholder.decorator.ReplyDecorator
-import io.getstream.chat.android.ui.messages.adapter.viewholder.decorator.ThreadRepliesDecorator
+import io.getstream.chat.android.ui.messages.adapter.viewholder.decorator.TextDecorator
+import io.getstream.chat.android.ui.messages.view.MessageListItemStyle
 
-public class MessageListItemDecoratorProvider(
-    context: Context,
+internal class MessageListItemDecoratorProvider(
     currentUser: User,
-    directMessage: Boolean = false
+    dateFormatter: DateFormatter,
+    isDirectMessage: Boolean,
+    style: MessageListItemStyle,
 ) : DecoratorProvider {
 
     private val messageListDecorators = listOf<Decorator>(
-        BackgroundDecorator(),
+        BackgroundDecorator(style),
+        TextDecorator(style),
         GapDecorator(),
         MaxPossibleWidthDecorator(),
         AvatarDecorator(),
-        GravityDecorator(),
-        DeliveryStatusDecorator(),
         FailedIndicatorDecorator(),
-        MessageFooterDecorator(DateFormatter.from(context), directMessage),
         ReactionsDecorator(),
         LinkAttachmentDecorator(),
         ReplyDecorator(currentUser),
         ReactionsDecorator(),
-        ThreadRepliesDecorator(),
+        FootnoteDecorator(dateFormatter, isDirectMessage),
     )
 
     override val decorators: List<Decorator> = messageListDecorators

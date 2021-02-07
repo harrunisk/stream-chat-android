@@ -28,9 +28,10 @@ sealed class ChatInfoItem {
         abstract val textResId: Int
 
         @get:ColorRes
-        open val tintResId: Int = R.color.stream_ui_icon_default_tint
+        open val tintResId: Int = R.color.stream_ui_grey
+
         @get:ColorRes
-        open val textColorResId: Int = R.color.stream_ui_text_color_strong
+        open val textColorResId: Int = R.color.stream_ui_black
 
         open val showRightArrow: Boolean = true
 
@@ -57,7 +58,7 @@ sealed class ChatInfoItem {
 
         object DeleteConversation : Option() {
             override val iconResId: Int
-                get() = R.drawable.ic_delete_contact
+                get() = R.drawable.ic_delete
             override val textResId: Int
                 get() = R.string.chat_info_option_delete_conversation
             override val tintResId: Int

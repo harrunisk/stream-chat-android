@@ -75,7 +75,7 @@ dependencies {
     api project(":stream-chat-android-ui-common")
 
     implementation Dependencies.kotlinStdLib
-    implementation Dependencies.activityKtx
+    implementation Dependencies.androidxActivityKtx
     implementation Dependencies.androidxAppCompat
     implementation Dependencies.androidLegacySupport
     implementation Dependencies.androidxLifecycleExtensions
@@ -100,5 +100,4 @@ dependencies {
     testImplementation Dependencies.mockitoKotlin
     testImplementation Dependencies.androidxArchCoreTest
     testImplementation Dependencies.kluent
-    testImplementation Dependencies.coroutinesTest
 }

@@ -6,6 +6,7 @@ import androidx.core.view.doOnNextLayout
 import androidx.core.view.isVisible
 import com.getstream.sdk.chat.utils.DateFormatter
 import com.getstream.sdk.chat.utils.extensions.inflater
+import com.getstream.sdk.chat.utils.extensions.isDirectMessaging
 import com.getstream.sdk.chat.utils.formatDate
 import io.getstream.chat.android.client.models.Channel
 import io.getstream.chat.android.client.models.Message
@@ -14,7 +15,7 @@ import io.getstream.chat.android.livedata.ChatDomain
 import io.getstream.chat.android.ui.R
 import io.getstream.chat.android.ui.channel.list.ChannelListView
 import io.getstream.chat.android.ui.channel.list.ChannelListViewStyle
-import io.getstream.chat.android.ui.channel.list.adapter.diff.ChannelDiff
+import io.getstream.chat.android.ui.channel.list.adapter.ChannelListPayloadDiff
 import io.getstream.chat.android.ui.databinding.StreamUiChannelListItemForegroundViewBinding
 import io.getstream.chat.android.ui.databinding.StreamUiChannelListItemViewBinding
 import io.getstream.chat.android.ui.utils.extensions.context
@@ -24,15 +25,14 @@ import io.getstream.chat.android.ui.utils.extensions.getDisplayName
 import io.getstream.chat.android.ui.utils.extensions.getLastMessage
 import io.getstream.chat.android.ui.utils.extensions.getLastMessagePreviewText
 import io.getstream.chat.android.ui.utils.extensions.isCurrentUserOwnerOrAdmin
-import io.getstream.chat.android.ui.utils.extensions.isDirectMessaging
 import io.getstream.chat.android.ui.utils.extensions.isMessageRead
 import io.getstream.chat.android.ui.utils.extensions.isNotNull
 import io.getstream.chat.android.ui.utils.extensions.setTextSizePx
 
-public class ChannelViewHolder @JvmOverloads constructor(
+internal class ChannelViewHolder @JvmOverloads constructor(
     parent: ViewGroup,
     private val channelClickListener: ChannelListView.ChannelClickListener,
-    private val channelLongClickListener: ChannelListView.ChannelClickListener,
+    private val channelLongClickListener: ChannelListView.ChannelLongClickListener,
     private val channelDeleteListener: ChannelListView.ChannelClickListener,
     private val channelMoreOptionsListener: ChannelListView.ChannelClickListener,
     private val userClickListener: ChannelListView.UserClickListener,
@@ -42,9 +42,8 @@ public class ChannelViewHolder @JvmOverloads constructor(
         parent.inflater,
         parent,
         false
-    )
+    ),
 ) : SwipeViewHolder(binding.root) {
-
     private val dateFormatter = DateFormatter.from(context)
     private val currentUser = ChatDomain.instance().currentUser
 
@@ -77,11 +76,14 @@ public class ChannelViewHolder @JvmOverloads constructor(
                 }
                 root.apply {
                     setOnClickListener {
-                        channelClickListener.onClick(channel)
+                        if (!swiping) {
+                            channelClickListener.onClick(channel)
+                        }
                     }
                     setOnLongClickListener {
-                        channelLongClickListener.onClick(channel)
-                        true
+                        if (!swiping) {
+                            channelLongClickListener.onLongClick(channel)
+                        } else true // consume if we're swiping
                     }
                     doOnNextLayout {
                         setSwipeListener(root, swipeListener)
@@ -93,7 +95,7 @@ public class ChannelViewHolder @JvmOverloads constructor(
         }
     }
 
-    public override fun bind(channel: Channel, diff: ChannelDiff) {
+    override fun bind(channel: Channel, diff: ChannelListPayloadDiff) {
         this.channel = channel
 
         configureForeground(diff)
@@ -137,7 +139,7 @@ public class ChannelViewHolder @JvmOverloads constructor(
         }
     }
 
-    private fun configureForeground(diff: ChannelDiff) {
+    private fun configureForeground(diff: ChannelListPayloadDiff) {
         binding.itemForegroundView.apply {
             diff.run {
                 if (nameChanged) {
@@ -151,11 +153,14 @@ public class ChannelViewHolder @JvmOverloads constructor(
                 val lastMessage = channel.getLastMessage()
                 if (lastMessageChanged) {
                     configureLastMessageLabelAndTimestamp(lastMessage)
-                    configureUnreadCountBadge()
                 }
 
                 if (readStateChanged) {
                     configureCurrentUserLastMessageStatus(lastMessage)
+                }
+
+                if (unreadCountChanged) {
+                    configureUnreadCountBadge()
                 }
             }
         }
@@ -170,7 +175,7 @@ public class ChannelViewHolder @JvmOverloads constructor(
     }
 
     private fun StreamUiChannelListItemForegroundViewBinding.configureLastMessageLabelAndTimestamp(
-        lastMessage: Message?
+        lastMessage: Message?,
     ) {
         lastMessageLabel.isVisible = lastMessage.isNotNull()
         lastMessageTimeLabel.isVisible = lastMessage.isNotNull()
@@ -182,18 +187,24 @@ public class ChannelViewHolder @JvmOverloads constructor(
     }
 
     private fun StreamUiChannelListItemForegroundViewBinding.configureUnreadCountBadge() {
-        val haveUnreadMessages = channel.unreadCount ?: 0 > 0
+        val count = channel.unreadCount ?: 0
+
+        val haveUnreadMessages = count > 0
         unreadCountBadge.isVisible = haveUnreadMessages
 
         if (!haveUnreadMessages) {
             return
         }
 
-        unreadCountBadge.text = channel.unreadCount.toString()
+        unreadCountBadge.text = if (count > 99) {
+            "99+"
+        } else {
+            count.toString()
+        }
     }
 
     private fun StreamUiChannelListItemForegroundViewBinding.configureCurrentUserLastMessageStatus(
-        lastMessage: Message?
+        lastMessage: Message?,
     ) {
         messageStatusImageView.isVisible = lastMessage != null
 
@@ -207,11 +218,11 @@ public class ChannelViewHolder @JvmOverloads constructor(
         val lastMessageByCurrentUserWasRead = channel.isMessageRead(lastMessage)
         when {
             !currentUserSentLastMessage || lastMessageByCurrentUserWasRead -> {
-                messageStatusImageView.setImageResource(R.drawable.stream_ui_ic_check_all)
+                messageStatusImageView.setImageResource(R.drawable.stream_ui_ic_check_double)
             }
 
             currentUserSentLastMessage && !lastMessageByCurrentUserWasRead -> {
-                messageStatusImageView.setImageResource(R.drawable.stream_ui_ic_check_gray)
+                messageStatusImageView.setImageResource(R.drawable.stream_ui_ic_check_single)
             }
 
             else -> determineLastMessageSyncStatus(lastMessage)
@@ -225,7 +236,7 @@ public class ChannelViewHolder @JvmOverloads constructor(
             }
 
             SyncStatus.COMPLETED -> {
-                messageStatusImageView.setImageResource(R.drawable.stream_ui_ic_check_gray)
+                messageStatusImageView.setImageResource(R.drawable.stream_ui_ic_check_single)
             }
 
             SyncStatus.FAILED_PERMANENTLY -> {

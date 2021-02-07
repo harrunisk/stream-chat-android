@@ -31,7 +31,7 @@ public class MessageListViewModel @JvmOverloads constructor(
     private val cid: String,
     private val messageId: String? = null,
     private val domain: ChatDomain = ChatDomain.instance(),
-    private val client: ChatClient = ChatClient.instance()
+    private val client: ChatClient = ChatClient.instance(),
 ) : ViewModel() {
     private var messageListData: MessageListItemLiveData? = null
     private var threadListData: MessageListItemLiveData? = null
@@ -59,6 +59,24 @@ public class MessageListViewModel @JvmOverloads constructor(
     public val state: LiveData<State> = stateMerger
     public val currentUser: User = domain.currentUser
 
+    private var dateSeparatorHandler: DateSeparatorHandler? =
+        DateSeparatorHandler { previousMessage: Message?, message: Message ->
+            if (previousMessage == null) {
+                true
+            } else {
+                (message.getCreatedAtOrThrow().time - previousMessage.getCreatedAtOrThrow().time) > (1000 * 60 * 60 * 4)
+            }
+        }
+
+    private var threadDateSeparatorHandler: DateSeparatorHandler? =
+        DateSeparatorHandler { previousMessage: Message?, message: Message ->
+            if (previousMessage == null) {
+                false
+            } else {
+                (message.getCreatedAtOrThrow().time - previousMessage.getCreatedAtOrThrow().time) > (1000 * 60 * 60 * 4)
+            }
+        }
+
     init {
         stateMerger.addSource(MutableLiveData(State.Loading)) { stateMerger.value = it }
 
@@ -74,53 +92,43 @@ public class MessageListViewModel @JvmOverloads constructor(
                     channelController.reads,
                     typingIds,
                     false,
-                    ::dateSeparator
+                    dateSeparatorHandler,
                 )
-
-                stateMerger.apply {
-                    addSource(channelController.messagesState) { messageState ->
-                        when (messageState) {
-                            is ChannelController.MessagesState.NoQueryActive,
-                            is ChannelController.MessagesState.Loading -> value = State.Loading
-                            is ChannelController.MessagesState.OfflineNoResults ->
-                                value = State.Result(MessageListItemWrapper())
-                            is ChannelController.MessagesState.Result -> {
-                                removeSource(channelController.messagesState)
-                                onNormalModeEntered()
-                            }
-                        }
-                    }
-                }
                 _reads.addSource(channelController.reads) { _reads.value = it }
                 _loadMoreLiveData.addSource(channelController.loadingOlderMessages) { _loadMoreLiveData.value = it }
 
-                if (messageId != null && messageId.isNotEmpty()) {
+                if (messageId.isNullOrEmpty()) {
+                    stateMerger.apply {
+                        addSource(channelController.messagesState) { messageState ->
+                            when (messageState) {
+                                is ChannelController.MessagesState.NoQueryActive,
+                                is ChannelController.MessagesState.Loading,
+                                -> value = State.Loading
+                                is ChannelController.MessagesState.OfflineNoResults ->
+                                    value = State.Result(MessageListItemWrapper())
+                                is ChannelController.MessagesState.Result -> {
+                                    removeSource(channelController.messagesState)
+                                    onNormalModeEntered()
+                                }
+                            }
+                        }
+                    }
+                } else {
                     domain.useCases.loadMessageById(
                         cid,
                         messageId,
                         MESSAGES_LIMIT,
                         MESSAGES_LIMIT
                     ).enqueue {
-                        _targetMessage.value = it.data()
+                        if (it.isSuccess) {
+                            _targetMessage.value = it.data()
+                            onNormalModeEntered()
+                        } else {
+                            stateMerger.value = State.Result(MessageListItemWrapper())
+                        }
                     }
                 }
             }
-        }
-    }
-
-    private fun dateSeparator(previous: Message?, message: Message): Boolean {
-        return if (previous == null) {
-            true
-        } else {
-            (message.getCreatedAtOrThrow().time - previous.getCreatedAtOrThrow().time) > (1000 * 60 * 60 * 4)
-        }
-    }
-
-    private fun threadDateSeparator(previous: Message?, message: Message): Boolean {
-        return if (previous == null) {
-            false
-        } else {
-            (message.getCreatedAtOrThrow().time - previous.getCreatedAtOrThrow().time) > (1000 * 60 * 60 * 4)
         }
     }
 
@@ -131,7 +139,7 @@ public class MessageListViewModel @JvmOverloads constructor(
             reads,
             null,
             true,
-            ::threadDateSeparator
+            threadDateSeparatorHandler,
         )
         threadListData?.let { tld ->
             messageListData?.let { mld ->
@@ -183,27 +191,97 @@ public class MessageListViewModel @JvmOverloads constructor(
                 domain.useCases.sendMessage(event.message).enqueue()
             }
             is Event.MessageReaction -> {
-                onMessageReaction(event.message, event.reactionType)
+                onMessageReaction(event.message, event.reactionType, event.enforceUnique)
             }
             is Event.MuteUser -> {
                 client.muteUser(event.user.id).enqueue()
             }
             is Event.BlockUser -> {
-                client.shadowBanUser(
+                val channelClient = client.channel(cid)
+                channelClient.shadowBanUser(
                     targetId = event.user.id,
-                    channelType = event.channel.type,
-                    channelId = event.channel.id,
                     reason = null,
-                    timeout = null
+                    timeout = null,
                 ).enqueue()
             }
             is Event.ReplyMessage -> {
                 domain.useCases.setMessageForReply(event.cid, event.repliedMessage).enqueue()
             }
+            is Event.DownloadAttachment -> {
+                domain.useCases.downloadAttachment.invoke(event.attachment).enqueue()
+            }
             is Event.AttachmentDownload -> {
                 domain.useCases.downloadAttachment.invoke(event.attachment).enqueue()
             }
+            is Event.ShowMessage -> {
+                domain.useCases.loadMessageById(
+                    cid,
+                    event.messageId,
+                    MESSAGES_LIMIT,
+                    MESSAGES_LIMIT
+                ).enqueue {
+                    if (it.isSuccess) {
+                        _targetMessage.value = it.data()
+                    }
+                }
+            }
+            is Event.RemoveAttachment -> {
+                val attachmentToBeDeleted = event.attachment
+                domain.useCases.loadMessageById(
+                    cid,
+                    event.messageId,
+                    MESSAGES_LIMIT,
+                    MESSAGES_LIMIT
+                ).enqueue {
+                    if (it.isSuccess) {
+                        val message = it.data()
+                        message.attachments.removeAll {
+                            if (attachmentToBeDeleted.assetUrl != null) {
+                                it.assetUrl == attachmentToBeDeleted.assetUrl
+                            } else {
+                                it.imageUrl == attachmentToBeDeleted.imageUrl
+                            }
+                        }
+                        domain.useCases.editMessage(message).enqueue()
+                    }
+                }
+            }
+            is Event.ReplyAttachment -> {
+                val messageId = event.repliedMessageId
+                val cid = event.cid
+                domain.useCases.loadMessageById(
+                    cid,
+                    messageId,
+                    MESSAGES_LIMIT,
+                    MESSAGES_LIMIT
+                ).enqueue {
+                    if (it.isSuccess) {
+                        val message = it.data()
+                        onEvent(Event.ReplyMessage(cid, message))
+                    }
+                }
+            }
         }.exhaustive
+    }
+
+    /**
+     * Sets the date separator handler which determines when to add date separators.
+     * By default, a date separator will be added if the difference between two messages' dates is greater than 4h.
+     *
+     * @param dateSeparatorHandler The handler to use. If null, [messageListData] won't contain date separators.
+     */
+    public fun setDateSeparatorHandler(dateSeparatorHandler: DateSeparatorHandler?) {
+        this.dateSeparatorHandler = dateSeparatorHandler
+    }
+
+    /**
+     * Sets thread date separator handler which determines when to add date separators inside the thread.
+     * @see setDateSeparatorHandler
+     *
+     * @param threadDateSeparatorHandler The handler to use. If null, [messageListData] won't contain date separators.
+     */
+    public fun setThreadDateSeparatorHandler(threadDateSeparatorHandler: DateSeparatorHandler?) {
+        this.threadDateSeparatorHandler = threadDateSeparatorHandler
     }
 
     private fun onGiphyActionSelected(event: Event.GiphyActionSelected) {
@@ -265,16 +343,17 @@ public class MessageListViewModel @JvmOverloads constructor(
         }
     }
 
-    private fun onMessageReaction(message: Message, reactionType: String) {
+    private fun onMessageReaction(message: Message, reactionType: String, enforceUnique: Boolean) {
         val reaction = Reaction().apply {
             messageId = message.id
             type = reactionType
+            score = 1
         }
         val currentUserId = ChatDomain.instance().currentUser.id
         if (message.latestReactions.any { it.type == reactionType && it.user?.id == currentUserId }) {
             domain.useCases.deleteReaction(cid, reaction).enqueue()
         } else {
-            domain.useCases.sendReaction(cid, reaction).enqueue()
+            domain.useCases.sendReaction(cid, reaction, enforceUnique = enforceUnique).enqueue()
         }
     }
 
@@ -298,16 +377,29 @@ public class MessageListViewModel @JvmOverloads constructor(
         public data class FlagMessage(val message: Message) : Event()
         public data class GiphyActionSelected(val message: Message, val action: GiphyAction) : Event()
         public data class RetryMessage(val message: Message) : Event()
-        public data class MessageReaction(val message: Message, val reactionType: String) : Event()
+        public data class MessageReaction(
+            val message: Message,
+            val reactionType: String,
+            val enforceUnique: Boolean,
+        ) : Event()
         public data class MuteUser(val user: User) : Event()
-        public data class BlockUser(val user: User, val channel: Channel) : Event()
+        public data class BlockUser(val user: User, val cid: String) : Event()
         public data class ReplyMessage(val cid: String, val repliedMessage: Message) : Event()
+        public data class ReplyAttachment(val cid: String, val repliedMessageId: String) : Event()
+        public data class DownloadAttachment(val attachment: Attachment) : Event()
+        @Deprecated(replaceWith = ReplaceWith("DownloadAttachment"), message = "Deprecated class.")
         public data class AttachmentDownload(val attachment: Attachment) : Event()
+        public data class ShowMessage(val messageId: String) : Event()
+        public data class RemoveAttachment(val messageId: String, val attachment: Attachment) : Event()
     }
 
     public sealed class Mode {
         public data class Thread(val parentMessage: Message) : Mode()
         public object Normal : Mode()
+    }
+
+    public fun interface DateSeparatorHandler {
+        public fun shouldAddDateSeparator(previousMessage: Message?, message: Message): Boolean
     }
 
     internal companion object {

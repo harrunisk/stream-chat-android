@@ -12,11 +12,12 @@ import io.getstream.chat.android.client.models.Message
 import io.getstream.chat.android.livedata.ChatDomain
 import io.getstream.chat.android.ui.R
 import io.getstream.chat.android.ui.databinding.StreamUiMentionsListViewBinding
+import io.getstream.chat.android.ui.utils.extensions.getColorCompat
 
 public class MentionsListView : ViewFlipper {
 
     private companion object {
-        const val LOAD_MORE_THRESHOLD = 10
+        private const val LOAD_MORE_THRESHOLD = 10
     }
 
     private object Flipper {
@@ -53,26 +54,25 @@ public class MentionsListView : ViewFlipper {
                 DividerItemDecoration(
                     context,
                     LinearLayoutManager.VERTICAL
-                )
+                ).apply {
+                    setDrawable(context.getDrawable(R.drawable.stream_ui_divider)!!)
+                }
             )
             addOnScrollListener(scrollListener)
         }
+        setBackgroundColor(context.getColorCompat(R.color.stream_ui_white_snow))
     }
 
     private fun parseAttrs(attrs: AttributeSet?) {
         attrs ?: return
     }
 
-    public fun setMessages(messages: List<Message>) {
+    public fun showMessages(messages: List<Message>) {
         val isEmpty = messages.isEmpty()
 
         displayedChild = if (isEmpty) Flipper.EMPTY else Flipper.RESULTS
 
         adapter.submitList(messages)
-    }
-
-    public fun setMentionSelectedListener(mentionSelectedListener: MentionSelectedListener?) {
-        adapter.setMentionSelectedListener(mentionSelectedListener)
     }
 
     public fun showLoading() {
@@ -82,6 +82,10 @@ public class MentionsListView : ViewFlipper {
 
     public fun showError() {
         Toast.makeText(context, R.string.stream_ui_mentions_list_error, Toast.LENGTH_SHORT).show()
+    }
+
+    public fun setMentionSelectedListener(mentionSelectedListener: MentionSelectedListener?) {
+        adapter.setMentionSelectedListener(mentionSelectedListener)
     }
 
     public fun setLoadMoreListener(loadMoreListener: LoadMoreListener?) {

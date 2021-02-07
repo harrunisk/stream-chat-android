@@ -1,22 +1,33 @@
 package io.getstream.chat.android.livedata.entity
 
+import androidx.room.Embedded
 import androidx.room.Entity
 import androidx.room.Index
 import androidx.room.PrimaryKey
-import io.getstream.chat.android.client.models.Attachment
+import androidx.room.Relation
 import io.getstream.chat.android.client.utils.SyncStatus
 import java.util.Date
 
-@Entity(tableName = "stream_chat_message", indices = [Index(value = ["cid", "createdAt"]), Index(value = ["syncStatus"])])
 internal data class MessageEntity(
+    @Embedded val messageInnerEntity: MessageInnerEntity,
+    @Relation(entity = AttachmentEntity::class, parentColumn = "id", entityColumn = "messageId")
+    val attachments: List<AttachmentEntity>,
+    /** the reactions from the current user */
+    @Relation(entity = ReactionEntity::class, parentColumn = "id", entityColumn = "messageId")
+    val ownReactions: List<ReactionEntity> = emptyList(),
+    /** the last 5 reactions on this message */
+    @Relation(entity = ReactionEntity::class, parentColumn = "id", entityColumn = "messageId")
+    val latestReactions: List<ReactionEntity> = emptyList(),
+)
+
+@Entity(tableName = "stream_chat_message", indices = [Index(value = ["cid", "createdAt"]), Index(value = ["syncStatus"])])
+internal data class MessageInnerEntity(
     @PrimaryKey
     val id: String,
     val cid: String,
     val userId: String,
     /** the message text */
     val text: String = "",
-    /** the list of attachments */
-    val attachments: List<Attachment> = emptyList(),
     /** message type can be system, regular or ephemeral */
     val type: String = "",
     /** if the message has been synced to the servers, default is synced */
@@ -33,10 +44,6 @@ internal data class MessageEntity(
     val updatedLocallyAt: Date? = null,
     /** when the message was deleted */
     val deletedAt: Date? = null,
-    /** the last 5 reactions on this message */
-    val latestReactions: List<ReactionEntity> = emptyList(),
-    /** the reactions from the current user */
-    val ownReactions: List<ReactionEntity> = emptyList(),
     /** the users mentioned in this message */
     val mentionedUsersId: List<String> = emptyList(),
     /** a mapping between reaction type and the count, ie like:10, heart:4 */
@@ -52,4 +59,6 @@ internal data class MessageEntity(
     /** all the custom data provided for this message */
     val extraData: Map<String, Any> = emptyMap(),
     val replyToId: String?,
+    /** participants of thread replies */
+    val threadParticipantsIds: List<String> = emptyList(),
 )

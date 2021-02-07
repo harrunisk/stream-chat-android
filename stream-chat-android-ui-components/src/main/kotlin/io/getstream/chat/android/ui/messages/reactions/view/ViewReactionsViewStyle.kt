@@ -32,60 +32,38 @@ internal class ViewReactionsViewStyle(context: Context, attrs: AttributeSet?) {
         ).use { a ->
             bubbleBorderColor = a.getColor(
                 R.styleable.ViewReactionsView_streamUiReactionsBubbleBorderColorMine,
-                context.getColorCompat(R.color.stream_ui_view_reactions_bubble_border_color_mine)
+                context.getColorCompat(R.color.stream_ui_grey_whisper)
             )
             bubbleColorMine = a.getColor(
                 R.styleable.ViewReactionsView_streamUiReactionsBubbleColorMine,
-                context.getColorCompat(R.color.stream_ui_view_reactions_bubble_color_mine)
+                context.getColorCompat(R.color.stream_ui_white)
             )
             bubbleColorTheirs = a.getColor(
                 R.styleable.ViewReactionsView_streamUiReactionsBubbleColorTheirs,
-                context.getColorCompat(R.color.stream_ui_view_reactions_bubble_color_theirs)
+                context.getColorCompat(R.color.stream_ui_grey_gainsboro)
             )
-            totalHeight = a.getDimensionPixelSize(
-                R.styleable.ViewReactionsView_streamUiReactionsTotalHeight,
+            totalHeight =
                 context.getDimension(R.dimen.stream_ui_view_reactions_total_height)
-            )
-            horizontalPadding = a.getDimensionPixelSize(
-                R.styleable.ViewReactionsView_streamUiReactionsHorizontalPadding,
+            horizontalPadding =
                 context.getDimension(R.dimen.stream_ui_view_reactions_horizontal_padding)
-            )
-            itemSize = a.getDimensionPixelSize(
-                R.styleable.ViewReactionsView_streamUiReactionsItemSize,
+            itemSize =
                 context.getDimension(R.dimen.stream_ui_view_reactions_item_size)
-            )
-            bubbleHeight = a.getDimensionPixelSize(
-                R.styleable.ViewReactionsView_streamUiReactionsBubbleHeight,
+            bubbleHeight =
                 context.getDimension(R.dimen.stream_ui_view_reactions_bubble_height)
-            )
-            bubbleRadius = a.getDimensionPixelSize(
-                R.styleable.ViewReactionsView_streamUiReactionsBubbleRadius,
+            bubbleRadius =
                 context.getDimension(R.dimen.stream_ui_view_reactions_bubble_radius)
-            )
-            largeTailBubbleCy = a.getDimensionPixelSize(
-                R.styleable.ViewReactionsView_streamUiReactionsLargeTailBubbleCy,
+            largeTailBubbleCy =
                 context.getDimension(R.dimen.stream_ui_view_reactions_large_tail_bubble_cy)
-            )
-            largeTailBubbleRadius = a.getDimensionPixelSize(
-                R.styleable.ViewReactionsView_streamUiReactionsLargeTailBubbleRadius,
+            largeTailBubbleRadius =
                 context.getDimension(R.dimen.stream_ui_view_reactions_large_tail_bubble_radius)
-            )
-            largeTailBubbleOffset = a.getDimensionPixelSize(
-                R.styleable.ViewReactionsView_streamUiReactionsLargeTailBubbleOffset,
+            largeTailBubbleOffset =
                 context.getDimension(R.dimen.stream_ui_view_reactions_large_tail_bubble_offset)
-            )
-            smallTailBubbleCy = a.getDimensionPixelSize(
-                R.styleable.ViewReactionsView_streamUiReactionsSmallTailBubbleCy,
+            smallTailBubbleCy =
                 context.getDimension(R.dimen.stream_ui_view_reactions_small_tail_bubble_cy)
-            )
-            smallTailBubbleRadius = a.getDimensionPixelSize(
-                R.styleable.ViewReactionsView_streamUiReactionsSmallTailBubbleRadius,
+            smallTailBubbleRadius =
                 context.getDimension(R.dimen.stream_ui_view_reactions_small_tail_bubble_radius)
-            )
-            smallTailBubbleOffset = a.getDimensionPixelSize(
-                R.styleable.ViewReactionsView_streamUiReactionsSmallTailBubbleOffset,
+            smallTailBubbleOffset =
                 context.getDimension(R.dimen.stream_ui_view_reactions_small_tail_bubble_offset)
-            )
         }
     }
 }

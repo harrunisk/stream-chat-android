@@ -5,7 +5,7 @@
     android:id="@+id/channelListHeader"
     android:layout_width="match_parent"
     android:layout_height="?attr/actionBarSize"
-    android:background="@color/stream_ui_background_light"
+    android:background="@color/stream_ui_white"
     tools:layout_height="@dimen/stream_ui_default_header_height"
     >
 
@@ -22,14 +22,15 @@
 
     <TextView
         android:id="@+id/onlineTextView"
-        style="@style/StreamUiChannelsHeaderTitleStyle"
+        style="@style/StreamUiTextAppearance.HeadlineBold"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_marginHorizontal="8dp"
+        android:gravity="center_horizontal"
         android:text="@string/stream_ui_channels_header_view_online_title"
         android:visibility="gone"
         app:layout_constraintBottom_toTopOf="@id/separator"
-        app:layout_constraintEnd_toStartOf="@id/addChannelButton"
+        app:layout_constraintEnd_toStartOf="@id/actionButton"
         app:layout_constraintStart_toEndOf="@id/userAvatar"
         app:layout_constraintTop_toTopOf="parent"
         />
@@ -43,7 +44,7 @@
         android:orientation="horizontal"
         android:visibility="gone"
         app:layout_constraintBottom_toTopOf="@id/separator"
-        app:layout_constraintEnd_toStartOf="@id/addChannelButton"
+        app:layout_constraintEnd_toStartOf="@id/actionButton"
         app:layout_constraintStart_toEndOf="@id/userAvatar"
         app:layout_constraintTop_toTopOf="parent"
         tools:visibility="visible"
@@ -54,33 +55,30 @@
             android:layout_width="16dp"
             android:layout_height="16dp"
             android:layout_marginEnd="8dp"
-            android:indeterminateTint="@color/stream_ui_blue"
+            android:indeterminateTint="@color/stream_ui_accent_blue"
             />
 
         <TextView
             android:id="@+id/offlineTextView"
-            style="@style/StreamUiChannelsHeaderTitleStyle"
+            style="@style/StreamUiTextAppearance.HeadlineBold"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="@string/stream_ui_channels_header_view_offline_title"
             />
     </LinearLayout>
 
-    <com.google.android.material.button.MaterialButton
-        android:id="@+id/addChannelButton"
+    <ImageView
+        android:id="@+id/actionButton"
         android:layout_width="40dp"
         android:layout_height="40dp"
         android:layout_marginEnd="8dp"
+        android:background="@drawable/stream_ui_circle_white"
+        android:elevation="@dimen/stream_ui_elevation_small"
         android:insetLeft="0dp"
         android:insetTop="0dp"
         android:insetRight="0dp"
         android:insetBottom="0dp"
-        app:backgroundTint="@color/stream_ui_white"
-        app:cornerRadius="20dp"
-        app:icon="@drawable/stream_ui_ic_pen"
-        app:iconGravity="textStart"
-        app:iconPadding="0dp"
-        app:iconTint="@color/stream_ui_blue"
+        android:padding="8dp"
         app:layout_constraintBottom_toTopOf="@id/separator"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toTopOf="parent"
@@ -90,7 +88,7 @@
         android:id="@+id/separator"
         android:layout_width="0dp"
         android:layout_height="@dimen/stream_ui_divider_height"
-        android:background="@color/stream_ui_divider"
+        android:background="@color/stream_ui_border"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"

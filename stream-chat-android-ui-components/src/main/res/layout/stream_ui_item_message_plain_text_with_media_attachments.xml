@@ -4,8 +4,8 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_marginStart="8dp"
-    android:layout_marginEnd="8dp"
+    android:paddingStart="@dimen/stream_ui_spacing_small"
+    android:paddingEnd="@dimen/stream_ui_spacing_small"
     >
 
     <io.getstream.chat.android.ui.messages.adapter.view.GapView
@@ -97,9 +97,8 @@
             android:paddingTop="@dimen/stream_ui_spacing_small"
             android:paddingRight="@dimen/stream_ui_spacing_medium"
             android:paddingBottom="@dimen/stream_ui_spacing_small"
-            android:textAppearance="@style/TextAppearance.MaterialComponents.Body2"
-            android:textColor="@color/stream_ui_text_color_strong"
-            android:textColorLink="@color/stream_ui_blue"
+            android:textAppearance="@style/StreamUiTextAppearance.Body"
+            android:textColorLink="@color/stream_ui_accent_blue"
             />
 
         <io.getstream.chat.android.ui.messages.adapter.view.LinkAttachmentView
@@ -124,25 +123,26 @@
         tools:src="@tools:sample/avatars"
         />
 
-    <include
-        android:id="@+id/threadRepliesFootnote"
-        layout="@layout/stream_ui_message_threads_footnote"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:visibility="gone"
-        app:layout_constraintLeft_toLeftOf="@id/messageContainer"
-        app:layout_constraintTop_toBottomOf="@+id/messageContainer"
-        />
+    <Space
+        android:id="@+id/threadGuideline"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:orientation="horizontal"
+        android:layout_marginBottom="@dimen/stream_ui_message_thread_reply_footnote_translation"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintBottom_toBottomOf="@id/messageContainer"/>
 
-    <include
+    <io.getstream.chat.android.ui.messages.adapter.view.FootnoteView
         android:id="@+id/footnote"
-        layout="@layout/stream_ui_item_message_footnote"
-        android:layout_width="wrap_content"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_marginStart="@dimen/stream_ui_spacing_small"
         app:layout_constraintEnd_toEndOf="@+id/marginEnd"
         app:layout_constraintStart_toEndOf="@+id/avatarView"
         app:layout_constraintTop_toBottomOf="@+id/messageContainer"
+        app:layout_goneMarginEnd="0dp"
+        app:layout_goneMarginStart="@dimen/stream_ui_message_viewholder_avatar_missing_margin"
         />
 
     <ImageView
@@ -153,6 +153,8 @@
         android:visibility="gone"
         app:layout_constraintBottom_toBottomOf="@+id/messageContainer"
         app:layout_constraintEnd_toEndOf="@+id/marginEnd"
+        app:tint="@color/stream_ui_accent_red"
+        tools:ignore="ContentDescription"
         tools:visibility="visible"
         />
 

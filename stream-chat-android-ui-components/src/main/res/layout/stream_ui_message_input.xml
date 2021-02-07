@@ -4,84 +4,87 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:background="@color/stream_ui_background_light"
+    android:background="@color/stream_ui_white"
     android:paddingHorizontal="@dimen/stream_ui_spacing_tiny"
     >
 
     <androidx.constraintlayout.widget.ConstraintLayout
-        android:id="@+id/replyHeader"
+        android:id="@+id/inputModeHeader"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        app:layout_constraintStart_toStartOf="parent"
+        android:paddingHorizontal="@dimen/stream_ui_spacing_small"
+        android:paddingTop="12dp"
+        android:paddingBottom="8dp"
+        android:visibility="gone"
         app:layout_constraintBottom_toTopOf="@id/messageInputFieldView"
         app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
-        android:paddingHorizontal="@dimen/stream_ui_spacing_small"
-        android:paddingVertical="12dp"
-        android:visibility="gone"
         tools:visibility="visible"
         >
 
         <ImageView
-            android:id="@+id/replyIcon"
+            android:id="@+id/inputModeIcon"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:src="@drawable/stream_ui_ic_arrow_curve_left"
+            app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent"
-            app:layout_constraintBottom_toBottomOf="parent"
-            android:src="@drawable/stream_ui_ic_arrow_curve_left"
             app:tint="@color/stream_ui_grey_gainsboro"
+            tools:ignore="ContentDescription"
             />
 
         <TextView
             android:id="@+id/headerLabel"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            app:layout_constraintTop_toTopOf="parent"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintStart_toEndOf="@id/replyIcon"
-            app:layout_constraintEnd_toStartOf="@id/dismissReply"
             android:gravity="center"
             android:text="@string/stream_ui_reply_to_message"
-            android:textColor="@color/stream_ui_text_color_strong"
-            android:textStyle="bold"
-            android:textSize="14sp"
+            android:textAppearance="@style/StreamUiTextAppearance.BodyBold"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toStartOf="@id/dismissInputMode"
+            app:layout_constraintStart_toEndOf="@id/inputModeIcon"
+            app:layout_constraintTop_toTopOf="parent"
             />
 
         <ImageView
-            android:id="@+id/dismissReply"
+            android:id="@+id/dismissInputMode"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:src="@drawable/stream_ui_ic_clear"
+            app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toTopOf="parent"
-            app:layout_constraintBottom_toBottomOf="parent"
-            android:src="@drawable/stream_ui_ic_clear_gray"
+            app:tint="@color/stream_ui_grey"
+            tools:ignore="ContentDescription"
             />
 
     </androidx.constraintlayout.widget.ConstraintLayout>
-
 
     <androidx.appcompat.widget.AppCompatImageView
         android:id="@+id/attachmentsButton"
         android:layout_width="@dimen/stream_ui_message_input_button_size"
         android:layout_height="@dimen/stream_ui_message_input_button_size"
-        android:layout_marginHorizontal="@dimen/stream_ui_spacing_tiny"
-        android:layout_marginBottom="@dimen/stream_ui_spacing_medium"
+        android:layout_marginBottom="12dp"
+        android:padding="@dimen/stream_ui_spacing_tiny"
         android:src="@drawable/stream_ui_ic_attach"
         app:layout_constraintBottom_toBottomOf="@id/messageInputFieldView"
         app:layout_constraintStart_toStartOf="parent"
+        android:background="?selectableItemBackgroundBorderless"
         />
 
     <androidx.appcompat.widget.AppCompatImageView
         android:id="@+id/commandsButton"
         android:layout_width="@dimen/stream_ui_message_input_button_size"
         android:layout_height="@dimen/stream_ui_message_input_button_size"
-        android:layout_marginHorizontal="@dimen/stream_ui_spacing_tiny"
-        android:layout_marginBottom="@dimen/stream_ui_spacing_medium"
+        android:layout_marginBottom="12dp"
+        android:padding="@dimen/stream_ui_spacing_tiny"
         android:src="@drawable/stream_ui_ic_command"
-        android:tint="@color/stream_ui_black_50"
+        android:tint="@color/stream_ui_grey"
         app:layout_constraintBottom_toBottomOf="@id/messageInputFieldView"
         app:layout_constraintStart_toEndOf="@id/attachmentsButton"
+        android:background="?selectableItemBackgroundBorderless"
         />
 
     <io.getstream.chat.android.ui.textinput.MessageInputFieldView
@@ -92,7 +95,7 @@
         app:layout_constraintBottom_toBottomOf="@+id/sendAlsoToChannel"
         app:layout_constraintEnd_toStartOf="@id/sendButtonContainer"
         app:layout_constraintStart_toEndOf="@id/commandsButton"
-        app:layout_constraintTop_toBottomOf="@id/replyHeader"
+        app:layout_constraintTop_toBottomOf="@id/inputModeHeader"
         tools:layout_height="40dp"
         />
 
@@ -100,8 +103,7 @@
         android:id="@+id/sendButtonContainer"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginHorizontal="@dimen/stream_ui_spacing_tiny"
-        android:layout_marginBottom="@dimen/stream_ui_spacing_medium"
+        android:layout_marginBottom="12dp"
         app:layout_constraintBottom_toBottomOf="@id/messageInputFieldView"
         app:layout_constraintEnd_toEndOf="parent"
         >
@@ -110,6 +112,7 @@
             android:id="@+id/sendMessageButtonDisabled"
             android:layout_width="@dimen/stream_ui_message_input_button_size"
             android:layout_height="@dimen/stream_ui_message_input_button_size"
+            android:padding="@dimen/stream_ui_spacing_tiny"
             android:src="@drawable/stream_ui_ic_filled_right_arrow"
             tools:visibility="gone"
             />
@@ -118,6 +121,7 @@
             android:id="@+id/sendMessageButtonEnabled"
             android:layout_width="@dimen/stream_ui_message_input_button_size"
             android:layout_height="@dimen/stream_ui_message_input_button_size"
+            android:padding="@dimen/stream_ui_spacing_tiny"
             android:src="@drawable/stream_ui_ic_filled_up_arrow"
             tools:visibility="visible"
             />
@@ -130,7 +134,7 @@
         android:layout_height="wrap_content"
         android:layout_marginLeft="12dp"
         android:layout_marginRight="12dp"
-        android:textColor="@color/stream_ui_text_color_light"
+        android:textColor="@color/stream_ui_grey"
         android:textSize="@dimen/stream_ui_text_small"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/messageInputFieldView"

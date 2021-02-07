@@ -9,7 +9,7 @@
         android:id="@+id/toolbar"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="@color/white"
+        android:background="@color/stream_ui_white"
         android:elevation="4dp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
@@ -21,8 +21,9 @@
             android:layout_height="wrap_content"
             android:layout_gravity="center"
             android:text="@string/chat_info_option_shared_groups"
-            android:textAppearance="@style/TextAppearance.AppCompat.Title"
+            android:textAppearance="@style/StreamUiTextAppearance.HeadlineBold"
             />
+
     </androidx.appcompat.widget.Toolbar>
 
     <io.getstream.chat.android.ui.channel.list.ChannelsView

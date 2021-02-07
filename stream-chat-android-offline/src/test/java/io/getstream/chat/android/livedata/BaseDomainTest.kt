@@ -3,6 +3,7 @@ package io.getstream.chat.android.livedata
 import android.content.Context
 import android.os.Handler
 import android.util.Log
+import androidx.annotation.CallSuper
 import androidx.arch.core.executor.testing.InstantTaskExecutorRule
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider.getApplicationContext
@@ -16,6 +17,7 @@ import com.nhaarman.mockitokotlin2.doAnswer
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.mock
 import io.getstream.chat.android.client.ChatClient
+import io.getstream.chat.android.client.ChatEventListener
 import io.getstream.chat.android.client.api.models.QuerySort
 import io.getstream.chat.android.client.api.models.WatchChannelRequest
 import io.getstream.chat.android.client.channel.ChannelClient
@@ -23,14 +25,15 @@ import io.getstream.chat.android.client.errors.ChatError
 import io.getstream.chat.android.client.events.ChatEvent
 import io.getstream.chat.android.client.events.ConnectedEvent
 import io.getstream.chat.android.client.events.DisconnectedEvent
+import io.getstream.chat.android.client.models.ConnectionData
 import io.getstream.chat.android.client.models.EventType
 import io.getstream.chat.android.client.models.User
-import io.getstream.chat.android.client.socket.InitConnectionListener
 import io.getstream.chat.android.client.utils.FilterObject
 import io.getstream.chat.android.client.utils.Result
 import io.getstream.chat.android.client.utils.observable.Disposable
 import io.getstream.chat.android.livedata.controller.QueryChannelsControllerImpl
 import io.getstream.chat.android.livedata.controller.QueryChannelsSpec
+import io.getstream.chat.android.livedata.model.ChannelConfig
 import io.getstream.chat.android.livedata.utils.EventObserver
 import io.getstream.chat.android.livedata.utils.RetryPolicy
 import io.getstream.chat.android.livedata.utils.TestDataHelper
@@ -93,6 +96,7 @@ internal open class BaseDomainTest {
     }
 
     @Before
+    @CallSuper
     open fun setup() {
         client = createDisconnectedMockClient()
         setupChatDomain(client, false)
@@ -128,8 +132,8 @@ internal open class BaseDomainTest {
 
         val client: ChatClient = mock {
             on { subscribe(any()) } doAnswer { invocation ->
-                val listener = invocation.arguments[0] as (ChatEvent) -> Unit
-                listener.invoke(connectedEvent)
+                val listener = invocation.arguments[0] as ChatEventListener<ChatEvent>
+                listener.onEvent(connectedEvent)
                 object : Disposable {
                     override val isDisposed: Boolean = true
                     override fun dispose() {}
@@ -147,7 +151,7 @@ internal open class BaseDomainTest {
                     any<Map<String, Any>>()
                 )
             } doReturn TestCall(Result(data.channel1))
-            on { sendReaction(any()) } doReturn TestCall(
+            on { sendReaction(any(), any<Boolean>()) } doReturn TestCall(
                 Result(data.reaction1)
             )
         }
@@ -171,8 +175,8 @@ internal open class BaseDomainTest {
         val eventResults = Result(events)
         val client = mock<ChatClient> {
             on { subscribe(any()) } doAnswer { invocation ->
-                val listener = invocation.arguments[0] as (ChatEvent) -> Unit
-                listener.invoke(connectedEvent)
+                val listener = invocation.arguments[0] as ChatEventListener<ChatEvent>
+                listener.onEvent(connectedEvent)
                 object : Disposable {
                     override val isDisposed: Boolean = true
                     override fun dispose() {}
@@ -182,16 +186,13 @@ internal open class BaseDomainTest {
             on { queryChannels(any()) } doReturn TestCall(result)
             on { channel(any(), any()) } doReturn channelClientMock
             on { channel(any()) } doReturn channelClientMock
-            on { sendReaction(any()) } doReturn TestCall(
+            on { sendReaction(any(), any<Boolean>()) } doReturn TestCall(
                 Result(data.reaction1)
             )
         }
-        When calling client.setUser(any(), any<String>(), any()) doAnswer {
-            (it.arguments[2] as InitConnectionListener).onSuccess(
-                InitConnectionListener.ConnectionData(it.arguments[0] as User, randomString())
-            )
+        When calling client.connectUser(any(), any<String>()) doAnswer {
+            TestCall(Result(ConnectionData(it.arguments[0] as User, randomString())))
         }
-
         return client
     }
 
@@ -246,8 +247,8 @@ internal open class BaseDomainTest {
             }
         )
 
-        chatDomainImpl.repos.configs.insertConfigs(mutableMapOf("messaging" to data.config1))
-        chatDomainImpl.repos.users.insert(data.userMap.values.toList())
+        chatDomainImpl.repos.insertConfigChannel(ChannelConfig("messaging", data.config1))
+        chatDomainImpl.repos.insertUsers(data.userMap.values.toList())
         channelControllerImpl = chatDomainImpl.channel(data.channel1.type, data.channel1.id)
         channelControllerImpl.updateLiveDataFromChannel(data.channel1)
 

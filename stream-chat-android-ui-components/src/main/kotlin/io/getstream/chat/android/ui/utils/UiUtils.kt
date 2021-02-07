@@ -44,14 +44,15 @@ public object UiUtils {
         }
     }
 
-    internal fun getReactionTypes(): Map<String, Int> {
-        return reactionTypes
+    @DrawableRes
+    internal fun getReactionIcon(type: String): Int? {
+        return reactionTypes[type]
     }
 }
 
 public enum class ReactionType(
     public val type: String,
-    @DrawableRes public val iconRes: Int
+    @DrawableRes public val iconRes: Int,
 ) {
     LOVE("love", R.drawable.stream_ui_ic_reaction_love),
     THUMBS_UP("thumbs_up", R.drawable.stream_ui_ic_reaction_thumbs_up),

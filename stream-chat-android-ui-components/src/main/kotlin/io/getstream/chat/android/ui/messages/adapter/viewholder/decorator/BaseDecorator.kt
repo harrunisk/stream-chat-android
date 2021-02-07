@@ -13,7 +13,11 @@ import io.getstream.chat.android.ui.messages.adapter.viewholder.PlainTextWithFil
 import io.getstream.chat.android.ui.messages.adapter.viewholder.PlainTextWithMediaAttachmentsViewHolder
 
 internal abstract class BaseDecorator : Decorator {
-    final override fun <T : MessageListItem> decorate(viewHolder: BaseMessageItemViewHolder<T>, data: T) {
+
+    final override fun <T : MessageListItem> decorate(
+        viewHolder: BaseMessageItemViewHolder<T>,
+        data: T,
+    ) {
         if (data !is MessageListItem.MessageItem) {
             return
         }
@@ -32,33 +36,36 @@ internal abstract class BaseDecorator : Decorator {
 
     protected abstract fun decoratePlainTextWithFileAttachmentsMessage(
         viewHolder: PlainTextWithFileAttachmentsViewHolder,
-        data: MessageListItem.MessageItem
+        data: MessageListItem.MessageItem,
     )
 
     protected abstract fun decorateOnlyFileAttachmentsMessage(
         viewHolder: OnlyFileAttachmentsViewHolder,
-        data: MessageListItem.MessageItem
+        data: MessageListItem.MessageItem,
     )
 
     protected abstract fun decoratePlainTextWithMediaAttachmentsMessage(
         viewHolder: PlainTextWithMediaAttachmentsViewHolder,
-        data: MessageListItem.MessageItem
+        data: MessageListItem.MessageItem,
     )
 
     protected abstract fun decorateOnlyMediaAttachmentsMessage(
         viewHolder: OnlyMediaAttachmentsViewHolder,
-        data: MessageListItem.MessageItem
+        data: MessageListItem.MessageItem,
     )
 
     protected abstract fun decoratePlainTextMessage(
         viewHolder: MessagePlainTextViewHolder,
-        data: MessageListItem.MessageItem
+        data: MessageListItem.MessageItem,
     )
 
     protected open fun decorateDeletedMessage(
         viewHolder: MessageDeletedViewHolder,
-        data: MessageListItem.MessageItem
+        data: MessageListItem.MessageItem,
     ) = Unit
 
-    abstract fun decorateGiphyMessage(viewHolder: GiphyViewHolder, data: MessageListItem.MessageItem)
+    abstract fun decorateGiphyMessage(
+        viewHolder: GiphyViewHolder,
+        data: MessageListItem.MessageItem,
+    )
 }

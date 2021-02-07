@@ -82,6 +82,8 @@ internal class TestDataHelper {
     val member1 = Member(user = user1, role = "user", isInvited = false)
     val member2 = Member(user = user2, role = "user", isInvited = false)
 
+    val parentMessageId = "parentMessageId"
+
     fun getOldDate(): Date {
         val cal = Calendar.getInstance()
         cal.set(Calendar.YEAR, 1988)
@@ -194,12 +196,24 @@ internal class TestDataHelper {
         cid = channel1.cid; text = "im update now"; id = "message-1"; user =
             user1; createdAt = calendar(2020, 1, 1)
     }
-    val reactionMessage = Message().apply {
-        text = "im update now"; id = "message-1"; user = user1
+    val reactionMessage1 = Message().apply {
+        text = "im update now"
+        id = "message-1"
+        user = user1
         cid = channel1.cid
         reactionScores = mutableMapOf("like" to 10)
-        reactionCounts = mutableMapOf("like" to 1); ownReactions =
-            mutableListOf(reaction1); latestReactions = mutableListOf(reaction1)
+        reactionCounts = mutableMapOf("like" to 1)
+        ownReactions = mutableListOf(reaction1)
+        latestReactions = mutableListOf(reaction1)
+    }
+
+    val reactionMessage2 = Message().apply {
+        text = "im update now"; id = "message-1"; user = user1
+        cid = channel1.cid
+        reactionScores = mutableMapOf("like" to 11)
+        reactionCounts = mutableMapOf("like" to 2)
+        ownReactions = mutableListOf(reaction2)
+        latestReactions = mutableListOf(reaction2, reaction1)
     }
     val message2Older = Message().apply {
         text = "message2"; id = "message-2"; user = user1; createdAt =
@@ -218,24 +232,24 @@ internal class TestDataHelper {
     val newMessageEvent2 = NewMessageEvent(EventType.MESSAGE_NEW, Date(), user1, channel1.cid, channel1.type, channel1.id, message2Older, null, null, null)
     val newMessageFromUser2 = NewMessageEvent(EventType.MESSAGE_NEW, Date(), user2, channel1.cid, channel1.type, channel1.id, messageFromUser2, null, null, null)
 
-    val newMessageEventNotification = NotificationMessageNewEvent(EventType.NOTIFICATION_MESSAGE_NEW, Date(), user1, channel1.cid, channel1.type, channel1.id, channel1, message1WithoutChannelAndCid, null, null, null)
+    val newMessageEventNotification = NotificationMessageNewEvent(EventType.NOTIFICATION_MESSAGE_NEW, Date(), channel1.cid, channel1.type, channel1.id, channel1, message1WithoutChannelAndCid, null, null, null)
 
     val messageUpdatedEvent = MessageUpdatedEvent(EventType.MESSAGE_UPDATED, Date(), user1, channel1.cid, channel1.type, channel1.id, message1Updated, null)
     val userStartWatchingEvent = UserStartWatchingEvent(EventType.USER_WATCHING_START, Date(), channel1.cid, 1, channel1.type, channel1.id, user1)
-    val reactionEvent = ReactionNewEvent(EventType.REACTION_NEW, Date(), user1, channel1.cid, channel1.type, channel1.id, reactionMessage, reaction1)
-    val reactionEvent2 = ReactionNewEvent(EventType.REACTION_NEW, Date(), user2, channel1.cid, channel1.type, channel1.id, reactionMessage, reaction2)
+    val reactionEvent = ReactionNewEvent(EventType.REACTION_NEW, Date(), user1, channel1.cid, channel1.type, channel1.id, reactionMessage1, reaction1)
+    val reactionEvent2 = ReactionNewEvent(EventType.REACTION_NEW, Date(), user2, channel1.cid, channel1.type, channel1.id, reactionMessage2, reaction2)
 
     val channelUpdatedEvent = ChannelUpdatedEvent(EventType.CHANNEL_UPDATED, Date(), channel1Updated.cid, channel1Updated.type, channel1Updated.id, null, channel1Updated)
     val channelUpdatedEvent2 = ChannelUpdatedEvent(EventType.CHANNEL_UPDATED, Date(), channel5.cid, channel5.type, channel5.id, null, channel5)
 
-    val user1TypingStarted = TypingStartEvent(EventType.TYPING_START, Date(), user1, channel1.cid, channel1.type, channel1.id)
-    val user3TypingStartedOld = TypingStartEvent(EventType.TYPING_START, getOldDate(), user3, channel1.cid, channel1.type, channel1.id)
+    val user1TypingStarted = TypingStartEvent(EventType.TYPING_START, Date(), user1, channel1.cid, channel1.type, channel1.id, parentMessageId)
+    val user3TypingStartedOld = TypingStartEvent(EventType.TYPING_START, getOldDate(), user3, channel1.cid, channel1.type, channel1.id, parentMessageId)
 
     val channelHiddenEvent = ChannelHiddenEvent(EventType.CHANNEL_HIDDEN, Date(), channel2.cid, channel2.type, channel2.id, user1, false)
     val channelVisibleEvent = ChannelVisibleEvent(EventType.CHANNEL_VISIBLE, Date(), channel2.cid, channel2.type, channel2.id, user1)
 
-    val user2TypingStarted = TypingStartEvent(EventType.TYPING_START, Date(), user2, channel2.cid, channel2.type, channel2.id)
-    val user1TypingStop = TypingStopEvent(EventType.TYPING_STOP, Date(), user1, channel2.cid, channel2.type, channel2.id)
+    val user2TypingStarted = TypingStartEvent(EventType.TYPING_START, Date(), user2, channel2.cid, channel2.type, channel2.id, parentMessageId)
+    val user1TypingStop = TypingStopEvent(EventType.TYPING_STOP, Date(), user1, channel2.cid, channel2.type, channel2.id, parentMessageId)
     val readEvent = MessageReadEvent(EventType.MESSAGE_READ, Date(), user1, channel1.cid, channel1.type, channel1.id, null)
 
     val notificationMutesUpdated = NotificationMutesUpdatedEvent(EventType.NOTIFICATION_MUTES_UPDATED, Date(), me1)

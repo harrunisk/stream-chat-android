@@ -9,8 +9,8 @@ import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.constraintlayout.widget.ConstraintSet
 import androidx.core.view.isVisible
 import androidx.core.view.updateLayoutParams
-import com.getstream.sdk.chat.ImageLoader
-import com.getstream.sdk.chat.ImageLoader.load
+import com.getstream.sdk.chat.images.StreamImageLoader.ImageTransformation.RoundedCorners
+import com.getstream.sdk.chat.images.load
 import com.getstream.sdk.chat.model.ModelType
 import com.getstream.sdk.chat.utils.extensions.updateConstraints
 import com.google.android.material.shape.MaterialShapeDrawable
@@ -60,38 +60,40 @@ public class MessageReplyView : FrameLayout {
     }
 
     private fun setUserAvatar(message: Message) {
-        binding.avatarView.setUserData(message.user)
-        binding.avatarView.isVisible = true
+        binding.replyAvatarView.setUserData(message.user)
+        binding.replyAvatarView.isVisible = true
     }
 
     private fun setAvatarPosition(isMine: Boolean) {
-        binding.root.updateConstraints {
-            clear(R.id.avatarView, ConstraintSet.START)
-            clear(R.id.avatarView, ConstraintSet.END)
-            clear(R.id.replyContainer, ConstraintSet.START)
-            clear(R.id.replyContainer, ConstraintSet.END)
-        }
-        binding.avatarView.updateLayoutParams<ConstraintLayout.LayoutParams> {
-            if (isMine) {
-                endToEnd = ConstraintLayout.LayoutParams.PARENT_ID
-                startToEnd = R.id.replyContainer
-            } else {
-                startToStart = ConstraintLayout.LayoutParams.PARENT_ID
-                endToStart = R.id.replyContainer
+        with(binding) {
+            root.updateConstraints {
+                clear(replyAvatarView.id, ConstraintSet.START)
+                clear(replyAvatarView.id, ConstraintSet.END)
+                clear(replyContainer.id, ConstraintSet.START)
+                clear(replyContainer.id, ConstraintSet.END)
             }
-            marginStart = CONTENT_MARGIN
-            marginEnd = CONTENT_MARGIN
-        }
-        binding.replyContainer.updateLayoutParams<ConstraintLayout.LayoutParams> {
-            if (isMine) {
-                startToStart = ConstraintLayout.LayoutParams.PARENT_ID
-                endToStart = R.id.avatarView
-            } else {
-                startToEnd = R.id.avatarView
-                endToEnd = ConstraintLayout.LayoutParams.PARENT_ID
+            replyAvatarView.updateLayoutParams<ConstraintLayout.LayoutParams> {
+                if (isMine) {
+                    endToEnd = ConstraintLayout.LayoutParams.PARENT_ID
+                    startToEnd = replyContainer.id
+                } else {
+                    startToStart = ConstraintLayout.LayoutParams.PARENT_ID
+                    endToStart = replyContainer.id
+                }
+                marginStart = CONTENT_MARGIN
+                marginEnd = CONTENT_MARGIN
             }
-            marginStart = CONTENT_MARGIN
-            marginEnd = CONTENT_MARGIN
+            replyContainer.updateLayoutParams<ConstraintLayout.LayoutParams> {
+                if (isMine) {
+                    startToStart = ConstraintLayout.LayoutParams.PARENT_ID
+                    endToStart = replyAvatarView.id
+                } else {
+                    startToEnd = replyAvatarView.id
+                    endToEnd = ConstraintLayout.LayoutParams.PARENT_ID
+                }
+                marginStart = CONTENT_MARGIN
+                marginEnd = CONTENT_MARGIN
+            }
         }
     }
 
@@ -108,17 +110,17 @@ public class MessageReplyView : FrameLayout {
             when {
                 isLink -> {
                     paintStyle = Paint.Style.FILL
-                    setTint(context.getColorCompat(R.color.stream_ui_link_attachment_background))
+                    setTint(context.getColorCompat(R.color.stream_ui_blue_alice))
                 }
                 isMine -> {
                     paintStyle = Paint.Style.FILL
-                    setTint(context.getColorCompat(R.color.stream_ui_grey_90))
+                    setTint(context.getColorCompat(R.color.stream_ui_grey_whisper))
                 }
                 else -> {
                     paintStyle = Paint.Style.FILL_AND_STROKE
-                    setStrokeTint(context.getColorCompat(R.color.stream_ui_border_stroke))
+                    setStrokeTint(context.getColorCompat(R.color.stream_ui_grey_whisper))
                     strokeWidth = DEFAULT_STROKE_WIDTH
-                    setTint(context.getColorCompat(R.color.stream_ui_background_light))
+                    setTint(context.getColorCompat(R.color.stream_ui_white))
                 }
             }
         }
@@ -169,7 +171,10 @@ public class MessageReplyView : FrameLayout {
                 logoContainer.isVisible = true
                 thumbImageView.isVisible = true
                 fileTypeImageView.isVisible = false
-                thumbImageView.load(url, ImageLoader.ImageTransformation.RoundedCorners(REPLY_IMAGE_CORNER_RADIUS))
+                thumbImageView.load(
+                    data = url,
+                    transformation = RoundedCorners(REPLY_IMAGE_CORNER_RADIUS),
+                )
             } else {
                 logoContainer.isVisible = false
             }
