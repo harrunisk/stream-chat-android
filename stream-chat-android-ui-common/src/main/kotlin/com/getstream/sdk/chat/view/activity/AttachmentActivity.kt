@@ -1,5 +1,7 @@
 package com.getstream.sdk.chat.view.activity
 
+import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
 import android.webkit.WebResourceError
 import android.webkit.WebResourceRequest
@@ -110,6 +112,16 @@ public class AttachmentActivity : AppCompatActivity() {
 
     private inner class AppWebViewClients : WebViewClient() {
         override fun shouldOverrideUrlLoading(view: WebView, url: String): Boolean {
+
+            if (url.startsWith("whatsapp://send/")) {
+                val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
+                intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                intent.setPackage("com.whatsapp")
+                intent.resolveActivity(packageManager)?.let {
+                    startActivity(intent)
+                }
+                return true
+            }
             view.loadUrl(urlSigner.signFileUrl(url))
             return true
         }
