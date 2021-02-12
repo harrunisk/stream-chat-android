@@ -1,0 +1,192 @@
+<html><head>
+    <meta name="viewport" content="width=device-width, initial-scale=1" charset="UTF-8">
+    <title>FiniteStateMachine</title>
+    <link href="../../../images/logo-icon.svg" rel="icon" type="image/svg">
+</head><body><script>var pathToRoot = "../../../../";</script>
+    <script type="text/javascript" src="../../../scripts/sourceset_dependencies.js" async></script>
+    <link href="../../../styles/style.css" rel="Stylesheet">
+    <link href="../../../styles/logo-styles.css" rel="Stylesheet">
+    <link href="../../../styles/jetbrains-mono.css" rel="Stylesheet">
+    <link href="../../../styles/main.css" rel="Stylesheet">
+    <script type="text/javascript" src="../../../scripts/clipboard.js" async></script>
+    <script type="text/javascript" src="../../../scripts/navigation-loader.js" async></script>
+    <script type="text/javascript" src="../../../scripts/platform-content-handler.js" async></script>
+    <script type="text/javascript" src="../../../scripts/main.js" async></script>
+  
+  
+    <div id="container">
+      <div id="leftColumn"><a href="../../../../index.html">
+            <div id="logo"></div>
+          </a>
+        <div id="paneSearch"></div>
+        <div id="sideMenu"></div>
+      </div>
+      <div id="main">
+        <div id="leftToggler"><span class="icon-toggler"></span></div>
+        <script type="text/javascript" src="../../../scripts/main.js"></script>
+        <div class="main-content" id="content" pageids="stream-chat-android-core::io.getstream.chat.android.core.internal.fsm/FiniteStateMachine///PointingToDeclaration//1089527807">
+          <div class="navigation-wrapper" id="navigation-wrapper">
+            <div class="breadcrumbs"><a href="../../../index.html">stream-chat-android-core</a>/<a href="../index.html">io.getstream.chat.android.core.internal.fsm</a>/<a href="index.html">FiniteStateMachine</a></div>
+            <div class="pull-right d-flex">
+              <div id="searchBar"></div>
+            </div>
+          </div>
+          <div class="cover ">
+            <h1 class="cover"><span>Finite</span><wbr><span>State</span><wbr><span>Machine</span></h1>
+            <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-depenent-content" data-active="" data-togglable=":stream-chat-android-core:dokkaHtmlPartial/main"><div class="symbol monospace">class <a href="index.html">FiniteStateMachine</a>&lt;<a href="index.html">S</a> : <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-any/index.html">Any</a>, <a href="index.html">E</a> : <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-any/index.html">Any</a>&gt;(initialState: <a href="index.html">S</a>, stateFunctions: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin.collections/-map/index.html">Map</a>&lt;<a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin.reflect/-k-class/index.html">KClass</a>&lt;out <a href="index.html">S</a>&gt;, <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin.collections/-map/index.html">Map</a>&lt;<a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin.reflect/-k-class/index.html">KClass</a>&lt;out <a href="index.html">E</a>&gt;, <a href="../../../../stream-chat-android-core/io.getstream.chat.android.core.internal.fsm/-state-function/index.html">StateFunction</a>&lt;<a href="index.html">S</a>, <a href="index.html">E</a>&gt;&gt;&gt;, defaultEventHandler: (<a href="index.html">S</a>, <a href="index.html">E</a>) -&gt; <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-unit/index.html">Unit</a>)<span class="top-right-position"><span class="copy-icon"></span><div class="copy-popup-wrapper popup-to-left"><span class="copy-popup-icon"></span><span>Content copied to clipboard</span></div></span></div><p class="paragraph">This class represents a Finite State Machine. It can be only in one possible state at a time out of the set of possible states <a href="index.html">S</a>. It can handle events from the set <a href="index.html">E</a>.</p></div></div>
+          </div>
+          <div class="tabbedcontent">
+            <div class="tabs-section" tabs-section="tabs-section"><button class="section-tab" data-active="" data-togglable="Types">Types</button><button class="section-tab" data-togglable="Constructors">Constructors</button><button class="section-tab" data-togglable="Functions">Functions</button><button class="section-tab" data-togglable="Inherited functions">Inherited functions</button><button class="section-tab" data-togglable="Properties">Properties</button><button class="section-tab" data-togglable="Parameters">Parameters</button></div>
+            <div class="tabs-section-body">
+              <h2 class="">Parameters</h2>
+              <div data-togglable="Parameters">
+                <div class="platform-hinted WithExtraAttributes" data-platform-hinted="data-platform-hinted" data-togglable="Parameters"><div class="content sourceset-depenent-content" data-active="" data-togglable=":stream-chat-android-core:dokkaHtmlPartial/main"><div data-togglable="Parameters"><div class="table" data-togglable="Parameters"><div class="table-row" data-filterable-current=":stream-chat-android-core:dokkaHtmlPartial/main" data-filterable-set=":stream-chat-android-core:dokkaHtmlPartial/main"><div class="main-subrow keyValue WithExtraAttributes"><div class=""><span class="inline-flex">initialState</span></div><div><div class="title"><div data-togglable="Parameters"><p class="paragraph">the initial state</p></div></div></div></div></div></div></div></div></div>
+              </div>
+              <h2 class="tabbedcontent">Constructors</h2>
+              <div class="table" data-togglable="Constructors"><a data-name="%5Bio.getstream.chat.android.core.internal.fsm%2FFiniteStateMachine%2FFiniteStateMachine%2F%23TypeParam%28bounds%3D%5Bkotlin.Any%5D%29%23kotlin.collections.Map%5Bkotlin.reflect.KClass%5BTypeParam%28bounds%3D%5Bkotlin.Any%5D%29%5D%2Ckotlin.collections.Map%5Bkotlin.reflect.KClass%5BTypeParam%28bounds%3D%5Bkotlin.Any%5D%29%5D%2Ckotlin.Function3%5Bio.getstream.chat.android.core.internal.fsm.FiniteStateMachine%5BTypeParam%28bounds%3D%5Bkotlin.Any%5D%29%2CTypeParam%28bounds%3D%5Bkotlin.Any%5D%29%5D%2CTypeParam%28bounds%3D%5Bkotlin.Any%5D%29%2CTypeParam%28bounds%3D%5Bkotlin.Any%5D%29%2CTypeParam%28bounds%3D%5Bkotlin.Any%5D%29%5D%5D%5D%23kotlin.Function2%5BTypeParam%28bounds%3D%5Bkotlin.Any%5D%29%2CTypeParam%28bounds%3D%5Bkotlin.Any%5D%29%2Ckotlin.Unit%5D%2FPointingToDeclaration%2F%5D%2FConstructors%2F1089527807" anchor-label="FiniteStateMachine" id="%5Bio.getstream.chat.android.core.internal.fsm%2FFiniteStateMachine%2FFiniteStateMachine%2F%23TypeParam%28bounds%3D%5Bkotlin.Any%5D%29%23kotlin.collections.Map%5Bkotlin.reflect.KClass%5BTypeParam%28bounds%3D%5Bkotlin.Any%5D%29%5D%2Ckotlin.collections.Map%5Bkotlin.reflect.KClass%5BTypeParam%28bounds%3D%5Bkotlin.Any%5D%29%5D%2Ckotlin.Function3%5Bio.getstream.chat.android.core.internal.fsm.FiniteStateMachine%5BTypeParam%28bounds%3D%5Bkotlin.Any%5D%29%2CTypeParam%28bounds%3D%5Bkotlin.Any%5D%29%5D%2CTypeParam%28bounds%3D%5Bkotlin.Any%5D%29%2CTypeParam%28bounds%3D%5Bkotlin.Any%5D%29%2CTypeParam%28bounds%3D%5Bkotlin.Any%5D%29%5D%5D%5D%23kotlin.Function2%5BTypeParam%28bounds%3D%5Bkotlin.Any%5D%29%2CTypeParam%28bounds%3D%5Bkotlin.Any%5D%29%2Ckotlin.Unit%5D%2FPointingToDeclaration%2F%5D%2FConstructors%2F1089527807" data-filterable-set=":stream-chat-android-core:dokkaHtmlPartial/main"></a>
+                <div class="table-row" data-filterable-current=":stream-chat-android-core:dokkaHtmlPartial/main" data-filterable-set=":stream-chat-android-core:dokkaHtmlPartial/main">
+                  <div class="main-subrow keyValue TabbedContent">
+                    <div class=""><span class="inline-flex"><a href="-finite-state-machine.html">FiniteStateMachine</a><span class="anchor-wrapper"><span class="anchor-icon" pointing-to="%5Bio.getstream.chat.android.core.internal.fsm%2FFiniteStateMachine%2FFiniteStateMachine%2F%23TypeParam%28bounds%3D%5Bkotlin.Any%5D%29%23kotlin.collections.Map%5Bkotlin.reflect.KClass%5BTypeParam%28bounds%3D%5Bkotlin.Any%5D%29%5D%2Ckotlin.collections.Map%5Bkotlin.reflect.KClass%5BTypeParam%28bounds%3D%5Bkotlin.Any%5D%29%5D%2Ckotlin.Function3%5Bio.getstream.chat.android.core.internal.fsm.FiniteStateMachine%5BTypeParam%28bounds%3D%5Bkotlin.Any%5D%29%2CTypeParam%28bounds%3D%5Bkotlin.Any%5D%29%5D%2CTypeParam%28bounds%3D%5Bkotlin.Any%5D%29%2CTypeParam%28bounds%3D%5Bkotlin.Any%5D%29%2CTypeParam%28bounds%3D%5Bkotlin.Any%5D%29%5D%5D%5D%23kotlin.Function2%5BTypeParam%28bounds%3D%5Bkotlin.Any%5D%29%2CTypeParam%28bounds%3D%5Bkotlin.Any%5D%29%2Ckotlin.Unit%5D%2FPointingToDeclaration%2F%5D%2FConstructors%2F1089527807"></span>
+                          <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                        </span></span></div>
+                    <div>
+                      <div class="title">
+                        <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-depenent-content" data-active="" data-togglable=":stream-chat-android-core:dokkaHtmlPartial/main"><div class="symbol monospace">fun &lt;<a href="index.html">S</a> : <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-any/index.html">Any</a>, <a href="index.html">E</a> : <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-any/index.html">Any</a>&gt; <a href="-finite-state-machine.html">FiniteStateMachine</a>(initialState: <a href="index.html">S</a>, stateFunctions: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin.collections/-map/index.html">Map</a>&lt;<a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin.reflect/-k-class/index.html">KClass</a>&lt;out <a href="index.html">S</a>&gt;, <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin.collections/-map/index.html">Map</a>&lt;<a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin.reflect/-k-class/index.html">KClass</a>&lt;out <a href="index.html">E</a>&gt;, <a href="../../../../stream-chat-android-core/io.getstream.chat.android.core.internal.fsm/-state-function/index.html">StateFunction</a>&lt;<a href="index.html">S</a>, <a href="index.html">E</a>&gt;&gt;&gt;, defaultEventHandler: (<a href="index.html">S</a>, <a href="index.html">E</a>) -&gt; <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-unit/index.html">Unit</a>)<span class="top-right-position"><span class="copy-icon"></span><div class="copy-popup-wrapper popup-to-left"><span class="copy-popup-icon"></span><span>Content copied to clipboard</span></div></span></div><div class="brief ">the initial state</div></div></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <h2 class="">Types</h2>
+              <div class="table" data-togglable="Types"><a data-name="%5Bio.getstream.chat.android.core.internal.fsm%2FFiniteStateMachine.Companion%2F%2F%2FPointingToDeclaration%2F%5D%2FClasslikes%2F1089527807" anchor-label="Companion" id="%5Bio.getstream.chat.android.core.internal.fsm%2FFiniteStateMachine.Companion%2F%2F%2FPointingToDeclaration%2F%5D%2FClasslikes%2F1089527807" data-filterable-set=":stream-chat-android-core:dokkaHtmlPartial/main"></a>
+                <div class="table-row" data-filterable-current=":stream-chat-android-core:dokkaHtmlPartial/main" data-filterable-set=":stream-chat-android-core:dokkaHtmlPartial/main">
+                  <div class="main-subrow keyValue ">
+                    <div class=""><span class="inline-flex"><a href="-companion/index.html">Companion</a><span class="anchor-wrapper"><span class="anchor-icon" pointing-to="%5Bio.getstream.chat.android.core.internal.fsm%2FFiniteStateMachine.Companion%2F%2F%2FPointingToDeclaration%2F%5D%2FClasslikes%2F1089527807"></span>
+                          <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                        </span></span></div>
+                    <div>
+                      <div class="title"><div class="divergent-group" data-filterable-current=":stream-chat-android-core:dokkaHtmlPartial/main" data-filterable-set=":stream-chat-android-core:dokkaHtmlPartial/main"><div class="with-platform-tags"><span class="pull-right"></span></div>
+
+  <div>
+    <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-depenent-content" data-active="" data-togglable=":stream-chat-android-core:dokkaHtmlPartial/main"><div class="symbol monospace">object <a href="-companion/index.html">Companion</a><span class="top-right-position"><span class="copy-icon"></span><div class="copy-popup-wrapper popup-to-left"><span class="copy-popup-icon"></span><span>Content copied to clipboard</span></div></span></div></div></div>
+  </div>
+</div>
+</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <h2 class="">Properties</h2>
+              <div class="table" data-togglable="Properties"><a data-name="%5Bio.getstream.chat.android.core.internal.fsm%2FFiniteStateMachine%2Fstate%2F%23%2FPointingToDeclaration%2F%5D%2FProperties%2F1089527807" anchor-label="state" id="%5Bio.getstream.chat.android.core.internal.fsm%2FFiniteStateMachine%2Fstate%2F%23%2FPointingToDeclaration%2F%5D%2FProperties%2F1089527807" data-filterable-set=":stream-chat-android-core:dokkaHtmlPartial/main"></a>
+                <div class="table-row" data-filterable-current=":stream-chat-android-core:dokkaHtmlPartial/main" data-filterable-set=":stream-chat-android-core:dokkaHtmlPartial/main">
+                  <div class="main-subrow keyValue ">
+                    <div class=""><span class="inline-flex"><a href="state.html">state</a><span class="anchor-wrapper"><span class="anchor-icon" pointing-to="%5Bio.getstream.chat.android.core.internal.fsm%2FFiniteStateMachine%2Fstate%2F%23%2FPointingToDeclaration%2F%5D%2FProperties%2F1089527807"></span>
+                          <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                        </span></span></div>
+                    <div>
+                      <div class="title">
+                        <div class="platform-hinted " data-platform-hinted="data-platform-hinted" data-togglable="Properties"><div class="content sourceset-depenent-content" data-active="" data-togglable=":stream-chat-android-core:dokkaHtmlPartial/main"><a data-name="%5Bio.getstream.chat.android.core.internal.fsm%2FFiniteStateMachine%2Fstate%2F%23%2FPointingToDeclaration%2F%5D%2FProperties%2F1089527807" anchor-label="state" id="%5Bio.getstream.chat.android.core.internal.fsm%2FFiniteStateMachine%2Fstate%2F%23%2FPointingToDeclaration%2F%5D%2FProperties%2F1089527807" data-filterable-set=":stream-chat-android-core:dokkaHtmlPartial/main"></a><div class="symbol monospace">val <a href="state.html">state</a>: <a href="index.html">S</a><span class="top-right-position"><span class="copy-icon"></span><div class="copy-popup-wrapper popup-to-left"><span class="copy-popup-icon"></span><span>Content copied to clipboard</span></div></span></div><div class="brief "><a data-name="%5Bio.getstream.chat.android.core.internal.fsm%2FFiniteStateMachine%2Fstate%2F%23%2FPointingToDeclaration%2F%5D%2FProperties%2F1089527807" anchor-label="state" id="%5Bio.getstream.chat.android.core.internal.fsm%2FFiniteStateMachine%2Fstate%2F%23%2FPointingToDeclaration%2F%5D%2FProperties%2F1089527807" data-filterable-set=":stream-chat-android-core:dokkaHtmlPartial/main"></a>The current state.</div></div></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <h2 class="">Functions</h2>
+              <div class="table" data-togglable="Functions"><a data-name="%5Bio.getstream.chat.android.core.internal.fsm%2FFiniteStateMachine%2FsendEvent%2F%23TypeParam%28bounds%3D%5Bkotlin.Any%5D%29%2FPointingToDeclaration%2F%5D%2FFunctions%2F1089527807" anchor-label="sendEvent" id="%5Bio.getstream.chat.android.core.internal.fsm%2FFiniteStateMachine%2FsendEvent%2F%23TypeParam%28bounds%3D%5Bkotlin.Any%5D%29%2FPointingToDeclaration%2F%5D%2FFunctions%2F1089527807" data-filterable-set=":stream-chat-android-core:dokkaHtmlPartial/main"></a>
+                <div class="table-row" data-filterable-current=":stream-chat-android-core:dokkaHtmlPartial/main" data-filterable-set=":stream-chat-android-core:dokkaHtmlPartial/main">
+                  <div class="main-subrow keyValue ">
+                    <div class=""><span class="inline-flex"><a href="send-event.html">sendEvent</a><span class="anchor-wrapper"><span class="anchor-icon" pointing-to="%5Bio.getstream.chat.android.core.internal.fsm%2FFiniteStateMachine%2FsendEvent%2F%23TypeParam%28bounds%3D%5Bkotlin.Any%5D%29%2FPointingToDeclaration%2F%5D%2FFunctions%2F1089527807"></span>
+                          <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                        </span></span></div>
+                    <div>
+                      <div class="title"><div class="divergent-group" data-filterable-current=":stream-chat-android-core:dokkaHtmlPartial/main" data-filterable-set=":stream-chat-android-core:dokkaHtmlPartial/main"><div class="with-platform-tags"><span class="pull-right"></span></div>
+
+  <div>
+    <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-depenent-content" data-active="" data-togglable=":stream-chat-android-core:dokkaHtmlPartial/main"><div class="symbol monospace">fun <a href="send-event.html">sendEvent</a>(event: <a href="index.html">E</a>)<span class="top-right-position"><span class="copy-icon"></span><div class="copy-popup-wrapper popup-to-left"><span class="copy-popup-icon"></span><span>Content copied to clipboard</span></div></span></div></div></div>
+  </div>
+<a data-name="%5Bio.getstream.chat.android.core.internal.fsm%2FFiniteStateMachine%2FsendEvent%2F%23TypeParam%28bounds%3D%5Bkotlin.Any%5D%29%2FPointingToDeclaration%2F%5D%2FFunctions%2F1089527807" anchor-label="sendEvent" id="%5Bio.getstream.chat.android.core.internal.fsm%2FFiniteStateMachine%2FsendEvent%2F%23TypeParam%28bounds%3D%5Bkotlin.Any%5D%29%2FPointingToDeclaration%2F%5D%2FFunctions%2F1089527807" data-filterable-set=":stream-chat-android-core:dokkaHtmlPartial/main"></a><div class="brief "><a data-name="%5Bio.getstream.chat.android.core.internal.fsm%2FFiniteStateMachine%2FsendEvent%2F%23TypeParam%28bounds%3D%5Bkotlin.Any%5D%29%2FPointingToDeclaration%2F%5D%2FFunctions%2F1089527807" anchor-label="sendEvent" id="%5Bio.getstream.chat.android.core.internal.fsm%2FFiniteStateMachine%2FsendEvent%2F%23TypeParam%28bounds%3D%5Bkotlin.Any%5D%29%2FPointingToDeclaration%2F%5D%2FFunctions%2F1089527807" data-filterable-set=":stream-chat-android-core:dokkaHtmlPartial/main"></a>Sends an event to the state machine.</div></div>
+</div>
+                    </div>
+                  </div>
+                </div>
+<a data-name="%5Bio.getstream.chat.android.core.internal.fsm%2FFiniteStateMachine%2Fstay%2F%23%2FPointingToDeclaration%2F%5D%2FFunctions%2F1089527807" anchor-label="stay" id="%5Bio.getstream.chat.android.core.internal.fsm%2FFiniteStateMachine%2Fstay%2F%23%2FPointingToDeclaration%2F%5D%2FFunctions%2F1089527807" data-filterable-set=":stream-chat-android-core:dokkaHtmlPartial/main"></a>
+                <div class="table-row" data-filterable-current=":stream-chat-android-core:dokkaHtmlPartial/main" data-filterable-set=":stream-chat-android-core:dokkaHtmlPartial/main">
+                  <div class="main-subrow keyValue ">
+                    <div class=""><span class="inline-flex"><a href="stay.html">stay</a><span class="anchor-wrapper"><span class="anchor-icon" pointing-to="%5Bio.getstream.chat.android.core.internal.fsm%2FFiniteStateMachine%2Fstay%2F%23%2FPointingToDeclaration%2F%5D%2FFunctions%2F1089527807"></span>
+                          <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                        </span></span></div>
+                    <div>
+                      <div class="title"><div class="divergent-group" data-filterable-current=":stream-chat-android-core:dokkaHtmlPartial/main" data-filterable-set=":stream-chat-android-core:dokkaHtmlPartial/main"><div class="with-platform-tags"><span class="pull-right"></span></div>
+
+  <div>
+    <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-depenent-content" data-active="" data-togglable=":stream-chat-android-core:dokkaHtmlPartial/main"><div class="symbol monospace">fun <a href="stay.html">stay</a>(): <a href="index.html">S</a><span class="top-right-position"><span class="copy-icon"></span><div class="copy-popup-wrapper popup-to-left"><span class="copy-popup-icon"></span><span>Content copied to clipboard</span></div></span></div></div></div>
+  </div>
+<a data-name="%5Bio.getstream.chat.android.core.internal.fsm%2FFiniteStateMachine%2Fstay%2F%23%2FPointingToDeclaration%2F%5D%2FFunctions%2F1089527807" anchor-label="stay" id="%5Bio.getstream.chat.android.core.internal.fsm%2FFiniteStateMachine%2Fstay%2F%23%2FPointingToDeclaration%2F%5D%2FFunctions%2F1089527807" data-filterable-set=":stream-chat-android-core:dokkaHtmlPartial/main"></a><div class="brief "><a data-name="%5Bio.getstream.chat.android.core.internal.fsm%2FFiniteStateMachine%2Fstay%2F%23%2FPointingToDeclaration%2F%5D%2FFunctions%2F1089527807" anchor-label="stay" id="%5Bio.getstream.chat.android.core.internal.fsm%2FFiniteStateMachine%2Fstay%2F%23%2FPointingToDeclaration%2F%5D%2FFunctions%2F1089527807" data-filterable-set=":stream-chat-android-core:dokkaHtmlPartial/main"></a>Keeps the FSM in its current state.</div></div>
+</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <h2 class="">Inherited functions</h2>
+              <div class="table" data-togglable="Inherited functions"><a data-name="%5Bkotlin%2FAny%2Fequals%2F%23kotlin.Any%3F%2FPointingToDeclaration%2F%5D%2FFunctions%2F1089527807" anchor-label="equals" id="%5Bkotlin%2FAny%2Fequals%2F%23kotlin.Any%3F%2FPointingToDeclaration%2F%5D%2FFunctions%2F1089527807" data-filterable-set=":stream-chat-android-core:dokkaHtmlPartial/main"></a>
+                <div class="table-row" data-filterable-current=":stream-chat-android-core:dokkaHtmlPartial/main" data-filterable-set=":stream-chat-android-core:dokkaHtmlPartial/main">
+                  <div class="main-subrow keyValue ">
+                    <div class=""><span class="inline-flex"><a href="../../io.getstream.chat.android.core.internal.fsm.builder/-state-handler-builder/index.html#%5Bkotlin%2FAny%2Fequals%2F%23kotlin.Any%3F%2FPointingToDeclaration%2F%5D%2FFunctions%2F1089527807">equals</a><span class="anchor-wrapper"><span class="anchor-icon" pointing-to="%5Bkotlin%2FAny%2Fequals%2F%23kotlin.Any%3F%2FPointingToDeclaration%2F%5D%2FFunctions%2F1089527807"></span>
+                          <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                        </span></span></div>
+                    <div>
+                      <div class="title"><div class="divergent-group" data-filterable-current=":stream-chat-android-core:dokkaHtmlPartial/main" data-filterable-set=":stream-chat-android-core:dokkaHtmlPartial/main"><div class="with-platform-tags"><span class="pull-right"></span></div>
+
+  <div>
+    <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-depenent-content" data-active="" data-togglable=":stream-chat-android-core:dokkaHtmlPartial/main"><div class="symbol monospace">open operator fun <a href="../../io.getstream.chat.android.core.internal.fsm.builder/-state-handler-builder/index.html#%5Bkotlin%2FAny%2Fequals%2F%23kotlin.Any%3F%2FPointingToDeclaration%2F%5D%2FFunctions%2F1089527807">equals</a>(other: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-any/index.html">Any</a>?): <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-boolean/index.html">Boolean</a><span class="top-right-position"><span class="copy-icon"></span><div class="copy-popup-wrapper popup-to-left"><span class="copy-popup-icon"></span><span>Content copied to clipboard</span></div></span></div></div></div>
+  </div>
+</div>
+</div>
+                    </div>
+                  </div>
+                </div>
+<a data-name="%5Bkotlin%2FAny%2FhashCode%2F%23%2FPointingToDeclaration%2F%5D%2FFunctions%2F1089527807" anchor-label="hashCode" id="%5Bkotlin%2FAny%2FhashCode%2F%23%2FPointingToDeclaration%2F%5D%2FFunctions%2F1089527807" data-filterable-set=":stream-chat-android-core:dokkaHtmlPartial/main"></a>
+                <div class="table-row" data-filterable-current=":stream-chat-android-core:dokkaHtmlPartial/main" data-filterable-set=":stream-chat-android-core:dokkaHtmlPartial/main">
+                  <div class="main-subrow keyValue ">
+                    <div class=""><span class="inline-flex"><a href="../../io.getstream.chat.android.core.internal.fsm.builder/-state-handler-builder/index.html#%5Bkotlin%2FAny%2FhashCode%2F%23%2FPointingToDeclaration%2F%5D%2FFunctions%2F1089527807">hashCode</a><span class="anchor-wrapper"><span class="anchor-icon" pointing-to="%5Bkotlin%2FAny%2FhashCode%2F%23%2FPointingToDeclaration%2F%5D%2FFunctions%2F1089527807"></span>
+                          <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                        </span></span></div>
+                    <div>
+                      <div class="title"><div class="divergent-group" data-filterable-current=":stream-chat-android-core:dokkaHtmlPartial/main" data-filterable-set=":stream-chat-android-core:dokkaHtmlPartial/main"><div class="with-platform-tags"><span class="pull-right"></span></div>
+
+  <div>
+    <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-depenent-content" data-active="" data-togglable=":stream-chat-android-core:dokkaHtmlPartial/main"><div class="symbol monospace">open fun <a href="../../io.getstream.chat.android.core.internal.fsm.builder/-state-handler-builder/index.html#%5Bkotlin%2FAny%2FhashCode%2F%23%2FPointingToDeclaration%2F%5D%2FFunctions%2F1089527807">hashCode</a>(): <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-int/index.html">Int</a><span class="top-right-position"><span class="copy-icon"></span><div class="copy-popup-wrapper popup-to-left"><span class="copy-popup-icon"></span><span>Content copied to clipboard</span></div></span></div></div></div>
+  </div>
+</div>
+</div>
+                    </div>
+                  </div>
+                </div>
+<a data-name="%5Bkotlin%2FAny%2FtoString%2F%23%2FPointingToDeclaration%2F%5D%2FFunctions%2F1089527807" anchor-label="toString" id="%5Bkotlin%2FAny%2FtoString%2F%23%2FPointingToDeclaration%2F%5D%2FFunctions%2F1089527807" data-filterable-set=":stream-chat-android-core:dokkaHtmlPartial/main"></a>
+                <div class="table-row" data-filterable-current=":stream-chat-android-core:dokkaHtmlPartial/main" data-filterable-set=":stream-chat-android-core:dokkaHtmlPartial/main">
+                  <div class="main-subrow keyValue ">
+                    <div class=""><span class="inline-flex"><a href="../../io.getstream.chat.android.core.internal.fsm.builder/-state-handler-builder/index.html#%5Bkotlin%2FAny%2FtoString%2F%23%2FPointingToDeclaration%2F%5D%2FFunctions%2F1089527807">toString</a><span class="anchor-wrapper"><span class="anchor-icon" pointing-to="%5Bkotlin%2FAny%2FtoString%2F%23%2FPointingToDeclaration%2F%5D%2FFunctions%2F1089527807"></span>
+                          <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                        </span></span></div>
+                    <div>
+                      <div class="title"><div class="divergent-group" data-filterable-current=":stream-chat-android-core:dokkaHtmlPartial/main" data-filterable-set=":stream-chat-android-core:dokkaHtmlPartial/main"><div class="with-platform-tags"><span class="pull-right"></span></div>
+
+  <div>
+    <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-depenent-content" data-active="" data-togglable=":stream-chat-android-core:dokkaHtmlPartial/main"><div class="symbol monospace">open fun <a href="../../io.getstream.chat.android.core.internal.fsm.builder/-state-handler-builder/index.html#%5Bkotlin%2FAny%2FtoString%2F%23%2FPointingToDeclaration%2F%5D%2FFunctions%2F1089527807">toString</a>(): <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a><span class="top-right-position"><span class="copy-icon"></span><div class="copy-popup-wrapper popup-to-left"><span class="copy-popup-icon"></span><span>Content copied to clipboard</span></div></span></div></div></div>
+  </div>
+</div>
+</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="footer"><span class="go-to-top-icon"><a href="#content"></a></span><span>© 2021 Copyright</span><span class="pull-right"><span>Generated by </span><a href="https://github.com/Kotlin/dokka"><span>dokka</span><span class="padded-icon"></span></a></span></div>
+      </div>
+    </div>
+  
+
+
+</body></html>

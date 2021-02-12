@@ -1,0 +1,1 @@
+sourceset_dependencies = '{":stream-chat-android-offline:dokkaHtmlPartial/androidTestRelease": [], ":stream-chat-android-offline:dokkaHtmlPartial/debug": [], ":stream-chat-android-offline:dokkaHtmlPartial/main": [], ":stream-chat-android-offline:dokkaHtmlPartial/release": []}'

@@ -1,0 +1,411 @@
+<html><head>
+    <meta name="viewport" content="width=device-width, initial-scale=1" charset="UTF-8">
+    <title>ChannelsViewModel</title>
+    <link href="../../../images/logo-icon.svg" rel="icon" type="image/svg">
+</head><body><script>var pathToRoot = "../../../../";</script>
+    <script type="text/javascript" src="../../../scripts/sourceset_dependencies.js" async></script>
+    <link href="../../../styles/style.css" rel="Stylesheet">
+    <link href="../../../styles/logo-styles.css" rel="Stylesheet">
+    <link href="../../../styles/jetbrains-mono.css" rel="Stylesheet">
+    <link href="../../../styles/main.css" rel="Stylesheet">
+    <script type="text/javascript" src="../../../scripts/clipboard.js" async></script>
+    <script type="text/javascript" src="../../../scripts/navigation-loader.js" async></script>
+    <script type="text/javascript" src="../../../scripts/platform-content-handler.js" async></script>
+    <script type="text/javascript" src="../../../scripts/main.js" async></script>
+  
+  
+    <div id="container">
+      <div id="leftColumn"><a href="../../../../index.html">
+            <div id="logo"></div>
+          </a>
+        <div id="paneSearch"></div>
+        <div id="sideMenu"></div>
+      </div>
+      <div id="main">
+        <div id="leftToggler"><span class="icon-toggler"></span></div>
+        <script type="text/javascript" src="../../../scripts/main.js"></script>
+        <div class="main-content" id="content" pageids="stream-chat-android::com.getstream.sdk.chat.viewmodel.channels/ChannelsViewModel///PointingToDeclaration//-680937007">
+          <div class="navigation-wrapper" id="navigation-wrapper">
+            <div class="breadcrumbs"><a href="../../../index.html">stream-chat-android</a>/<a href="../index.html">com.getstream.sdk.chat.viewmodel.channels</a>/<a href="index.html">ChannelsViewModel</a></div>
+            <div class="pull-right d-flex">
+              <div id="searchBar"></div>
+            </div>
+          </div>
+          <div class="cover ">
+            <h1 class="cover"><span>Channels</span><wbr><span>View</span><wbr><span>Model</span></h1>
+            <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-depenent-content" data-active="" data-togglable=":stream-chat-android:dokkaHtmlPartial/release"><div class="symbol monospace">class <a href="index.html">ChannelsViewModel</a>(chatDomain: <a href="../../../../stream-chat-android-offline/stream-chat-android-offline/io.getstream.chat.android.livedata/-chat-domain/index.html">ChatDomain</a>, filter: <a href="../../../../stream-chat-android-client/stream-chat-android-client/io.getstream.chat.android.client.utils/-filter-object/index.html">FilterObject</a>, sort: <a href="../../../../stream-chat-android-client/stream-chat-android-client/io.getstream.chat.android.client.api.models/-query-sort/index.html">QuerySort</a>&lt;<a href="../../../../stream-chat-android-client/stream-chat-android-client/io.getstream.chat.android.client.models/-channel/index.html">Channel</a>&gt;, limit: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-int/index.html">Int</a>) : <a href="https://developer.android.com/reference/kotlin/androidx/lifecycle/ViewModel.html">ViewModel</a><span class="top-right-position"><span class="copy-icon"></span><div class="copy-popup-wrapper popup-to-left"><span class="copy-popup-icon"></span><span>Content copied to clipboard</span></div></span></div><p class="paragraph">ViewModel class for <a href="../../com.getstream.sdk.chat.view.channels/-channels-view/index.html">com.getstream.sdk.chat.view.channels.ChannelsView</a>. Responsible for keeping the channels list up to date. Can be bound to the view using <a href="../bind-view.html">ChannelsViewModel.bindView</a> function.</p></div></div>
+          </div>
+          <div class="tabbedcontent">
+            <div class="tabs-section" tabs-section="tabs-section"><button class="section-tab" data-active="" data-togglable="Types">Types</button><button class="section-tab" data-togglable="Constructors">Constructors</button><button class="section-tab" data-togglable="Functions">Functions</button><button class="section-tab" data-togglable="Inherited functions">Inherited functions</button><button class="section-tab" data-togglable="Properties">Properties</button><button class="section-tab" data-togglable="Extensions">Extensions</button><button class="section-tab" data-togglable="Parameters">Parameters</button></div>
+            <div class="tabs-section-body">
+              <h2 class="">Parameters</h2>
+              <div data-togglable="Parameters">
+                <div class="platform-hinted WithExtraAttributes" data-platform-hinted="data-platform-hinted" data-togglable="Parameters"><div class="content sourceset-depenent-content" data-active="" data-togglable=":stream-chat-android:dokkaHtmlPartial/release"><div data-togglable="Parameters"><div class="table" data-togglable="Parameters"><div class="table-row" data-filterable-current=":stream-chat-android:dokkaHtmlPartial/release" data-filterable-set=":stream-chat-android:dokkaHtmlPartial/release"><div class="main-subrow keyValue WithExtraAttributes"><div class=""><span class="inline-flex">chatDomain</span></div><div><div class="title"><div data-togglable="Parameters"><p class="paragraph">entry point for all livedata &amp; offline operations</p></div></div></div></div></div><div class="table-row" data-filterable-current=":stream-chat-android:dokkaHtmlPartial/release" data-filterable-set=":stream-chat-android:dokkaHtmlPartial/release"><div class="main-subrow keyValue WithExtraAttributes"><div class=""><span class="inline-flex">filter</span></div><div><div class="title"><div data-togglable="Parameters"><p class="paragraph">filter for querying channels, should never be empty</p></div></div></div></div></div><div class="table-row" data-filterable-current=":stream-chat-android:dokkaHtmlPartial/release" data-filterable-set=":stream-chat-android:dokkaHtmlPartial/release"><div class="main-subrow keyValue WithExtraAttributes"><div class=""><span class="inline-flex">sort</span></div><div><div class="title"><div data-togglable="Parameters"><p class="paragraph">defines the ordering of the channels</p></div></div></div></div></div><div class="table-row" data-filterable-current=":stream-chat-android:dokkaHtmlPartial/release" data-filterable-set=":stream-chat-android:dokkaHtmlPartial/release"><div class="main-subrow keyValue WithExtraAttributes"><div class=""><span class="inline-flex">limit</span></div><div><div class="title"><div data-togglable="Parameters"><p class="paragraph">the maximum number of channels to fetch</p></div></div></div></div></div></div></div></div></div>
+              </div>
+              <h2 class="tabbedcontent">Constructors</h2>
+              <div class="table" data-togglable="Constructors"><a data-name="%5Bcom.getstream.sdk.chat.viewmodel.channels%2FChannelsViewModel%2FChannelsViewModel%2F%23io.getstream.chat.android.livedata.ChatDomain%23io.getstream.chat.android.client.utils.FilterObject%23io.getstream.chat.android.client.api.models.QuerySort%5Bio.getstream.chat.android.client.models.Channel%5D%23kotlin.Int%2FPointingToDeclaration%2F%5D%2FConstructors%2F-680937007" anchor-label="ChannelsViewModel" id="%5Bcom.getstream.sdk.chat.viewmodel.channels%2FChannelsViewModel%2FChannelsViewModel%2F%23io.getstream.chat.android.livedata.ChatDomain%23io.getstream.chat.android.client.utils.FilterObject%23io.getstream.chat.android.client.api.models.QuerySort%5Bio.getstream.chat.android.client.models.Channel%5D%23kotlin.Int%2FPointingToDeclaration%2F%5D%2FConstructors%2F-680937007" data-filterable-set=":stream-chat-android:dokkaHtmlPartial/release"></a>
+                <div class="table-row" data-filterable-current=":stream-chat-android:dokkaHtmlPartial/release" data-filterable-set=":stream-chat-android:dokkaHtmlPartial/release">
+                  <div class="main-subrow keyValue TabbedContent">
+                    <div class=""><span class="inline-flex"><a href="-channels-view-model.html">ChannelsViewModel</a><span class="anchor-wrapper"><span class="anchor-icon" pointing-to="%5Bcom.getstream.sdk.chat.viewmodel.channels%2FChannelsViewModel%2FChannelsViewModel%2F%23io.getstream.chat.android.livedata.ChatDomain%23io.getstream.chat.android.client.utils.FilterObject%23io.getstream.chat.android.client.api.models.QuerySort%5Bio.getstream.chat.android.client.models.Channel%5D%23kotlin.Int%2FPointingToDeclaration%2F%5D%2FConstructors%2F-680937007"></span>
+                          <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                        </span></span></div>
+                    <div>
+                      <div class="title">
+                        <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-depenent-content" data-active="" data-togglable=":stream-chat-android:dokkaHtmlPartial/release"><div class="symbol monospace">fun <a href="-channels-view-model.html">ChannelsViewModel</a>(chatDomain: <a href="../../../../stream-chat-android-offline/stream-chat-android-offline/io.getstream.chat.android.livedata/-chat-domain/index.html">ChatDomain</a> = ChatDomain.instance(), filter: <a href="../../../../stream-chat-android-client/stream-chat-android-client/io.getstream.chat.android.client.utils/-filter-object/index.html">FilterObject</a> = Filters.and(
+        eq("type", "messaging"),
+        Filters.`in`("members", listOf(chatDomain.currentUser.id)),
+        Filters.ne("draft", true)
+    ), sort: <a href="../../../../stream-chat-android-client/stream-chat-android-client/io.getstream.chat.android.client.api.models/-query-sort/index.html">QuerySort</a>&lt;<a href="../../../../stream-chat-android-client/stream-chat-android-client/io.getstream.chat.android.client.models/-channel/index.html">Channel</a>&gt; = DEFAULT_SORT, limit: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-int/index.html">Int</a> = 30)<span class="top-right-position"><span class="copy-icon"></span><div class="copy-popup-wrapper popup-to-left"><span class="copy-popup-icon"></span><span>Content copied to clipboard</span></div></span></div><div class="brief ">entry point for all livedata &amp; offline operations</div></div></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <h2 class="">Types</h2>
+              <div class="table" data-togglable="Types"><a data-name="%5Bcom.getstream.sdk.chat.viewmodel.channels%2FChannelsViewModel.Companion%2F%2F%2FPointingToDeclaration%2F%5D%2FClasslikes%2F-680937007" anchor-label="Companion" id="%5Bcom.getstream.sdk.chat.viewmodel.channels%2FChannelsViewModel.Companion%2F%2F%2FPointingToDeclaration%2F%5D%2FClasslikes%2F-680937007" data-filterable-set=":stream-chat-android:dokkaHtmlPartial/release"></a>
+                <div class="table-row" data-filterable-current=":stream-chat-android:dokkaHtmlPartial/release" data-filterable-set=":stream-chat-android:dokkaHtmlPartial/release">
+                  <div class="main-subrow keyValue ">
+                    <div class=""><span class="inline-flex"><a href="-companion/index.html">Companion</a><span class="anchor-wrapper"><span class="anchor-icon" pointing-to="%5Bcom.getstream.sdk.chat.viewmodel.channels%2FChannelsViewModel.Companion%2F%2F%2FPointingToDeclaration%2F%5D%2FClasslikes%2F-680937007"></span>
+                          <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                        </span></span></div>
+                    <div>
+                      <div class="title"><div class="divergent-group" data-filterable-current=":stream-chat-android:dokkaHtmlPartial/release" data-filterable-set=":stream-chat-android:dokkaHtmlPartial/release"><div class="with-platform-tags"><span class="pull-right"></span></div>
+
+  <div>
+    <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-depenent-content" data-active="" data-togglable=":stream-chat-android:dokkaHtmlPartial/release"><div class="symbol monospace">object <a href="-companion/index.html">Companion</a><span class="top-right-position"><span class="copy-icon"></span><div class="copy-popup-wrapper popup-to-left"><span class="copy-popup-icon"></span><span>Content copied to clipboard</span></div></span></div></div></div>
+  </div>
+</div>
+</div>
+                    </div>
+                  </div>
+                </div>
+<a data-name="%5Bcom.getstream.sdk.chat.viewmodel.channels%2FChannelsViewModel.Event%2F%2F%2FPointingToDeclaration%2F%5D%2FClasslikes%2F-680937007" anchor-label="Event" id="%5Bcom.getstream.sdk.chat.viewmodel.channels%2FChannelsViewModel.Event%2F%2F%2FPointingToDeclaration%2F%5D%2FClasslikes%2F-680937007" data-filterable-set=":stream-chat-android:dokkaHtmlPartial/release"></a>
+                <div class="table-row" data-filterable-current=":stream-chat-android:dokkaHtmlPartial/release" data-filterable-set=":stream-chat-android:dokkaHtmlPartial/release">
+                  <div class="main-subrow keyValue ">
+                    <div class=""><span class="inline-flex"><a href="-event/index.html">Event</a><span class="anchor-wrapper"><span class="anchor-icon" pointing-to="%5Bcom.getstream.sdk.chat.viewmodel.channels%2FChannelsViewModel.Event%2F%2F%2FPointingToDeclaration%2F%5D%2FClasslikes%2F-680937007"></span>
+                          <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                        </span></span></div>
+                    <div>
+                      <div class="title"><div class="divergent-group" data-filterable-current=":stream-chat-android:dokkaHtmlPartial/release" data-filterable-set=":stream-chat-android:dokkaHtmlPartial/release"><div class="with-platform-tags"><span class="pull-right"></span></div>
+
+  <div>
+    <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-depenent-content" data-active="" data-togglable=":stream-chat-android:dokkaHtmlPartial/release"><div class="symbol monospace">sealed class <a href="-event/index.html">Event</a><span class="top-right-position"><span class="copy-icon"></span><div class="copy-popup-wrapper popup-to-left"><span class="copy-popup-icon"></span><span>Content copied to clipboard</span></div></span></div></div></div>
+  </div>
+</div>
+</div>
+                    </div>
+                  </div>
+                </div>
+<a data-name="%5Bcom.getstream.sdk.chat.viewmodel.channels%2FChannelsViewModel.PaginationState%2F%2F%2FPointingToDeclaration%2F%5D%2FClasslikes%2F-680937007" anchor-label="PaginationState" id="%5Bcom.getstream.sdk.chat.viewmodel.channels%2FChannelsViewModel.PaginationState%2F%2F%2FPointingToDeclaration%2F%5D%2FClasslikes%2F-680937007" data-filterable-set=":stream-chat-android:dokkaHtmlPartial/release"></a>
+                <div class="table-row" data-filterable-current=":stream-chat-android:dokkaHtmlPartial/release" data-filterable-set=":stream-chat-android:dokkaHtmlPartial/release">
+                  <div class="main-subrow keyValue ">
+                    <div class=""><span class="inline-flex"><a href="-pagination-state/index.html">PaginationState</a><span class="anchor-wrapper"><span class="anchor-icon" pointing-to="%5Bcom.getstream.sdk.chat.viewmodel.channels%2FChannelsViewModel.PaginationState%2F%2F%2FPointingToDeclaration%2F%5D%2FClasslikes%2F-680937007"></span>
+                          <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                        </span></span></div>
+                    <div>
+                      <div class="title"><div class="divergent-group" data-filterable-current=":stream-chat-android:dokkaHtmlPartial/release" data-filterable-set=":stream-chat-android:dokkaHtmlPartial/release"><div class="with-platform-tags"><span class="pull-right"></span></div>
+
+  <div>
+    <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-depenent-content" data-active="" data-togglable=":stream-chat-android:dokkaHtmlPartial/release"><div class="symbol monospace">data class <a href="-pagination-state/index.html">PaginationState</a>(loadingMore: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-boolean/index.html">Boolean</a>, endOfChannels: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-boolean/index.html">Boolean</a>)<span class="top-right-position"><span class="copy-icon"></span><div class="copy-popup-wrapper popup-to-left"><span class="copy-popup-icon"></span><span>Content copied to clipboard</span></div></span></div></div></div>
+  </div>
+</div>
+</div>
+                    </div>
+                  </div>
+                </div>
+<a data-name="%5Bcom.getstream.sdk.chat.viewmodel.channels%2FChannelsViewModel.State%2F%2F%2FPointingToDeclaration%2F%5D%2FClasslikes%2F-680937007" anchor-label="State" id="%5Bcom.getstream.sdk.chat.viewmodel.channels%2FChannelsViewModel.State%2F%2F%2FPointingToDeclaration%2F%5D%2FClasslikes%2F-680937007" data-filterable-set=":stream-chat-android:dokkaHtmlPartial/release"></a>
+                <div class="table-row" data-filterable-current=":stream-chat-android:dokkaHtmlPartial/release" data-filterable-set=":stream-chat-android:dokkaHtmlPartial/release">
+                  <div class="main-subrow keyValue ">
+                    <div class=""><span class="inline-flex"><a href="-state/index.html">State</a><span class="anchor-wrapper"><span class="anchor-icon" pointing-to="%5Bcom.getstream.sdk.chat.viewmodel.channels%2FChannelsViewModel.State%2F%2F%2FPointingToDeclaration%2F%5D%2FClasslikes%2F-680937007"></span>
+                          <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                        </span></span></div>
+                    <div>
+                      <div class="title"><div class="divergent-group" data-filterable-current=":stream-chat-android:dokkaHtmlPartial/release" data-filterable-set=":stream-chat-android:dokkaHtmlPartial/release"><div class="with-platform-tags"><span class="pull-right"></span></div>
+
+  <div>
+    <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-depenent-content" data-active="" data-togglable=":stream-chat-android:dokkaHtmlPartial/release"><div class="symbol monospace">sealed class <a href="-state/index.html">State</a><span class="top-right-position"><span class="copy-icon"></span><div class="copy-popup-wrapper popup-to-left"><span class="copy-popup-icon"></span><span>Content copied to clipboard</span></div></span></div></div></div>
+  </div>
+</div>
+</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <h2 class="">Properties</h2>
+              <div class="table" data-togglable="Properties"><a data-name="%5Bcom.getstream.sdk.chat.viewmodel.channels%2FChannelsViewModel%2FpaginationState%2F%23%2FPointingToDeclaration%2F%5D%2FProperties%2F-680937007" anchor-label="paginationState" id="%5Bcom.getstream.sdk.chat.viewmodel.channels%2FChannelsViewModel%2FpaginationState%2F%23%2FPointingToDeclaration%2F%5D%2FProperties%2F-680937007" data-filterable-set=":stream-chat-android:dokkaHtmlPartial/release"></a>
+                <div class="table-row" data-filterable-current=":stream-chat-android:dokkaHtmlPartial/release" data-filterable-set=":stream-chat-android:dokkaHtmlPartial/release">
+                  <div class="main-subrow keyValue ">
+                    <div class=""><span class="inline-flex"><a href="pagination-state.html">paginationState</a><span class="anchor-wrapper"><span class="anchor-icon" pointing-to="%5Bcom.getstream.sdk.chat.viewmodel.channels%2FChannelsViewModel%2FpaginationState%2F%23%2FPointingToDeclaration%2F%5D%2FProperties%2F-680937007"></span>
+                          <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                        </span></span></div>
+                    <div>
+                      <div class="title">
+                        <div class="platform-hinted " data-platform-hinted="data-platform-hinted" data-togglable="Properties"><div class="content sourceset-depenent-content" data-active="" data-togglable=":stream-chat-android:dokkaHtmlPartial/release"><a data-name="%5Bcom.getstream.sdk.chat.viewmodel.channels%2FChannelsViewModel%2FpaginationState%2F%23%2FPointingToDeclaration%2F%5D%2FProperties%2F-680937007" anchor-label="paginationState" id="%5Bcom.getstream.sdk.chat.viewmodel.channels%2FChannelsViewModel%2FpaginationState%2F%23%2FPointingToDeclaration%2F%5D%2FProperties%2F-680937007" data-filterable-set=":stream-chat-android:dokkaHtmlPartial/release"></a><div class="symbol monospace">val <a href="pagination-state.html">paginationState</a>: <a href="https://developer.android.com/reference/kotlin/androidx/lifecycle/LiveData.html">LiveData</a>&lt;<a href="-pagination-state/index.html">ChannelsViewModel.PaginationState</a>&gt;<span class="top-right-position"><span class="copy-icon"></span><div class="copy-popup-wrapper popup-to-left"><span class="copy-popup-icon"></span><span>Content copied to clipboard</span></div></span></div></div></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+<a data-name="%5Bcom.getstream.sdk.chat.viewmodel.channels%2FChannelsViewModel%2Fstate%2F%23%2FPointingToDeclaration%2F%5D%2FProperties%2F-680937007" anchor-label="state" id="%5Bcom.getstream.sdk.chat.viewmodel.channels%2FChannelsViewModel%2Fstate%2F%23%2FPointingToDeclaration%2F%5D%2FProperties%2F-680937007" data-filterable-set=":stream-chat-android:dokkaHtmlPartial/release"></a>
+                <div class="table-row" data-filterable-current=":stream-chat-android:dokkaHtmlPartial/release" data-filterable-set=":stream-chat-android:dokkaHtmlPartial/release">
+                  <div class="main-subrow keyValue ">
+                    <div class=""><span class="inline-flex"><a href="state.html">state</a><span class="anchor-wrapper"><span class="anchor-icon" pointing-to="%5Bcom.getstream.sdk.chat.viewmodel.channels%2FChannelsViewModel%2Fstate%2F%23%2FPointingToDeclaration%2F%5D%2FProperties%2F-680937007"></span>
+                          <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                        </span></span></div>
+                    <div>
+                      <div class="title">
+                        <div class="platform-hinted " data-platform-hinted="data-platform-hinted" data-togglable="Properties"><div class="content sourceset-depenent-content" data-active="" data-togglable=":stream-chat-android:dokkaHtmlPartial/release"><a data-name="%5Bcom.getstream.sdk.chat.viewmodel.channels%2FChannelsViewModel%2Fstate%2F%23%2FPointingToDeclaration%2F%5D%2FProperties%2F-680937007" anchor-label="state" id="%5Bcom.getstream.sdk.chat.viewmodel.channels%2FChannelsViewModel%2Fstate%2F%23%2FPointingToDeclaration%2F%5D%2FProperties%2F-680937007" data-filterable-set=":stream-chat-android:dokkaHtmlPartial/release"></a><div class="symbol monospace">val <a href="state.html">state</a>: <a href="https://developer.android.com/reference/kotlin/androidx/lifecycle/LiveData.html">LiveData</a>&lt;<a href="-state/index.html">ChannelsViewModel.State</a>&gt;<span class="top-right-position"><span class="copy-icon"></span><div class="copy-popup-wrapper popup-to-left"><span class="copy-popup-icon"></span><span>Content copied to clipboard</span></div></span></div></div></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+<a data-name="%5Bcom.getstream.sdk.chat.viewmodel.channels%2FChannelsViewModel%2FtypingEvents%2F%23%2FPointingToDeclaration%2F%5D%2FProperties%2F-680937007" anchor-label="typingEvents" id="%5Bcom.getstream.sdk.chat.viewmodel.channels%2FChannelsViewModel%2FtypingEvents%2F%23%2FPointingToDeclaration%2F%5D%2FProperties%2F-680937007" data-filterable-set=":stream-chat-android:dokkaHtmlPartial/release"></a>
+                <div class="table-row" data-filterable-current=":stream-chat-android:dokkaHtmlPartial/release" data-filterable-set=":stream-chat-android:dokkaHtmlPartial/release">
+                  <div class="main-subrow keyValue ">
+                    <div class=""><span class="inline-flex"><a href="typing-events.html">typingEvents</a><span class="anchor-wrapper"><span class="anchor-icon" pointing-to="%5Bcom.getstream.sdk.chat.viewmodel.channels%2FChannelsViewModel%2FtypingEvents%2F%23%2FPointingToDeclaration%2F%5D%2FProperties%2F-680937007"></span>
+                          <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                        </span></span></div>
+                    <div>
+                      <div class="title">
+                        <div class="platform-hinted " data-platform-hinted="data-platform-hinted" data-togglable="Properties"><div class="content sourceset-depenent-content" data-active="" data-togglable=":stream-chat-android:dokkaHtmlPartial/release"><a data-name="%5Bcom.getstream.sdk.chat.viewmodel.channels%2FChannelsViewModel%2FtypingEvents%2F%23%2FPointingToDeclaration%2F%5D%2FProperties%2F-680937007" anchor-label="typingEvents" id="%5Bcom.getstream.sdk.chat.viewmodel.channels%2FChannelsViewModel%2FtypingEvents%2F%23%2FPointingToDeclaration%2F%5D%2FProperties%2F-680937007" data-filterable-set=":stream-chat-android:dokkaHtmlPartial/release"></a><div class="symbol monospace">val <a href="typing-events.html">typingEvents</a>: <a href="https://developer.android.com/reference/kotlin/androidx/lifecycle/LiveData.html">LiveData</a>&lt;<a href="../../../../stream-chat-android-client/stream-chat-android-client/io.getstream.chat.android.client.models/-typing-event/index.html">TypingEvent</a>&gt;<span class="top-right-position"><span class="copy-icon"></span><div class="copy-popup-wrapper popup-to-left"><span class="copy-popup-icon"></span><span>Content copied to clipboard</span></div></span></div></div></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <h2 class="">Functions</h2>
+              <div class="table" data-togglable="Functions"><a data-name="%5Bcom.getstream.sdk.chat.viewmodel.channels%2FChannelsViewModel%2FdeleteChannel%2F%23io.getstream.chat.android.client.models.Channel%2FPointingToDeclaration%2F%5D%2FFunctions%2F-680937007" anchor-label="deleteChannel" id="%5Bcom.getstream.sdk.chat.viewmodel.channels%2FChannelsViewModel%2FdeleteChannel%2F%23io.getstream.chat.android.client.models.Channel%2FPointingToDeclaration%2F%5D%2FFunctions%2F-680937007" data-filterable-set=":stream-chat-android:dokkaHtmlPartial/release"></a>
+                <div class="table-row" data-filterable-current=":stream-chat-android:dokkaHtmlPartial/release" data-filterable-set=":stream-chat-android:dokkaHtmlPartial/release">
+                  <div class="main-subrow keyValue ">
+                    <div class=""><span class="inline-flex"><a href="delete-channel.html">deleteChannel</a><span class="anchor-wrapper"><span class="anchor-icon" pointing-to="%5Bcom.getstream.sdk.chat.viewmodel.channels%2FChannelsViewModel%2FdeleteChannel%2F%23io.getstream.chat.android.client.models.Channel%2FPointingToDeclaration%2F%5D%2FFunctions%2F-680937007"></span>
+                          <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                        </span></span></div>
+                    <div>
+                      <div class="title"><div class="divergent-group" data-filterable-current=":stream-chat-android:dokkaHtmlPartial/release" data-filterable-set=":stream-chat-android:dokkaHtmlPartial/release"><div class="with-platform-tags"><span class="pull-right"></span></div>
+
+  <div>
+    <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-depenent-content" data-active="" data-togglable=":stream-chat-android:dokkaHtmlPartial/release"><div class="symbol monospace">fun <a href="delete-channel.html">deleteChannel</a>(channel: <a href="../../../../stream-chat-android-client/stream-chat-android-client/io.getstream.chat.android.client.models/-channel/index.html">Channel</a>)<span class="top-right-position"><span class="copy-icon"></span><div class="copy-popup-wrapper popup-to-left"><span class="copy-popup-icon"></span><span>Content copied to clipboard</span></div></span></div></div></div>
+  </div>
+</div>
+</div>
+                    </div>
+                  </div>
+                </div>
+<a data-name="%5Bcom.getstream.sdk.chat.viewmodel.channels%2FChannelsViewModel%2FhideChannel%2F%23io.getstream.chat.android.client.models.Channel%2FPointingToDeclaration%2F%5D%2FFunctions%2F-680937007" anchor-label="hideChannel" id="%5Bcom.getstream.sdk.chat.viewmodel.channels%2FChannelsViewModel%2FhideChannel%2F%23io.getstream.chat.android.client.models.Channel%2FPointingToDeclaration%2F%5D%2FFunctions%2F-680937007" data-filterable-set=":stream-chat-android:dokkaHtmlPartial/release"></a>
+                <div class="table-row" data-filterable-current=":stream-chat-android:dokkaHtmlPartial/release" data-filterable-set=":stream-chat-android:dokkaHtmlPartial/release">
+                  <div class="main-subrow keyValue ">
+                    <div class=""><span class="inline-flex"><a href="hide-channel.html">hideChannel</a><span class="anchor-wrapper"><span class="anchor-icon" pointing-to="%5Bcom.getstream.sdk.chat.viewmodel.channels%2FChannelsViewModel%2FhideChannel%2F%23io.getstream.chat.android.client.models.Channel%2FPointingToDeclaration%2F%5D%2FFunctions%2F-680937007"></span>
+                          <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                        </span></span></div>
+                    <div>
+                      <div class="title"><div class="divergent-group" data-filterable-current=":stream-chat-android:dokkaHtmlPartial/release" data-filterable-set=":stream-chat-android:dokkaHtmlPartial/release"><div class="with-platform-tags"><span class="pull-right"></span></div>
+
+  <div>
+    <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-depenent-content" data-active="" data-togglable=":stream-chat-android:dokkaHtmlPartial/release"><div class="symbol monospace">fun <a href="hide-channel.html">hideChannel</a>(channel: <a href="../../../../stream-chat-android-client/stream-chat-android-client/io.getstream.chat.android.client.models/-channel/index.html">Channel</a>)<span class="top-right-position"><span class="copy-icon"></span><div class="copy-popup-wrapper popup-to-left"><span class="copy-popup-icon"></span><span>Content copied to clipboard</span></div></span></div></div></div>
+  </div>
+</div>
+</div>
+                    </div>
+                  </div>
+                </div>
+<a data-name="%5Bcom.getstream.sdk.chat.viewmodel.channels%2FChannelsViewModel%2FleaveChannel%2F%23io.getstream.chat.android.client.models.Channel%2FPointingToDeclaration%2F%5D%2FFunctions%2F-680937007" anchor-label="leaveChannel" id="%5Bcom.getstream.sdk.chat.viewmodel.channels%2FChannelsViewModel%2FleaveChannel%2F%23io.getstream.chat.android.client.models.Channel%2FPointingToDeclaration%2F%5D%2FFunctions%2F-680937007" data-filterable-set=":stream-chat-android:dokkaHtmlPartial/release"></a>
+                <div class="table-row" data-filterable-current=":stream-chat-android:dokkaHtmlPartial/release" data-filterable-set=":stream-chat-android:dokkaHtmlPartial/release">
+                  <div class="main-subrow keyValue ">
+                    <div class=""><span class="inline-flex"><a href="leave-channel.html">leaveChannel</a><span class="anchor-wrapper"><span class="anchor-icon" pointing-to="%5Bcom.getstream.sdk.chat.viewmodel.channels%2FChannelsViewModel%2FleaveChannel%2F%23io.getstream.chat.android.client.models.Channel%2FPointingToDeclaration%2F%5D%2FFunctions%2F-680937007"></span>
+                          <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                        </span></span></div>
+                    <div>
+                      <div class="title"><div class="divergent-group" data-filterable-current=":stream-chat-android:dokkaHtmlPartial/release" data-filterable-set=":stream-chat-android:dokkaHtmlPartial/release"><div class="with-platform-tags"><span class="pull-right"></span></div>
+
+  <div>
+    <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-depenent-content" data-active="" data-togglable=":stream-chat-android:dokkaHtmlPartial/release"><div class="symbol monospace">fun <a href="leave-channel.html">leaveChannel</a>(channel: <a href="../../../../stream-chat-android-client/stream-chat-android-client/io.getstream.chat.android.client.models/-channel/index.html">Channel</a>)<span class="top-right-position"><span class="copy-icon"></span><div class="copy-popup-wrapper popup-to-left"><span class="copy-popup-icon"></span><span>Content copied to clipboard</span></div></span></div></div></div>
+  </div>
+</div>
+</div>
+                    </div>
+                  </div>
+                </div>
+<a data-name="%5Bcom.getstream.sdk.chat.viewmodel.channels%2FChannelsViewModel%2FmarkAllRead%2F%23%2FPointingToDeclaration%2F%5D%2FFunctions%2F-680937007" anchor-label="markAllRead" id="%5Bcom.getstream.sdk.chat.viewmodel.channels%2FChannelsViewModel%2FmarkAllRead%2F%23%2FPointingToDeclaration%2F%5D%2FFunctions%2F-680937007" data-filterable-set=":stream-chat-android:dokkaHtmlPartial/release"></a>
+                <div class="table-row" data-filterable-current=":stream-chat-android:dokkaHtmlPartial/release" data-filterable-set=":stream-chat-android:dokkaHtmlPartial/release">
+                  <div class="main-subrow keyValue ">
+                    <div class=""><span class="inline-flex"><a href="mark-all-read.html">markAllRead</a><span class="anchor-wrapper"><span class="anchor-icon" pointing-to="%5Bcom.getstream.sdk.chat.viewmodel.channels%2FChannelsViewModel%2FmarkAllRead%2F%23%2FPointingToDeclaration%2F%5D%2FFunctions%2F-680937007"></span>
+                          <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                        </span></span></div>
+                    <div>
+                      <div class="title"><div class="divergent-group" data-filterable-current=":stream-chat-android:dokkaHtmlPartial/release" data-filterable-set=":stream-chat-android:dokkaHtmlPartial/release"><div class="with-platform-tags"><span class="pull-right"></span></div>
+
+  <div>
+    <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-depenent-content" data-active="" data-togglable=":stream-chat-android:dokkaHtmlPartial/release"><div class="symbol monospace">fun <a href="mark-all-read.html">markAllRead</a>()<span class="top-right-position"><span class="copy-icon"></span><div class="copy-popup-wrapper popup-to-left"><span class="copy-popup-icon"></span><span>Content copied to clipboard</span></div></span></div></div></div>
+  </div>
+</div>
+</div>
+                    </div>
+                  </div>
+                </div>
+<a data-name="%5Bcom.getstream.sdk.chat.viewmodel.channels%2FChannelsViewModel%2FonEvent%2F%23com.getstream.sdk.chat.viewmodel.channels.ChannelsViewModel.Event%2FPointingToDeclaration%2F%5D%2FFunctions%2F-680937007" anchor-label="onEvent" id="%5Bcom.getstream.sdk.chat.viewmodel.channels%2FChannelsViewModel%2FonEvent%2F%23com.getstream.sdk.chat.viewmodel.channels.ChannelsViewModel.Event%2FPointingToDeclaration%2F%5D%2FFunctions%2F-680937007" data-filterable-set=":stream-chat-android:dokkaHtmlPartial/release"></a>
+                <div class="table-row" data-filterable-current=":stream-chat-android:dokkaHtmlPartial/release" data-filterable-set=":stream-chat-android:dokkaHtmlPartial/release">
+                  <div class="main-subrow keyValue ">
+                    <div class=""><span class="inline-flex"><a href="on-event.html">onEvent</a><span class="anchor-wrapper"><span class="anchor-icon" pointing-to="%5Bcom.getstream.sdk.chat.viewmodel.channels%2FChannelsViewModel%2FonEvent%2F%23com.getstream.sdk.chat.viewmodel.channels.ChannelsViewModel.Event%2FPointingToDeclaration%2F%5D%2FFunctions%2F-680937007"></span>
+                          <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                        </span></span></div>
+                    <div>
+                      <div class="title"><div class="divergent-group" data-filterable-current=":stream-chat-android:dokkaHtmlPartial/release" data-filterable-set=":stream-chat-android:dokkaHtmlPartial/release"><div class="with-platform-tags"><span class="pull-right"></span></div>
+
+  <div>
+    <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-depenent-content" data-active="" data-togglable=":stream-chat-android:dokkaHtmlPartial/release"><div class="symbol monospace">fun <a href="on-event.html">onEvent</a>(event: <a href="-event/index.html">ChannelsViewModel.Event</a>)<span class="top-right-position"><span class="copy-icon"></span><div class="copy-popup-wrapper popup-to-left"><span class="copy-popup-icon"></span><span>Content copied to clipboard</span></div></span></div></div></div>
+  </div>
+</div>
+</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <h2 class="">Inherited functions</h2>
+              <div class="table" data-togglable="Inherited functions"><a data-name="%5Bandroidx.lifecycle%2FViewModel%2Fclear%2F%23%2FPointingToDeclaration%2F%5D%2FFunctions%2F-680937007" anchor-label="clear" id="%5Bandroidx.lifecycle%2FViewModel%2Fclear%2F%23%2FPointingToDeclaration%2F%5D%2FFunctions%2F-680937007" data-filterable-set=":stream-chat-android:dokkaHtmlPartial/release"></a>
+                <div class="table-row" data-filterable-current=":stream-chat-android:dokkaHtmlPartial/release" data-filterable-set=":stream-chat-android:dokkaHtmlPartial/release">
+                  <div class="main-subrow keyValue ">
+                    <div class=""><span class="inline-flex"><a href="index.html#%5Bandroidx.lifecycle%2FViewModel%2Fclear%2F%23%2FPointingToDeclaration%2F%5D%2FFunctions%2F-680937007">clear</a><span class="anchor-wrapper"><span class="anchor-icon" pointing-to="%5Bandroidx.lifecycle%2FViewModel%2Fclear%2F%23%2FPointingToDeclaration%2F%5D%2FFunctions%2F-680937007"></span>
+                          <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                        </span></span></div>
+                    <div>
+                      <div class="title"><div class="divergent-group" data-filterable-current=":stream-chat-android:dokkaHtmlPartial/release" data-filterable-set=":stream-chat-android:dokkaHtmlPartial/release"><div class="with-platform-tags"><span class="pull-right"></span></div>
+
+  <div>
+    <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-depenent-content" data-active="" data-togglable=":stream-chat-android:dokkaHtmlPartial/release"><div class="symbol monospace"><div class="block"><div class="block">@<a href="https://developer.android.com/reference/kotlin/androidx/annotation/MainThread.html">MainThread</a>()</div></div>fun <a href="index.html#%5Bandroidx.lifecycle%2FViewModel%2Fclear%2F%23%2FPointingToDeclaration%2F%5D%2FFunctions%2F-680937007">clear</a>()<span class="top-right-position"><span class="copy-icon"></span><div class="copy-popup-wrapper popup-to-left"><span class="copy-popup-icon"></span><span>Content copied to clipboard</span></div></span></div></div></div>
+  </div>
+</div>
+</div>
+                    </div>
+                  </div>
+                </div>
+<a data-name="%5Bkotlin%2FAny%2Fequals%2F%23kotlin.Any%3F%2FPointingToDeclaration%2F%5D%2FFunctions%2F-680937007" anchor-label="equals" id="%5Bkotlin%2FAny%2Fequals%2F%23kotlin.Any%3F%2FPointingToDeclaration%2F%5D%2FFunctions%2F-680937007" data-filterable-set=":stream-chat-android:dokkaHtmlPartial/release"></a>
+                <div class="table-row" data-filterable-current=":stream-chat-android:dokkaHtmlPartial/release" data-filterable-set=":stream-chat-android:dokkaHtmlPartial/release">
+                  <div class="main-subrow keyValue ">
+                    <div class=""><span class="inline-flex"><a href="../../com.getstream.sdk.chat.viewmodel.factory/-channels-view-model-factory/index.html#%5Bkotlin%2FAny%2Fequals%2F%23kotlin.Any%3F%2FPointingToDeclaration%2F%5D%2FFunctions%2F-680937007">equals</a><span class="anchor-wrapper"><span class="anchor-icon" pointing-to="%5Bkotlin%2FAny%2Fequals%2F%23kotlin.Any%3F%2FPointingToDeclaration%2F%5D%2FFunctions%2F-680937007"></span>
+                          <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                        </span></span></div>
+                    <div>
+                      <div class="title"><div class="divergent-group" data-filterable-current=":stream-chat-android:dokkaHtmlPartial/release" data-filterable-set=":stream-chat-android:dokkaHtmlPartial/release"><div class="with-platform-tags"><span class="pull-right"></span></div>
+
+  <div>
+    <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-depenent-content" data-active="" data-togglable=":stream-chat-android:dokkaHtmlPartial/release"><div class="symbol monospace">open operator fun <a href="../../com.getstream.sdk.chat.viewmodel.factory/-channels-view-model-factory/index.html#%5Bkotlin%2FAny%2Fequals%2F%23kotlin.Any%3F%2FPointingToDeclaration%2F%5D%2FFunctions%2F-680937007">equals</a>(other: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-any/index.html">Any</a>?): <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-boolean/index.html">Boolean</a><span class="top-right-position"><span class="copy-icon"></span><div class="copy-popup-wrapper popup-to-left"><span class="copy-popup-icon"></span><span>Content copied to clipboard</span></div></span></div></div></div>
+  </div>
+</div>
+</div>
+                    </div>
+                  </div>
+                </div>
+<a data-name="%5Bandroidx.lifecycle%2FViewModel%2FgetTag%2F%23kotlin.String%2FPointingToDeclaration%2F%5D%2FFunctions%2F-680937007" anchor-label="getTag" id="%5Bandroidx.lifecycle%2FViewModel%2FgetTag%2F%23kotlin.String%2FPointingToDeclaration%2F%5D%2FFunctions%2F-680937007" data-filterable-set=":stream-chat-android:dokkaHtmlPartial/release"></a>
+                <div class="table-row" data-filterable-current=":stream-chat-android:dokkaHtmlPartial/release" data-filterable-set=":stream-chat-android:dokkaHtmlPartial/release">
+                  <div class="main-subrow keyValue ">
+                    <div class=""><span class="inline-flex"><a href="index.html#%5Bandroidx.lifecycle%2FViewModel%2FgetTag%2F%23kotlin.String%2FPointingToDeclaration%2F%5D%2FFunctions%2F-680937007">getTag</a><span class="anchor-wrapper"><span class="anchor-icon" pointing-to="%5Bandroidx.lifecycle%2FViewModel%2FgetTag%2F%23kotlin.String%2FPointingToDeclaration%2F%5D%2FFunctions%2F-680937007"></span>
+                          <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                        </span></span></div>
+                    <div>
+                      <div class="title"><div class="divergent-group" data-filterable-current=":stream-chat-android:dokkaHtmlPartial/release" data-filterable-set=":stream-chat-android:dokkaHtmlPartial/release"><div class="with-platform-tags"><span class="pull-right"></span></div>
+
+  <div>
+    <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-depenent-content" data-active="" data-togglable=":stream-chat-android:dokkaHtmlPartial/release"><div class="symbol monospace">open fun &lt;<a href="index.html#%5Bandroidx.lifecycle%2FViewModel%2FgetTag%2F%23kotlin.String%2FPointingToDeclaration%2F%5D%2FFunctions%2F-680937007">T</a> : <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-any/index.html">Any</a>&gt; <a href="index.html#%5Bandroidx.lifecycle%2FViewModel%2FgetTag%2F%23kotlin.String%2FPointingToDeclaration%2F%5D%2FFunctions%2F-680937007">getTag</a>(p0: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a>): <a href="index.html#%5Bandroidx.lifecycle%2FViewModel%2FgetTag%2F%23kotlin.String%2FPointingToDeclaration%2F%5D%2FFunctions%2F-680937007">T</a><span class="top-right-position"><span class="copy-icon"></span><div class="copy-popup-wrapper popup-to-left"><span class="copy-popup-icon"></span><span>Content copied to clipboard</span></div></span></div></div></div>
+  </div>
+</div>
+</div>
+                    </div>
+                  </div>
+                </div>
+<a data-name="%5Bkotlin%2FAny%2FhashCode%2F%23%2FPointingToDeclaration%2F%5D%2FFunctions%2F-680937007" anchor-label="hashCode" id="%5Bkotlin%2FAny%2FhashCode%2F%23%2FPointingToDeclaration%2F%5D%2FFunctions%2F-680937007" data-filterable-set=":stream-chat-android:dokkaHtmlPartial/release"></a>
+                <div class="table-row" data-filterable-current=":stream-chat-android:dokkaHtmlPartial/release" data-filterable-set=":stream-chat-android:dokkaHtmlPartial/release">
+                  <div class="main-subrow keyValue ">
+                    <div class=""><span class="inline-flex"><a href="../../com.getstream.sdk.chat.viewmodel.factory/-channels-view-model-factory/index.html#%5Bkotlin%2FAny%2FhashCode%2F%23%2FPointingToDeclaration%2F%5D%2FFunctions%2F-680937007">hashCode</a><span class="anchor-wrapper"><span class="anchor-icon" pointing-to="%5Bkotlin%2FAny%2FhashCode%2F%23%2FPointingToDeclaration%2F%5D%2FFunctions%2F-680937007"></span>
+                          <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                        </span></span></div>
+                    <div>
+                      <div class="title"><div class="divergent-group" data-filterable-current=":stream-chat-android:dokkaHtmlPartial/release" data-filterable-set=":stream-chat-android:dokkaHtmlPartial/release"><div class="with-platform-tags"><span class="pull-right"></span></div>
+
+  <div>
+    <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-depenent-content" data-active="" data-togglable=":stream-chat-android:dokkaHtmlPartial/release"><div class="symbol monospace">open fun <a href="../../com.getstream.sdk.chat.viewmodel.factory/-channels-view-model-factory/index.html#%5Bkotlin%2FAny%2FhashCode%2F%23%2FPointingToDeclaration%2F%5D%2FFunctions%2F-680937007">hashCode</a>(): <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-int/index.html">Int</a><span class="top-right-position"><span class="copy-icon"></span><div class="copy-popup-wrapper popup-to-left"><span class="copy-popup-icon"></span><span>Content copied to clipboard</span></div></span></div></div></div>
+  </div>
+</div>
+</div>
+                    </div>
+                  </div>
+                </div>
+<a data-name="%5Bandroidx.lifecycle%2FViewModel%2FonCleared%2F%23%2FPointingToDeclaration%2F%5D%2FFunctions%2F-680937007" anchor-label="onCleared" id="%5Bandroidx.lifecycle%2FViewModel%2FonCleared%2F%23%2FPointingToDeclaration%2F%5D%2FFunctions%2F-680937007" data-filterable-set=":stream-chat-android:dokkaHtmlPartial/release"></a>
+                <div class="table-row" data-filterable-current=":stream-chat-android:dokkaHtmlPartial/release" data-filterable-set=":stream-chat-android:dokkaHtmlPartial/release">
+                  <div class="main-subrow keyValue ">
+                    <div class=""><span class="inline-flex"><a href="index.html#%5Bandroidx.lifecycle%2FViewModel%2FonCleared%2F%23%2FPointingToDeclaration%2F%5D%2FFunctions%2F-680937007">onCleared</a><span class="anchor-wrapper"><span class="anchor-icon" pointing-to="%5Bandroidx.lifecycle%2FViewModel%2FonCleared%2F%23%2FPointingToDeclaration%2F%5D%2FFunctions%2F-680937007"></span>
+                          <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                        </span></span></div>
+                    <div>
+                      <div class="title"><div class="divergent-group" data-filterable-current=":stream-chat-android:dokkaHtmlPartial/release" data-filterable-set=":stream-chat-android:dokkaHtmlPartial/release"><div class="with-platform-tags"><span class="pull-right"></span></div>
+
+  <div>
+    <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-depenent-content" data-active="" data-togglable=":stream-chat-android:dokkaHtmlPartial/release"><div class="symbol monospace">open fun <a href="index.html#%5Bandroidx.lifecycle%2FViewModel%2FonCleared%2F%23%2FPointingToDeclaration%2F%5D%2FFunctions%2F-680937007">onCleared</a>()<span class="top-right-position"><span class="copy-icon"></span><div class="copy-popup-wrapper popup-to-left"><span class="copy-popup-icon"></span><span>Content copied to clipboard</span></div></span></div></div></div>
+  </div>
+</div>
+</div>
+                    </div>
+                  </div>
+                </div>
+<a data-name="%5Bandroidx.lifecycle%2FViewModel%2FsetTagIfAbsent%2F%23kotlin.String%23TypeParam%28bounds%3D%5Bkotlin.Any%5D%29%2FPointingToDeclaration%2F%5D%2FFunctions%2F-680937007" anchor-label="setTagIfAbsent" id="%5Bandroidx.lifecycle%2FViewModel%2FsetTagIfAbsent%2F%23kotlin.String%23TypeParam%28bounds%3D%5Bkotlin.Any%5D%29%2FPointingToDeclaration%2F%5D%2FFunctions%2F-680937007" data-filterable-set=":stream-chat-android:dokkaHtmlPartial/release"></a>
+                <div class="table-row" data-filterable-current=":stream-chat-android:dokkaHtmlPartial/release" data-filterable-set=":stream-chat-android:dokkaHtmlPartial/release">
+                  <div class="main-subrow keyValue ">
+                    <div class=""><span class="inline-flex"><a href="index.html#%5Bandroidx.lifecycle%2FViewModel%2FsetTagIfAbsent%2F%23kotlin.String%23TypeParam%28bounds%3D%5Bkotlin.Any%5D%29%2FPointingToDeclaration%2F%5D%2FFunctions%2F-680937007">setTagIfAbsent</a><span class="anchor-wrapper"><span class="anchor-icon" pointing-to="%5Bandroidx.lifecycle%2FViewModel%2FsetTagIfAbsent%2F%23kotlin.String%23TypeParam%28bounds%3D%5Bkotlin.Any%5D%29%2FPointingToDeclaration%2F%5D%2FFunctions%2F-680937007"></span>
+                          <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                        </span></span></div>
+                    <div>
+                      <div class="title"><div class="divergent-group" data-filterable-current=":stream-chat-android:dokkaHtmlPartial/release" data-filterable-set=":stream-chat-android:dokkaHtmlPartial/release"><div class="with-platform-tags"><span class="pull-right"></span></div>
+
+  <div>
+    <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-depenent-content" data-active="" data-togglable=":stream-chat-android:dokkaHtmlPartial/release"><div class="symbol monospace">open fun &lt;<a href="index.html#%5Bandroidx.lifecycle%2FViewModel%2FsetTagIfAbsent%2F%23kotlin.String%23TypeParam%28bounds%3D%5Bkotlin.Any%5D%29%2FPointingToDeclaration%2F%5D%2FFunctions%2F-680937007">T</a> : <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-any/index.html">Any</a>&gt; <a href="index.html#%5Bandroidx.lifecycle%2FViewModel%2FsetTagIfAbsent%2F%23kotlin.String%23TypeParam%28bounds%3D%5Bkotlin.Any%5D%29%2FPointingToDeclaration%2F%5D%2FFunctions%2F-680937007">setTagIfAbsent</a>(p0: <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a>, p1: <a href="index.html#%5Bandroidx.lifecycle%2FViewModel%2FsetTagIfAbsent%2F%23kotlin.String%23TypeParam%28bounds%3D%5Bkotlin.Any%5D%29%2FPointingToDeclaration%2F%5D%2FFunctions%2F-680937007">T</a>): <a href="index.html#%5Bandroidx.lifecycle%2FViewModel%2FsetTagIfAbsent%2F%23kotlin.String%23TypeParam%28bounds%3D%5Bkotlin.Any%5D%29%2FPointingToDeclaration%2F%5D%2FFunctions%2F-680937007">T</a><span class="top-right-position"><span class="copy-icon"></span><div class="copy-popup-wrapper popup-to-left"><span class="copy-popup-icon"></span><span>Content copied to clipboard</span></div></span></div></div></div>
+  </div>
+</div>
+</div>
+                    </div>
+                  </div>
+                </div>
+<a data-name="%5Bkotlin%2FAny%2FtoString%2F%23%2FPointingToDeclaration%2F%5D%2FFunctions%2F-680937007" anchor-label="toString" id="%5Bkotlin%2FAny%2FtoString%2F%23%2FPointingToDeclaration%2F%5D%2FFunctions%2F-680937007" data-filterable-set=":stream-chat-android:dokkaHtmlPartial/release"></a>
+                <div class="table-row" data-filterable-current=":stream-chat-android:dokkaHtmlPartial/release" data-filterable-set=":stream-chat-android:dokkaHtmlPartial/release">
+                  <div class="main-subrow keyValue ">
+                    <div class=""><span class="inline-flex"><a href="../../com.getstream.sdk.chat.viewmodel.factory/-channels-view-model-factory/index.html#%5Bkotlin%2FAny%2FtoString%2F%23%2FPointingToDeclaration%2F%5D%2FFunctions%2F-680937007">toString</a><span class="anchor-wrapper"><span class="anchor-icon" pointing-to="%5Bkotlin%2FAny%2FtoString%2F%23%2FPointingToDeclaration%2F%5D%2FFunctions%2F-680937007"></span>
+                          <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                        </span></span></div>
+                    <div>
+                      <div class="title"><div class="divergent-group" data-filterable-current=":stream-chat-android:dokkaHtmlPartial/release" data-filterable-set=":stream-chat-android:dokkaHtmlPartial/release"><div class="with-platform-tags"><span class="pull-right"></span></div>
+
+  <div>
+    <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-depenent-content" data-active="" data-togglable=":stream-chat-android:dokkaHtmlPartial/release"><div class="symbol monospace">open fun <a href="../../com.getstream.sdk.chat.viewmodel.factory/-channels-view-model-factory/index.html#%5Bkotlin%2FAny%2FtoString%2F%23%2FPointingToDeclaration%2F%5D%2FFunctions%2F-680937007">toString</a>(): <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a><span class="top-right-position"><span class="copy-icon"></span><div class="copy-popup-wrapper popup-to-left"><span class="copy-popup-icon"></span><span>Content copied to clipboard</span></div></span></div></div></div>
+  </div>
+</div>
+</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <h2 class="tabbedcontent">Extensions</h2>
+              <div class="table" data-togglable="Extensions"><a data-name="%5Bcom.getstream.sdk.chat.viewmodel.channels%2F%2FbindView%2Fcom.getstream.sdk.chat.viewmodel.channels.ChannelsViewModel%23com.getstream.sdk.chat.view.channels.ChannelsView%23androidx.lifecycle.LifecycleOwner%2FPointingToDeclaration%2F%5D%2FExtensions%2F-680937007" anchor-label="bindView" id="%5Bcom.getstream.sdk.chat.viewmodel.channels%2F%2FbindView%2Fcom.getstream.sdk.chat.viewmodel.channels.ChannelsViewModel%23com.getstream.sdk.chat.view.channels.ChannelsView%23androidx.lifecycle.LifecycleOwner%2FPointingToDeclaration%2F%5D%2FExtensions%2F-680937007" data-filterable-set=":stream-chat-android:dokkaHtmlPartial/release"></a>
+                <div class="table-row" data-filterable-current=":stream-chat-android:dokkaHtmlPartial/release" data-filterable-set=":stream-chat-android:dokkaHtmlPartial/release">
+                  <div class="main-subrow keyValue ">
+                    <div class=""><span class="inline-flex"><a href="../bind-view.html">bindView</a><span class="anchor-wrapper"><span class="anchor-icon" pointing-to="%5Bcom.getstream.sdk.chat.viewmodel.channels%2F%2FbindView%2Fcom.getstream.sdk.chat.viewmodel.channels.ChannelsViewModel%23com.getstream.sdk.chat.view.channels.ChannelsView%23androidx.lifecycle.LifecycleOwner%2FPointingToDeclaration%2F%5D%2FExtensions%2F-680937007"></span>
+                          <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                        </span></span></div>
+                    <div>
+                      <div class="title"><div class="divergent-group" data-filterable-current=":stream-chat-android:dokkaHtmlPartial/release" data-filterable-set=":stream-chat-android:dokkaHtmlPartial/release"><div class="with-platform-tags"><span class="pull-right"></span></div>
+
+  <div>
+    <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-depenent-content" data-active="" data-togglable=":stream-chat-android:dokkaHtmlPartial/release"><div class="symbol monospace"><div class="block"><div class="block">@<a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin.jvm/-jvm-name/index.html">JvmName</a>(<span>name = <span class="breakable-word">bind</span></span><wbr>)</div></div>fun <a href="index.html">ChannelsViewModel</a>.<a href="../bind-view.html">bindView</a>(view: <a href="../../com.getstream.sdk.chat.view.channels/-channels-view/index.html">ChannelsView</a>, lifecycle: <a href="https://developer.android.com/reference/kotlin/androidx/lifecycle/LifecycleOwner.html">LifecycleOwner</a>): <a href="index.html">ChannelsViewModel</a><span class="top-right-position"><span class="copy-icon"></span><div class="copy-popup-wrapper popup-to-left"><span class="copy-popup-icon"></span><span>Content copied to clipboard</span></div></span></div></div></div>
+  </div>
+<a data-name="%5Bcom.getstream.sdk.chat.viewmodel.channels%2F%2FbindView%2Fcom.getstream.sdk.chat.viewmodel.channels.ChannelsViewModel%23com.getstream.sdk.chat.view.channels.ChannelsView%23androidx.lifecycle.LifecycleOwner%2FPointingToDeclaration%2F%5D%2FExtensions%2F-680937007" anchor-label="bindView" id="%5Bcom.getstream.sdk.chat.viewmodel.channels%2F%2FbindView%2Fcom.getstream.sdk.chat.viewmodel.channels.ChannelsViewModel%23com.getstream.sdk.chat.view.channels.ChannelsView%23androidx.lifecycle.LifecycleOwner%2FPointingToDeclaration%2F%5D%2FExtensions%2F-680937007" data-filterable-set=":stream-chat-android:dokkaHtmlPartial/release"></a><div class="brief "><a data-name="%5Bcom.getstream.sdk.chat.viewmodel.channels%2F%2FbindView%2Fcom.getstream.sdk.chat.viewmodel.channels.ChannelsViewModel%23com.getstream.sdk.chat.view.channels.ChannelsView%23androidx.lifecycle.LifecycleOwner%2FPointingToDeclaration%2F%5D%2FExtensions%2F-680937007" anchor-label="bindView" id="%5Bcom.getstream.sdk.chat.viewmodel.channels%2F%2FbindView%2Fcom.getstream.sdk.chat.viewmodel.channels.ChannelsViewModel%23com.getstream.sdk.chat.view.channels.ChannelsView%23androidx.lifecycle.LifecycleOwner%2FPointingToDeclaration%2F%5D%2FExtensions%2F-680937007" data-filterable-set=":stream-chat-android:dokkaHtmlPartial/release"></a>Binds <a href="../../com.getstream.sdk.chat.view.channels/-channels-view/index.html">ChannelsView</a> with <a href="index.html">ChannelsViewModel</a>, updating the view's state based on data provided by the ViewModel, and forwarding View events to the ViewModel, to load more channels as the View is scrolled.</div></div>
+</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="footer"><span class="go-to-top-icon"><a href="#content"></a></span><span>© 2021 Copyright</span><span class="pull-right"><span>Generated by </span><a href="https://github.com/Kotlin/dokka"><span>dokka</span><span class="padded-icon"></span></a></span></div>
+      </div>
+    </div>
+  
+
+
+</body></html>
