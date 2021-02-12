@@ -12,8 +12,9 @@ import androidx.core.view.isVisible
 import com.getstream.sdk.chat.style.TextStyle
 import io.getstream.chat.android.client.models.User
 import io.getstream.chat.android.ui.R
+import io.getstream.chat.android.ui.common.extensions.internal.getColorCompat
+import io.getstream.chat.android.ui.common.extensions.internal.getDimension
 import io.getstream.chat.android.ui.databinding.StreamUiChannelListHeaderViewBinding
-import io.getstream.chat.android.ui.utils.extensions.getDimension
 
 public class ChannelListHeaderView : ConstraintLayout {
 
@@ -96,7 +97,7 @@ public class ChannelListHeaderView : ConstraintLayout {
         )
             .color(
                 R.styleable.ChannelListHeaderView_streamUiOnlineTitleTextColor,
-                ContextCompat.getColor(context, R.color.stream_ui_black)
+                context.getColorCompat(R.color.stream_ui_text_color_primary)
             )
             .font(
                 R.styleable.ChannelListHeaderView_streamUiOnlineTitleFontAssets,
@@ -115,7 +116,7 @@ public class ChannelListHeaderView : ConstraintLayout {
         )
             .color(
                 R.styleable.ChannelListHeaderView_streamUiOfflineTitleTextColor,
-                ContextCompat.getColor(context, R.color.stream_ui_black)
+                context.getColorCompat(R.color.stream_ui_text_color_primary)
             )
             .font(
                 R.styleable.ChannelListHeaderView_streamUiOfflineTitleFontAssets,

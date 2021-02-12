@@ -13,7 +13,7 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="24dp"
         android:text="EditReactionsView"
-        android:textColor="@color/stream_ui_black"
+        android:textColor="@color/stream_ui_text_color_primary"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
@@ -37,28 +37,28 @@
             >
 
 
-            <io.getstream.chat.android.ui.messages.reactions.edit.EditReactionsView
+            <io.getstream.chat.android.ui.message.list.reactions.edit.internal.EditReactionsView
                 android:id="@+id/editReactionsView1"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
                 />
 
-            <io.getstream.chat.android.ui.messages.reactions.edit.EditReactionsView
+            <io.getstream.chat.android.ui.message.list.reactions.edit.internal.EditReactionsView
                 android:id="@+id/editReactionsView2"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
                 />
 
-            <io.getstream.chat.android.ui.messages.reactions.edit.EditReactionsView
+            <io.getstream.chat.android.ui.message.list.reactions.edit.internal.EditReactionsView
                 android:id="@+id/editReactionsView3"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
                 />
 
-            <io.getstream.chat.android.ui.messages.reactions.edit.EditReactionsView
+            <io.getstream.chat.android.ui.message.list.reactions.edit.internal.EditReactionsView
                 android:id="@+id/editReactionsView4"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"

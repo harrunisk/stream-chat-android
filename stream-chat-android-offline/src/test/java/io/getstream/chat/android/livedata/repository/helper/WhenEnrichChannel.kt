@@ -12,7 +12,7 @@ import org.amshove.kluent.calling
 import org.junit.jupiter.api.Test
 
 @ExperimentalCoroutinesApi
-internal class WhenEnrichChannel : BaseRepositoryHelperTest() {
+internal class WhenEnrichChannel : BaseRepositoryFacadeTest() {
 
     @Test
     fun `Given a channel config in repo Should update channel by config from repo`() {
@@ -20,7 +20,7 @@ internal class WhenEnrichChannel : BaseRepositoryHelperTest() {
             val channel = randomChannel(type = "channelType")
             val defaultConfig = Config(name = "default")
             val config = Config(name = "forChannel")
-            When calling configs.select("channelType") doReturn ChannelConfig("channelType", config)
+            When calling configs.selectChannelConfig("channelType") doReturn ChannelConfig("channelType", config)
 
             channel.enrichChannel(emptyMap(), defaultConfig)
 
@@ -33,7 +33,7 @@ internal class WhenEnrichChannel : BaseRepositoryHelperTest() {
         sut.run {
             val channel = randomChannel(type = "channelType")
             val defaultConfig = Config(name = "default")
-            When calling configs.select("channelType") doReturn null
+            When calling configs.selectChannelConfig("channelType") doReturn null
 
             channel.enrichChannel(emptyMap(), defaultConfig)
 

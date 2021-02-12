@@ -45,7 +45,7 @@
             />
     </FrameLayout>
 
-    <io.getstream.chat.android.ui.messages.adapter.view.MessageReplyView
+    <io.getstream.chat.android.ui.message.list.adapter.view.internal.MessageReplyView
         android:id="@+id/messageReplyView"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
@@ -98,7 +98,7 @@
         android:paddingBottom="18dp"
         android:scrollbars="vertical"
         android:textAppearance="@style/StreamUiTextAppearance.Body"
-        android:textColorHint="@color/stream_ui_grey"
+        android:textColorHint="@color/stream_ui_text_color_hint"
         android:textSize="15sp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toStartOf="@id/clearCommandButton"

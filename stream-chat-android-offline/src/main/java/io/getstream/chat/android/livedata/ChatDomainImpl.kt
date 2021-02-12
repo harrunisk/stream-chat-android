@@ -7,7 +7,6 @@ import androidx.annotation.VisibleForTesting
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MediatorLiveData
 import androidx.lifecycle.asLiveData
-import androidx.room.Room
 import io.getstream.chat.android.client.BuildConfig.STREAM_CHAT_VERSION
 import io.getstream.chat.android.client.ChatClient
 import io.getstream.chat.android.client.api.models.QueryChannelsRequest
@@ -16,6 +15,7 @@ import io.getstream.chat.android.client.call.Call
 import io.getstream.chat.android.client.call.await
 import io.getstream.chat.android.client.errors.ChatError
 import io.getstream.chat.android.client.events.ChatEvent
+import io.getstream.chat.android.client.events.ConnectedEvent
 import io.getstream.chat.android.client.events.MarkAllReadEvent
 import io.getstream.chat.android.client.extensions.enrichWithCid
 import io.getstream.chat.android.client.logger.ChatLogger
@@ -29,6 +29,7 @@ import io.getstream.chat.android.client.models.TypingEvent
 import io.getstream.chat.android.client.models.User
 import io.getstream.chat.android.client.models.UserEntity
 import io.getstream.chat.android.client.parser.StreamGson
+import io.getstream.chat.android.client.socket.SocketListener
 import io.getstream.chat.android.client.utils.FilterObject
 import io.getstream.chat.android.client.utils.Result
 import io.getstream.chat.android.client.utils.SyncStatus
@@ -41,9 +42,9 @@ import io.getstream.chat.android.livedata.extensions.isPermanent
 import io.getstream.chat.android.livedata.extensions.users
 import io.getstream.chat.android.livedata.model.ChannelConfig
 import io.getstream.chat.android.livedata.model.SyncState
-import io.getstream.chat.android.livedata.repository.QueryChannelsRepository
-import io.getstream.chat.android.livedata.repository.RepositoryFactory
-import io.getstream.chat.android.livedata.repository.RepositoryHelper
+import io.getstream.chat.android.livedata.repository.RepositoryFacade
+import io.getstream.chat.android.livedata.repository.builder.RepositoryFacadeBuilder
+import io.getstream.chat.android.livedata.repository.database.ChatDatabase
 import io.getstream.chat.android.livedata.request.AnyChannelPaginationRequest
 import io.getstream.chat.android.livedata.request.QueryChannelPaginationRequest
 import io.getstream.chat.android.livedata.request.QueryChannelsPaginationRequest
@@ -67,7 +68,6 @@ import java.util.Date
 import java.util.InputMismatchException
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
-import kotlin.collections.set
 
 private val CHANNEL_CID_REGEX = Regex("^!?[\\w-]+:!?[\\w-]+$")
 private const val MESSAGE_LIMIT = 30
@@ -210,7 +210,7 @@ internal class ChatDomainImpl internal constructor(
         }
     }
 
-    internal lateinit var repos: RepositoryHelper
+    internal lateinit var repos: RepositoryFacade
     private val syncStateFlow: MutableStateFlow<SyncState?> = MutableStateFlow(null)
     internal lateinit var initJob: Deferred<SyncState?>
 
@@ -228,12 +228,6 @@ internal class ChatDomainImpl internal constructor(
         activeQueryMapImpl.clear()
     }
 
-    private fun createDatabase(context: Context, user: User, offlineEnabled: Boolean) = if (offlineEnabled) {
-        ChatDatabase.getDatabase(context, user.id)
-    } else {
-        Room.inMemoryDatabaseBuilder(context, ChatDatabase::class.java).build()
-    }
-
     private fun isTestRunner(): Boolean {
         return Build.FINGERPRINT.toLowerCase().contains("robolectric")
     }
@@ -243,23 +237,20 @@ internal class ChatDomainImpl internal constructor(
 
         currentUser = user
 
-        if (backgroundSyncEnabled && !isTestRunner()) {
-            val config = BackgroundSyncConfig(client.config.apiKey, currentUser.id, client.getCurrentToken() ?: "")
-            if (config.isValid()) {
-                syncModule.encryptedBackgroundSyncConfigStore.apply {
-                    put(config)
-                }
-            }
+        repos = RepositoryFacadeBuilder {
+            context(appContext)
+            database(db)
+            currentUser(currentUser)
+            scope(scope)
+            defaultConfig(defaultConfig)
+            setOfflineEnabled(offlineEnabled)
         }
-
-        database = db ?: createDatabase(appContext, user, offlineEnabled)
-
-        repos = RepositoryHelper.create(factory = RepositoryFactory(database, user), scope = scope, defaultConfig = defaultConfig)
+            .build()
 
         // load channel configs from Room into memory
         initJob = scope.async {
             // fetch the configs for channels
-            repos.loadChannelConfig()
+            repos.cacheChannelConfigs()
 
             // load the current user from the db
             val syncState = repos.selectSyncState(currentUser.id) ?: SyncState(currentUser.id)
@@ -267,7 +258,7 @@ internal class ChatDomainImpl internal constructor(
             // restore channels
             syncState.activeChannelIds.forEach(::channel)
             // restore queries
-            repos.querySelectById(syncState.activeQueryIds)
+            repos.selectQueriesChannelsByIds(syncState.activeQueryIds)
                 .forEach { spec -> queryChannels(spec.filter, spec.sort) }
 
             // retrieve the last time the user marked all as read and handle it as an event
@@ -310,6 +301,7 @@ internal class ChatDomainImpl internal constructor(
                 }
             }
         }
+        storeBgSyncDataWhenUserConnects()
     }
 
     internal suspend fun updateCurrentUser(me: User) {
@@ -329,8 +321,7 @@ internal class ChatDomainImpl internal constructor(
         syncStateFlow.value?.let { _syncState ->
             val newSyncState = _syncState.copy(
                 activeChannelIds = activeChannelMapImpl.keys().toList(),
-                activeQueryIds =
-                    activeQueryMapImpl.values.toList().map { QueryChannelsRepository.getId(it.queryChannelsSpec) }
+                activeQueryIds = activeQueryMapImpl.values.map { it.queryChannelsSpec.id }
             )
             repos.insertSyncState(newSyncState)
             syncStateFlow.value = newSyncState
@@ -456,6 +447,28 @@ internal class ChatDomainImpl internal constructor(
 
     fun setTotalUnreadCount(newCount: Int) {
         _totalUnreadCount.value = newCount
+    }
+
+    private fun storeBgSyncDataWhenUserConnects() {
+        client.addSocketListener(
+            object : SocketListener() {
+                override fun onConnected(event: ConnectedEvent) {
+                    storeBgSyncData()
+                    client.removeSocketListener(this)
+                }
+            }
+        )
+    }
+
+    private fun storeBgSyncData() {
+        if (backgroundSyncEnabled && !isTestRunner()) {
+            val config = BackgroundSyncConfig(client.config.apiKey, currentUser.id, client.getCurrentToken() ?: "")
+            if (config.isValid()) {
+                syncModule.encryptedBackgroundSyncConfigStore.apply {
+                    put(config)
+                }
+            }
+        }
     }
 
     /**
@@ -715,7 +728,7 @@ internal class ChatDomainImpl internal constructor(
 
     @VisibleForTesting
     internal suspend fun retryMessages(): List<Message> {
-        val messages = repos.selectMessageSyncNeeded()
+        val messages = repos.selectMessagesSyncNeeded()
         for (message in messages) {
             val channelClient = client.channel(message.cid)
             // support sending, deleting and editing messages here
@@ -740,7 +753,7 @@ internal class ChatDomainImpl internal constructor(
 
     @VisibleForTesting
     internal suspend fun retryReactions(): List<Reaction> {
-        return repos.selectReactionSyncNeeded().onEach { reaction ->
+        return repos.selectReactionsSyncNeeded().onEach { reaction ->
             reaction.user = null
             val result = if (reaction.deletedAt != null) {
                 client.deleteReaction(reaction.messageId, reaction.type).execute()
@@ -825,7 +838,7 @@ internal class ChatDomainImpl internal constructor(
     }
 
     override fun getChannelConfig(channelType: String): Config {
-        return repos.selectConfig(channelType)?.config ?: defaultConfig
+        return repos.selectChannelConfig(channelType)?.config ?: defaultConfig
     }
 
     companion object {

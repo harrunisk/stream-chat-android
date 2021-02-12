@@ -7,7 +7,7 @@
     android:paddingEnd="@dimen/stream_ui_spacing_small"
     >
 
-    <io.getstream.chat.android.ui.messages.adapter.view.GapView
+    <io.getstream.chat.android.ui.message.list.adapter.view.internal.GapView
         android:id="@+id/gapView"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -23,11 +23,11 @@
         android:paddingEnd="@dimen/stream_ui_spacing_medium"
         android:paddingBottom="@dimen/stream_ui_spacing_small"
         android:text="@string/stream_ui_message_deleted_label"
-        android:textColor="@color/stream_ui_grey"
+        android:textColor="@color/stream_ui_text_color_secondary"
         android:textStyle="italic"
         />
 
-    <io.getstream.chat.android.ui.messages.adapter.view.FootnoteView
+    <io.getstream.chat.android.ui.message.list.adapter.view.internal.FootnoteView
         android:id="@+id/footnote"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"

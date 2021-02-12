@@ -6,7 +6,7 @@
     android:layout_height="wrap_content"
     >
 
-    <io.getstream.chat.android.ui.messages.adapter.view.GapView
+    <io.getstream.chat.android.ui.message.list.adapter.view.internal.GapView
         android:id="@+id/gapView"
         android:layout_width="match_parent"
         android:layout_height="0dp"
@@ -32,7 +32,7 @@
             android:layout_height="wrap_content"
             >
 
-            <io.getstream.chat.android.ui.messages.adapter.view.MediaAttachmentView
+            <io.getstream.chat.android.ui.message.list.adapter.view.internal.MediaAttachmentView
                 android:id="@+id/mediaAttachmentView"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -119,7 +119,7 @@
                 android:paddingBottom="16dp"
                 android:text="@string/stream_ui_cancel_label"
                 android:textAppearance="@style/StreamUiTextAppearance.BodyBold"
-                android:textColor="@color/stream_ui_grey"
+                android:textColor="@color/stream_ui_text_color_secondary"
                 app:layout_constraintBottom_toBottomOf="parent"
                 app:layout_constraintLeft_toLeftOf="parent"
                 app:layout_constraintRight_toLeftOf="@id/verticalDivider"
@@ -156,14 +156,14 @@
 
     </com.google.android.material.card.MaterialCardView>
 
-    <io.getstream.chat.android.ui.messages.adapter.view.FootnoteView
+    <io.getstream.chat.android.ui.message.list.adapter.view.internal.FootnoteView
         android:id="@+id/footnote"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_marginStart="@dimen/stream_ui_spacing_small"
         android:layout_marginEnd="@dimen/stream_ui_spacing_small"
-        app:layout_constraintStart_toEndOf="@id/marginStart"
         app:layout_constraintEnd_toEndOf="@+id/marginEnd"
+        app:layout_constraintStart_toEndOf="@id/marginStart"
         app:layout_constraintTop_toBottomOf="@+id/cardView"
         />
 
