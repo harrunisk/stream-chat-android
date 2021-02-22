@@ -36,7 +36,7 @@ private fun List<Member>.lastActive(context: Context): String =
         context.getString(
             R.string.stream_channel_header_active,
             when {
-                it.isInLastMinute() -> context.getString(R.string.stream_channel_header_active_now)
+                it!!.isInLastMinute() -> context.getString(R.string.stream_channel_header_active_now)
                 else -> DateUtils.getRelativeTimeSpanString(it.time).toString()
             }
         )

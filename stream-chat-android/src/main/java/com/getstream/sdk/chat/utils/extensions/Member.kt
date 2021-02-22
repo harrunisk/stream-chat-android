@@ -9,9 +9,9 @@ import java.util.Date
 
 public fun List<Member>.getLastActive(
     currentUser: User = instance().currentUser
-): Date {
+): Date? {
     return filter { it.user.id != currentUser.id && it.user.lastActive != null }
-        .maxOfOrNull { it.user.lastActive!! } ?: Date()
+        .maxOfOrNull { it.user.lastActive!! }
 }
 
 @JvmOverloads

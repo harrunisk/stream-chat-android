@@ -42,7 +42,7 @@ public abstract class BaseMessageListHeaderViewModel constructor(
                 _anyOtherUsersOnline.addSource(
                     map(channelController.members) { members ->
                         members.asSequence()
-                            .filter { it.user != chatDomain.currentUser }
+                            .filter { it.user.id != chatDomain.currentUser.id }
                             .any { it.user.online }
                     }
                 ) { _anyOtherUsersOnline.value = it }
