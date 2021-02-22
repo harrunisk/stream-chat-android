@@ -9,7 +9,7 @@ import org.threeten.bp.LocalTime
 import org.threeten.bp.format.DateTimeFormatter
 import java.util.Locale
 
-internal class DefaultDateFormatter(
+public class DefaultDateFormatter(
     private val dateContext: DateContext
 ) : DateFormatter {
 

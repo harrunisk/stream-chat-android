@@ -12,7 +12,7 @@ import io.getstream.chat.android.client.models.name
 import io.getstream.chat.android.livedata.ChatDomain
 import java.util.Date
 
-internal fun Channel.computeLastMessage(): Message? {
+public fun Channel.computeLastMessage(): Message? {
     val messages = messages
     for (i in messages.indices.reversed()) {
         val message = messages[i]
