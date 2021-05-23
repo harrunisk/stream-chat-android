@@ -60,10 +60,6 @@ $dokka.location:io.getstream.chat.android.livedata.controller/ThreadController/g
 $dokka.location:io.getstream.chat.android.livedata.controller/ThreadController/loadingOlderMessages/#/PointingToDeclaration/stream-chat-android-offline/io.getstream.chat.android.livedata.controller/-thread-controller/loading-older-messages.html
 $dokka.location:io.getstream.chat.android.livedata.controller/ThreadController/messages/#/PointingToDeclaration/stream-chat-android-offline/io.getstream.chat.android.livedata.controller/-thread-controller/messages.html
 $dokka.location:io.getstream.chat.android.livedata.controller/ThreadController/threadId/#/PointingToDeclaration/stream-chat-android-offline/io.getstream.chat.android.livedata.controller/-thread-controller/thread-id.html
-$dokka.location:io.getstream.chat.android.livedata.extensions////PointingToDeclaration/stream-chat-android-offline/io.getstream.chat.android.livedata.extensions/index.html
-$dokka.location:io.getstream.chat.android.livedata.extensions//isPermanent/io.getstream.chat.android.client.errors.ChatError#/PointingToDeclaration/stream-chat-android-offline/io.getstream.chat.android.livedata.extensions/is-permanent.html
-$dokka.location:io.getstream.chat.android.livedata.extensions//users/io.getstream.chat.android.client.models.Channel#/PointingToDeclaration/stream-chat-android-offline/io.getstream.chat.android.livedata.extensions/users.html
-$dokka.location:io.getstream.chat.android.livedata.extensions//users/io.getstream.chat.android.client.models.Message#/PointingToDeclaration/stream-chat-android-offline/io.getstream.chat.android.livedata.extensions/users.html
 $dokka.location:io.getstream.chat.android.livedata.service.sync////PointingToDeclaration/stream-chat-android-offline/io.getstream.chat.android.livedata.service.sync/index.html
 $dokka.location:io.getstream.chat.android.livedata.service.sync/PushMessageSyncHandler///PointingToDeclaration/stream-chat-android-offline/io.getstream.chat.android.livedata.service.sync/-push-message-sync-handler/index.html
 $dokka.location:io.getstream.chat.android.livedata.service.sync/PushMessageSyncHandler/PushMessageSyncHandler/#android.app.Service/PointingToDeclaration/stream-chat-android-offline/io.getstream.chat.android.livedata.service.sync/-push-message-sync-handler/-push-message-sync-handler.html
@@ -441,7 +437,6 @@ $dokka.location:io.getstream.chat.android.offline/ChatDomain/userPresence/#/Poin
 $dokka.location:io.getstream.chat.android.offline/ChatDomain/watchChannel/#kotlin.String#kotlin.Int/PointingToDeclaration/stream-chat-android-offline/io.getstream.chat.android.offline/-chat-domain/watch-channel.html
 io.getstream.chat.android.livedata
 io.getstream.chat.android.livedata.controller
-io.getstream.chat.android.livedata.extensions
 io.getstream.chat.android.livedata.service.sync
 io.getstream.chat.android.livedata.usecase
 io.getstream.chat.android.livedata.utils
