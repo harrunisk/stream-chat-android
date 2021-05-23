@@ -24,6 +24,7 @@ import io.getstream.chat.ui.sample.feature.chat.info.ChatInfoItem
 import io.getstream.chat.ui.sample.feature.chat.info.group.member.GroupChatInfoMemberOptionsDialogFragment
 import io.getstream.chat.ui.sample.feature.chat.info.group.users.GroupChatInfoAddUsersDialogFragment
 import io.getstream.chat.ui.sample.feature.common.ConfirmationDialogFragment
+import io.getstream.chat.ui.sample.util.extensions.autoScrollToTop
 import io.getstream.chat.ui.sample.util.extensions.useAdjustResize
 
 class GroupChatInfoFragment : Fragment() {
@@ -51,8 +52,9 @@ class GroupChatInfoFragment : Fragment() {
             requireActivity().onBackPressed()
         }
         binding.optionsRecyclerView.adapter = adapter
+        binding.optionsRecyclerView.autoScrollToTop()
         headerViewModel.bindView(binding.headerView, viewLifecycleOwner)
-        if (!isDistinctChannel()) {
+        if (!isAnonymousChannel()) {
             binding.addChannelButton.apply {
                 isVisible = true
                 setOnClickListener {
@@ -76,7 +78,7 @@ class GroupChatInfoFragment : Fragment() {
 
     // Distinct channel == channel created without id (based on members).
     // There is no possibility to modify distinct channel members.
-    private fun isDistinctChannel(): Boolean = args.cid.contains("!members")
+    private fun isAnonymousChannel(): Boolean = args.cid.contains("!members")
 
     private fun bindGroupInfoViewModel() {
         subscribeForChannelMutesUpdatedEvents()
@@ -91,6 +93,7 @@ class GroupChatInfoFragment : Fragment() {
                             args.cid,
                             it.channelName,
                             it.member.user,
+                            viewModel.state.value?.isCurrentUserOwnerOrAdmin == true
                         )
                             .show(parentFragmentManager, GroupChatInfoMemberOptionsDialogFragment.TAG)
                     GroupChatInfoViewModel.UiEvent.RedirectToHome -> findNavController().popBackStack(

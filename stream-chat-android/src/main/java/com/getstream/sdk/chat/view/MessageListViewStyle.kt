@@ -1,8 +1,10 @@
 package com.getstream.sdk.chat.view
 
 import android.content.Context
+import android.content.res.ColorStateList
 import android.graphics.Color
 import android.graphics.Typeface
+import android.graphics.drawable.Drawable
 import android.util.AttributeSet
 import androidx.core.content.ContextCompat
 import com.getstream.sdk.chat.R
@@ -80,6 +82,9 @@ public class MessageListViewStyle(c: Context, attrs: AttributeSet?) {
     public val readStateStyle: ReadStateStyle
 
     // MessageMoreActionDialog
+    public val messageActionButtonsBackground: Drawable?
+    public val messageActionButtonsIconTint: ColorStateList?
+    public val messageActionButtonsTextStyle: TextStyle
     public val startThreadMessageActionEnabled: Boolean
     public val copyMessageActionEnabled: Boolean
     public val flagMessageActionEnabled: Boolean
@@ -560,6 +565,28 @@ public class MessageListViewStyle(c: Context, attrs: AttributeSet?) {
             a.getResourceId(R.styleable.MessageListView_streamDateSeparatorLineDrawable, -1)
         isUserNameShow = a.getBoolean(R.styleable.MessageListView_streamUserNameShow, true)
         isMessageDateShow = a.getBoolean(R.styleable.MessageListView_streamMessageDateShow, true)
+
+        messageActionButtonsBackground = a.getDrawable(R.styleable.MessageListView_streamMessageActionButtonsBackground)
+        messageActionButtonsIconTint =
+            a.getColorStateList(R.styleable.MessageListView_streamMessageActionButtonsIconTint)
+            ?: ContextCompat.getColorStateList(c, R.color.stream_black_54)
+        messageActionButtonsTextStyle = TextStyle.Builder(a)
+            .size(
+                R.styleable.MessageListView_streamMessageActionButtonsTextSize,
+                res.getDimensionPixelSize(
+                    R.dimen.stream_message_action_buttons_text_size
+                )
+            )
+            .color(
+                R.styleable.MessageListView_streamMessageActionButtonsTextColor,
+                ContextCompat.getColor(c, R.color.stream_black_54)
+            )
+            .font(
+                R.styleable.MessageListView_streamMessageActionButtonsTextFontAssets,
+                R.styleable.MessageListView_streamMessageActionButtonsTextFont
+            )
+            .style(R.styleable.MessageListView_streamMessageActionButtonsTextStyle, Typeface.NORMAL)
+            .build()
 
         startThreadMessageActionEnabled = a.getBoolean(
             R.styleable.MessageListView_streamStartThreadMessageActionEnabled,

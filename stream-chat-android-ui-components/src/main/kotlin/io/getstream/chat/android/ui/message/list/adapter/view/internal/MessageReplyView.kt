@@ -3,7 +3,6 @@ package io.getstream.chat.android.ui.message.list.adapter.view.internal
 import android.content.Context
 import android.graphics.Paint
 import android.util.AttributeSet
-import android.view.LayoutInflater
 import android.widget.FrameLayout
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.constraintlayout.widget.ConstraintSet
@@ -12,33 +11,36 @@ import androidx.core.view.updateLayoutParams
 import com.getstream.sdk.chat.images.StreamImageLoader.ImageTransformation.RoundedCorners
 import com.getstream.sdk.chat.images.load
 import com.getstream.sdk.chat.model.ModelType
+import com.getstream.sdk.chat.utils.extensions.imagePreviewUrl
 import com.getstream.sdk.chat.utils.extensions.updateConstraints
 import com.google.android.material.shape.MaterialShapeDrawable
 import com.google.android.material.shape.ShapeAppearanceModel
 import io.getstream.chat.android.client.models.Message
+import io.getstream.chat.android.ui.ChatUI
 import io.getstream.chat.android.ui.R
-import io.getstream.chat.android.ui.common.UiUtils
+import io.getstream.chat.android.ui.common.extensions.internal.createStreamThemeWrapper
 import io.getstream.chat.android.ui.common.extensions.internal.dpToPx
 import io.getstream.chat.android.ui.common.extensions.internal.dpToPxPrecise
 import io.getstream.chat.android.ui.common.extensions.internal.getColorCompat
+import io.getstream.chat.android.ui.common.extensions.internal.streamThemeInflater
 import io.getstream.chat.android.ui.common.extensions.internal.use
 import io.getstream.chat.android.ui.databinding.StreamUiMessageReplyViewBinding
 
 internal class MessageReplyView : FrameLayout {
     private val binding: StreamUiMessageReplyViewBinding =
-        StreamUiMessageReplyViewBinding.inflate(LayoutInflater.from(context), this, true)
+        StreamUiMessageReplyViewBinding.inflate(streamThemeInflater, this, true)
     private var ellipsize = false
 
-    constructor(context: Context) : super(context) {
+    constructor(context: Context) : super(context.createStreamThemeWrapper()) {
         init(context, null)
     }
 
-    constructor(context: Context, attrs: AttributeSet?) : super(context, attrs) {
+    constructor(context: Context, attrs: AttributeSet?) : super(context.createStreamThemeWrapper(), attrs) {
         init(context, attrs)
     }
 
     constructor(context: Context, attrs: AttributeSet?, defStyleAttr: Int) : super(
-        context,
+        context.createStreamThemeWrapper(),
         attrs,
         defStyleAttr
     ) {
@@ -133,7 +135,7 @@ internal class MessageReplyView : FrameLayout {
         } else {
             when (attachment.type) {
                 ModelType.attach_file -> showFileTypeLogo(attachment.mimeType)
-                ModelType.attach_image -> showAttachmentThumb(attachment.thumbUrl ?: attachment.imageUrl)
+                ModelType.attach_image -> showAttachmentThumb(attachment.imagePreviewUrl)
                 ModelType.attach_giphy,
                 ModelType.attach_video -> showAttachmentThumb(attachment.thumbUrl)
                 else -> showAttachmentThumb(attachment.image)
@@ -186,7 +188,7 @@ internal class MessageReplyView : FrameLayout {
             logoContainer.isVisible = true
             fileTypeImageView.isVisible = true
             thumbImageView.isVisible = false
-            fileTypeImageView.setImageResource(UiUtils.getIcon(mimeType))
+            fileTypeImageView.setImageResource(ChatUI.mimeTypeIconProvider.getIconRes(mimeType))
         }
     }
 

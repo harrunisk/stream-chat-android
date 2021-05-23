@@ -15,10 +15,6 @@ internal class FakeChatSocket : ChatSocket {
     override fun connectAnonymously() {
     }
 
-    override fun events(): ChatObservable {
-        error("not implemented")
-    }
-
     override fun addListener(listener: SocketListener) {
         listeners += listener
     }

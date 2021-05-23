@@ -1,8 +1,8 @@
 package io.getstream.chat.android.ui.message.list
 
+import android.animation.LayoutTransition
 import android.app.AlertDialog
 import android.content.Context
-import android.content.res.TypedArray
 import android.util.AttributeSet
 import android.view.Gravity
 import android.view.View
@@ -10,33 +10,38 @@ import android.view.ViewGroup
 import android.widget.FrameLayout
 import android.widget.Toast
 import androidx.constraintlayout.widget.ConstraintLayout
-import androidx.core.content.ContextCompat
 import androidx.core.view.isVisible
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.getstream.sdk.chat.ChatUI
 import com.getstream.sdk.chat.adapter.MessageListItem
 import com.getstream.sdk.chat.enums.GiphyAction
 import com.getstream.sdk.chat.model.ModelType
-import com.getstream.sdk.chat.navigation.destinations.WebLinkDestination
 import com.getstream.sdk.chat.utils.DateFormatter
 import com.getstream.sdk.chat.utils.ListenerDelegate
 import com.getstream.sdk.chat.utils.StartStopBuffer
 import com.getstream.sdk.chat.utils.extensions.activity
-import com.getstream.sdk.chat.utils.extensions.inflater
+import com.getstream.sdk.chat.utils.extensions.imagePreviewUrl
 import com.getstream.sdk.chat.utils.extensions.isDirectMessaging
 import com.getstream.sdk.chat.view.EndlessScrollListener
 import com.getstream.sdk.chat.view.messages.MessageListItemWrapper
 import io.getstream.chat.android.client.models.Attachment
 import io.getstream.chat.android.client.models.Channel
+import io.getstream.chat.android.client.models.Flag
 import io.getstream.chat.android.client.models.Message
 import io.getstream.chat.android.client.models.User
+import io.getstream.chat.android.client.utils.Result
 import io.getstream.chat.android.core.internal.coroutines.DispatcherProvider
+import io.getstream.chat.android.ui.ChatUI
 import io.getstream.chat.android.ui.R
 import io.getstream.chat.android.ui.common.extensions.getCreatedAtOrThrow
+import io.getstream.chat.android.ui.common.extensions.internal.createStreamThemeWrapper
 import io.getstream.chat.android.ui.common.extensions.internal.getFragmentManager
 import io.getstream.chat.android.ui.common.extensions.internal.isCurrentUser
+import io.getstream.chat.android.ui.common.extensions.internal.isMedia
+import io.getstream.chat.android.ui.common.extensions.internal.streamThemeInflater
 import io.getstream.chat.android.ui.common.extensions.isInThread
+import io.getstream.chat.android.ui.common.navigation.destinations.AttachmentDestination
+import io.getstream.chat.android.ui.common.navigation.destinations.WebLinkDestination
 import io.getstream.chat.android.ui.databinding.StreamUiMessageListViewBinding
 import io.getstream.chat.android.ui.gallery.AttachmentGalleryActivity
 import io.getstream.chat.android.ui.gallery.AttachmentGalleryDestination
@@ -46,8 +51,10 @@ import io.getstream.chat.android.ui.message.list.MessageListView.AttachmentClick
 import io.getstream.chat.android.ui.message.list.MessageListView.AttachmentDownloadClickListener
 import io.getstream.chat.android.ui.message.list.MessageListView.AttachmentDownloadHandler
 import io.getstream.chat.android.ui.message.list.MessageListView.ConfirmDeleteMessageHandler
+import io.getstream.chat.android.ui.message.list.MessageListView.ConfirmFlagMessageHandler
 import io.getstream.chat.android.ui.message.list.MessageListView.EndRegionReachedHandler
 import io.getstream.chat.android.ui.message.list.MessageListView.EnterThreadListener
+import io.getstream.chat.android.ui.message.list.MessageListView.FlagMessageResultHandler
 import io.getstream.chat.android.ui.message.list.MessageListView.GiphySendHandler
 import io.getstream.chat.android.ui.message.list.MessageListView.GiphySendListener
 import io.getstream.chat.android.ui.message.list.MessageListView.LastMessageReadHandler
@@ -67,13 +74,14 @@ import io.getstream.chat.android.ui.message.list.MessageListView.ThreadStartHand
 import io.getstream.chat.android.ui.message.list.MessageListView.UserBlockHandler
 import io.getstream.chat.android.ui.message.list.MessageListView.UserClickListener
 import io.getstream.chat.android.ui.message.list.MessageListView.UserMuteHandler
+import io.getstream.chat.android.ui.message.list.MessageListView.UserUnmuteHandler
 import io.getstream.chat.android.ui.message.list.adapter.MessageListItemViewHolderFactory
 import io.getstream.chat.android.ui.message.list.adapter.internal.MessageListItemAdapter
 import io.getstream.chat.android.ui.message.list.adapter.internal.MessageListItemDecoratorProvider
 import io.getstream.chat.android.ui.message.list.adapter.internal.MessageListListenerContainerImpl
+import io.getstream.chat.android.ui.message.list.adapter.viewholder.attachment.AttachmentViewFactory
 import io.getstream.chat.android.ui.message.list.internal.HiddenMessageListItemPredicate
 import io.getstream.chat.android.ui.message.list.internal.MessageListScrollHelper
-import io.getstream.chat.android.ui.message.list.internal.MessageListViewStyle
 import io.getstream.chat.android.ui.message.list.options.message.internal.MessageOptionsDialogFragment
 import io.getstream.chat.android.ui.message.list.options.message.internal.MessageOptionsView
 import kotlinx.coroutines.CoroutineScope
@@ -134,6 +142,9 @@ public class MessageListView : ConstraintLayout {
     private var messageFlagHandler = MessageFlagHandler {
         throw IllegalStateException("onMessageFlagHandler must be set.")
     }
+    private var flagMessageResultHandler = FlagMessageResultHandler {
+        // no-op
+    }
     private var giphySendHandler = GiphySendHandler { _, _ ->
         throw IllegalStateException("onSendGiphyHandler must be set.")
     }
@@ -146,6 +157,9 @@ public class MessageListView : ConstraintLayout {
     private var userMuteHandler = UserMuteHandler {
         throw IllegalStateException("onMuteUserHandler must be set.")
     }
+    private var userUnmuteHandler = UserUnmuteHandler {
+        throw IllegalStateException("onUnmuteUserHandler must be set.")
+    }
     private var userBlockHandler = UserBlockHandler { _, _ ->
         throw IllegalStateException("onBlockUserHandler must be set.")
     }
@@ -156,7 +170,7 @@ public class MessageListView : ConstraintLayout {
         throw IllegalStateException("onAttachmentDownloadHandler must be set")
     }
 
-    private var confirmDeleteMessageHandler = ConfirmDeleteMessageHandler { message, confirmCallback ->
+    private var confirmDeleteMessageHandler = ConfirmDeleteMessageHandler { _, confirmCallback ->
         AlertDialog.Builder(context)
             .setTitle(R.string.stream_ui_message_option_delete_confirmation_title)
             .setMessage(R.string.stream_ui_message_option_delete_confirmation_message)
@@ -165,6 +179,20 @@ public class MessageListView : ConstraintLayout {
                 confirmCallback()
             }
             .setNegativeButton(R.string.stream_ui_message_option_delete_negative_button) { dialog, _ ->
+                dialog.dismiss()
+            }
+            .show()
+    }
+
+    private var confirmFlagMessageHandler = ConfirmFlagMessageHandler { _, confirmCallback ->
+        AlertDialog.Builder(context)
+            .setTitle(R.string.stream_ui_message_option_flag_confirmation_title)
+            .setMessage(R.string.stream_ui_message_option_flag_confirmation_message)
+            .setPositiveButton(R.string.stream_ui_message_option_flag_positive_button) { dialog, _ ->
+                dialog.dismiss()
+                confirmCallback()
+            }
+            .setNegativeButton(R.string.stream_ui_message_option_flag_negative_button) { dialog, _ ->
                 dialog.dismiss()
             }
             .show()
@@ -205,13 +233,10 @@ public class MessageListView : ConstraintLayout {
     }
 
     private var messageListItemPredicate: MessageListItemPredicate = HiddenMessageListItemPredicate
-
-    private lateinit var messageOptionsConfiguration: MessageOptionsView.Configuration
-
     private lateinit var loadMoreListener: EndlessScrollListener
 
     private lateinit var channel: Channel
-    private lateinit var currentUser: User
+    private lateinit var getCurrentUser: () -> User
 
     /**
      * If you are allowed to scroll up or not
@@ -222,7 +247,6 @@ public class MessageListView : ConstraintLayout {
         MessageClickListener { message ->
             if (message.replyCount > 0) {
                 threadStartHandler.onStartThread(message)
-                enterThreadListener.onThreadEntered(message)
             }
         }
     private val DEFAULT_MESSAGE_LONG_CLICK_LISTENER =
@@ -231,10 +255,12 @@ public class MessageListView : ConstraintLayout {
                 MessageOptionsDialogFragment
                     .newMessageOptionsInstance(
                         message,
-                        messageOptionsConfiguration.copy(
-                            threadEnabled = !adapter.isThread && !message.isInThread(),
+                        MessageOptionsView.Configuration(
+                            viewStyle = messageListViewStyle,
+                            channelConfig = channel.config,
+                            suppressThreads = adapter.isThread || message.isInThread()
                         ),
-                        messageListViewStyle.itemStyle,
+                        messageListViewStyle
                     )
                     .apply {
                         setReactionClickHandler { message, reactionType ->
@@ -246,6 +272,9 @@ public class MessageListView : ConstraintLayout {
                                 callback::onConfirmDeleteMessage
                             )
                         }
+                        setConfirmFlagMessageClickHandler { message, callback ->
+                            confirmFlagMessageHandler.onConfirmFlagMessage(message, callback)
+                        }
                         setMessageOptionsHandlers(
                             MessageOptionsDialogFragment.MessageOptionsHandlers(
                                 threadReplyHandler = threadStartHandler,
@@ -253,6 +282,7 @@ public class MessageListView : ConstraintLayout {
                                 editClickHandler = messageEditHandler,
                                 flagClickHandler = messageFlagHandler,
                                 muteClickHandler = userMuteHandler,
+                                unmuteClickHandler = userUnmuteHandler,
                                 blockClickHandler = userBlockHandler,
                                 deleteClickHandler = messageDeleteHandler,
                                 replyClickHandler = messageReplyHandler,
@@ -270,7 +300,6 @@ public class MessageListView : ConstraintLayout {
         ThreadClickListener { message ->
             if (message.replyCount > 0) {
                 threadStartHandler.onStartThread(message)
-                enterThreadListener.onThreadEntered(message)
             }
         }
 
@@ -285,24 +314,28 @@ public class MessageListView : ConstraintLayout {
 
     private val DEFAULT_ATTACHMENT_CLICK_LISTENER =
         AttachmentClickListener { message, attachment ->
-            val attachmentGalleryItems = message.attachments
-                .filter { it.type == ModelType.attach_image && !it.imageUrl.isNullOrEmpty() }
-                .map {
-                    AttachmentGalleryItem(
-                        attachment = it,
-                        user = message.user,
-                        createdAt = message.getCreatedAtOrThrow(),
-                        messageId = message.id,
-                        cid = message.cid,
-                        isMine = message.user.isCurrentUser()
-                    )
-                }
-            val attachmentIndex = message.attachments.indexOf(attachment)
+            val destination = when {
+                message.attachments.all(Attachment::isMedia) -> {
+                    val filteredAttachments = message.attachments
+                        .filter { it.type == ModelType.attach_image && !it.imagePreviewUrl.isNullOrEmpty() }
+                    val attachmentGalleryItems = filteredAttachments.map {
+                        AttachmentGalleryItem(
+                            attachment = it,
+                            user = message.user,
+                            createdAt = message.getCreatedAtOrThrow(),
+                            messageId = message.id,
+                            cid = message.cid,
+                            isMine = message.user.isCurrentUser()
+                        )
+                    }
+                    val attachmentIndex = filteredAttachments.indexOf(attachment)
 
-            attachmentGalleryDestination.setData(attachmentGalleryItems, attachmentIndex)
-            ChatUI.instance()
-                .navigator
-                .navigate(attachmentGalleryDestination)
+                    attachmentGalleryDestination.setData(attachmentGalleryItems, attachmentIndex)
+                    attachmentGalleryDestination
+                }
+                else -> AttachmentDestination(message, attachment, context)
+            }
+            ChatUI.navigator.navigate(destination)
         }
 
     private val DEFAULT_ATTACHMENT_DOWNLOAD_CLICK_LISTENER =
@@ -317,12 +350,18 @@ public class MessageListView : ConstraintLayout {
     private val DEFAULT_REACTION_VIEW_CLICK_LISTENER =
         ReactionViewClickListener { message: Message ->
             context.getFragmentManager()?.let {
-                MessageOptionsDialogFragment.newReactionOptionsInstance(message, messageListViewStyle.itemStyle)
-                    .apply {
-                        setReactionClickHandler { message, reactionType ->
-                            messageReactionHandler.onMessageReaction(message, reactionType)
-                        }
+                MessageOptionsDialogFragment.newReactionOptionsInstance(
+                    message,
+                    MessageOptionsView.Configuration(
+                        viewStyle = messageListViewStyle,
+                        channelConfig = channel.config,
+                    ),
+                    messageListViewStyle
+                ).apply {
+                    setReactionClickHandler { message, reactionType ->
+                        messageReactionHandler.onMessageReaction(message, reactionType)
                     }
+                }
                     .show(it, MessageOptionsDialogFragment.TAG)
             }
         }
@@ -332,7 +371,7 @@ public class MessageListView : ConstraintLayout {
             giphySendHandler.onSendGiphy(message, action)
         }
     private val DEFAULT_LINK_CLICK_LISTENER = LinkClickListener { url ->
-        ChatUI.instance().navigator.navigate(WebLinkDestination(url, context))
+        ChatUI.navigator.navigate(WebLinkDestination(url, context, ChatUI.urlSigner))
     }
     private val DEFAULT_ENTER_THREAD_LISTENER = EnterThreadListener {
         // Empty
@@ -354,36 +393,36 @@ public class MessageListView : ConstraintLayout {
 
     private lateinit var messageListItemViewHolderFactory: MessageListItemViewHolderFactory
     private lateinit var messageDateFormatter: DateFormatter
+    private lateinit var attachmentViewFactory: AttachmentViewFactory
 
-    public constructor(context: Context) : super(context) {
+    public constructor(context: Context) : super(context.createStreamThemeWrapper()) {
         init(context, null)
     }
 
-    public constructor(context: Context, attrs: AttributeSet?) : super(context, attrs) {
-        parseAttr(context, attrs)
+    public constructor(context: Context, attrs: AttributeSet?) : super(context.createStreamThemeWrapper(), attrs) {
         init(context, attrs)
     }
 
     public constructor(context: Context, attrs: AttributeSet?, defStyle: Int) : super(
-        context,
+        context.createStreamThemeWrapper(),
         attrs,
         defStyle
     ) {
-        parseAttr(context, attrs)
         init(context, attrs)
     }
 
     private fun init(context: Context, attr: AttributeSet?) {
-        binding = StreamUiMessageListViewBinding.inflate(context.inflater, this, true)
+        messageListViewStyle = MessageListViewStyle(context, attr)
+
+        binding = StreamUiMessageListViewBinding.inflate(streamThemeInflater, this)
 
         initRecyclerView()
         initScrollHelper()
         initLoadingView()
         initEmptyStateView()
 
-        if (attr != null) {
-            configureAttributes(attr)
-        }
+        configureAttributes(attr)
+        layoutTransition = LayoutTransition()
 
         buffer.subscribe(::handleNewWrapper)
         buffer.active()
@@ -420,11 +459,7 @@ public class MessageListView : ConstraintLayout {
         }
     }
 
-    private fun parseAttr(context: Context, attrs: AttributeSet?) {
-        messageListViewStyle = MessageListViewStyle(context, attrs)
-    }
-
-    private fun configureAttributes(attributeSet: AttributeSet) {
+    private fun configureAttributes(attributeSet: AttributeSet?) {
         val tArray = context
             .obtainStyledAttributes(attributeSet, R.styleable.MessageListView)
 
@@ -437,13 +472,7 @@ public class MessageListView : ConstraintLayout {
             }
         }
 
-        with(binding.scrollToBottomButton) {
-            setUnreadBadgeEnabled(messageListViewStyle.scrollButtonViewStyle.scrollButtonUnreadEnabled)
-            setButtonRippleColor(messageListViewStyle.scrollButtonViewStyle.scrollButtonRippleColor)
-            setButtonIcon(messageListViewStyle.scrollButtonViewStyle.scrollButtonIcon)
-            setButtonColor(messageListViewStyle.scrollButtonViewStyle.scrollButtonColor)
-            setUnreadBadgeColor(messageListViewStyle.scrollButtonViewStyle.scrollButtonBadgeColor)
-        }
+        binding.scrollToBottomButton.setScrollButtonViewStyle(messageListViewStyle.scrollButtonViewStyle)
         scrollHelper.scrollToBottomButtonEnabled = messageListViewStyle.scrollButtonViewStyle.scrollButtonEnabled
 
         NewMessagesBehaviour.parseValue(
@@ -455,80 +484,10 @@ public class MessageListView : ConstraintLayout {
             scrollHelper.alwaysScrollToBottom = it == NewMessagesBehaviour.SCROLL_TO_BOTTOM
         }
 
-        configureMessageOptions(tArray)
         tArray.recycle()
-    }
-
-    private fun configureMessageOptions(tArray: TypedArray) {
-        val iconsTint = tArray.getColor(
-            R.styleable.MessageListView_streamUiMessageOptionIconColor,
-            ContextCompat.getColor(context, R.color.stream_ui_grey)
-        )
-
-        val replyIcon = tArray.getResourceId(
-            R.styleable.MessageListView_streamUiReplyOptionIcon,
-            R.drawable.stream_ui_ic_arrow_curve_left
-        )
-
-        val threadReplyIcon = tArray.getResourceId(
-            R.styleable.MessageListView_streamUiThreadReplyOptionIcon,
-            R.drawable.stream_ui_ic_thread_reply
-        )
-
-        val retryIcon = tArray.getResourceId(
-            R.styleable.MessageListView_streamUiRetryOptionIcon,
-            R.drawable.stream_ui_ic_send
-        )
-
-        val copyIcon = tArray.getResourceId(
-            R.styleable.MessageListView_streamUiCopyOptionIcon,
-            R.drawable.stream_ui_ic_copy
-        )
-
-        val editIcon = tArray.getResourceId(
-            R.styleable.MessageListView_streamUiEditOptionIcon,
-            R.drawable.stream_ui_ic_edit
-        )
-
-        val flagIcon = tArray.getResourceId(
-            R.styleable.MessageListView_streamUiFlagOptionIcon,
-            R.drawable.stream_ui_ic_flag
-        )
-
-        val muteIcon = tArray.getResourceId(
-            R.styleable.MessageListView_streamUiMuteOptionIcon,
-            R.drawable.stream_ui_ic_mute
-        )
-
-        val blockIcon = tArray.getResourceId(
-            R.styleable.MessageListView_streamUiBlockOptionIcon,
-            R.drawable.stream_ui_ic_user_block
-        )
-
-        val deleteIcon = tArray.getResourceId(
-            R.styleable.MessageListView_streamUiDeleteOptionIcon,
-            R.drawable.stream_ui_ic_delete
-        )
-
-        val copyTextEnabled = tArray.getBoolean(R.styleable.MessageListView_streamUiCopyMessageActionEnabled, true)
-
-        val deleteConfirmationEnabled =
-            tArray.getBoolean(R.styleable.MessageListView_streamUiDeleteConfirmationEnabled, true)
-
-        messageOptionsConfiguration = MessageOptionsView.Configuration(
-            iconsTint = iconsTint,
-            replyIcon = replyIcon,
-            threadReplyIcon = threadReplyIcon,
-            retryIcon = retryIcon,
-            copyIcon = copyIcon,
-            editIcon = editIcon,
-            flagIcon = flagIcon,
-            muteIcon = muteIcon,
-            blockIcon = blockIcon,
-            deleteIcon = deleteIcon,
-            copyTextEnabled = copyTextEnabled,
-            deleteConfirmationEnabled = deleteConfirmationEnabled,
-        )
+        if (background == null) {
+            setBackgroundColor(messageListViewStyle.backgroundColor)
+        }
     }
 
     override fun onAttachedToWindow() {
@@ -572,9 +531,18 @@ public class MessageListView : ConstraintLayout {
     }
 
     public fun init(channel: Channel, currentUser: User) {
-        this.currentUser = currentUser
+        init(channel) { currentUser }
+    }
+
+    public fun init(channel: Channel, getCurrentUser: () -> User) {
+        this.getCurrentUser = getCurrentUser
         this.channel = channel
         initAdapter()
+
+        messageListViewStyle = messageListViewStyle.copy(
+            replyEnabled = messageListViewStyle.replyEnabled && channel.config.isRepliesEnabled,
+            threadsEnabled = messageListViewStyle.threadsEnabled && channel.config.isRepliesEnabled,
+        )
     }
 
     private fun initAdapter() {
@@ -583,19 +551,25 @@ public class MessageListView : ConstraintLayout {
             messageDateFormatter = DateFormatter.from(context)
         }
 
+        if (::attachmentViewFactory.isInitialized.not()) {
+            attachmentViewFactory = AttachmentViewFactory()
+        }
+
         // Create default ViewHolderFactory if needed
         if (::messageListItemViewHolderFactory.isInitialized.not()) {
             messageListItemViewHolderFactory = MessageListItemViewHolderFactory()
         }
 
         messageListItemViewHolderFactory.decoratorProvider = MessageListItemDecoratorProvider(
-            currentUser = currentUser,
+            getCurrentUser = getCurrentUser,
             dateFormatter = messageDateFormatter,
-            isDirectMessage = channel.isDirectMessaging(),
+            isDirectMessage = { channel.isDirectMessaging() },
             messageListViewStyle.itemStyle,
         )
 
         messageListItemViewHolderFactory.setListenerContainer(this.listenerContainer)
+        messageListItemViewHolderFactory.setAttachmentViewFactory(this.attachmentViewFactory)
+        messageListItemViewHolderFactory.setMessageListItemStyle(messageListViewStyle.itemStyle)
 
         adapter = MessageListItemAdapter(messageListItemViewHolderFactory)
         adapter.setHasStableIds(true)
@@ -651,6 +625,90 @@ public class MessageListView : ConstraintLayout {
         scrollHelper.scrollToBottomButtonEnabled = scrollToBottomButtonEnabled
     }
 
+    /**
+     * Enables or disables the message editing feature.
+     *
+     * @param enabled True if editing a message is enabled, false otherwise.
+     */
+    public fun setEditMessageEnabled(enabled: Boolean) {
+        messageListViewStyle = messageListViewStyle.copy(editMessageEnabled = enabled)
+    }
+
+    /**
+     * Enables or disables the message deleting feature.
+     *
+     * @param enabled True if deleting a message is enabled, false otherwise.
+     */
+    public fun setDeleteMessageEnabled(enabled: Boolean) {
+        messageListViewStyle = messageListViewStyle.copy(deleteMessageEnabled = enabled)
+    }
+
+    /**
+     * Enables or disables the message delete confiramation showing
+     *
+     * @param enabled True if deleting a message is enabled, false otherwise.
+     */
+    public fun setDeleteMessageConfirmationEnabled(enabled: Boolean) {
+        messageListViewStyle = messageListViewStyle.copy(deleteConfirmationEnabled = enabled)
+    }
+
+    /**
+     * Enables or disables the message copy feature.
+     *
+     * @param enabled True if copying a message is enabled, false otherwise.
+     */
+    public fun setCopyMessageEnabled(enabled: Boolean) {
+        messageListViewStyle = messageListViewStyle.copy(copyTextEnabled = enabled)
+    }
+
+    /**
+     * Enables or disables the user blocking feature.
+     *
+     * @param enabled True if user blocking is enabled, false otherwise.
+     */
+    public fun setBlockUserEnabled(enabled: Boolean) {
+        messageListViewStyle = messageListViewStyle.copy(blockEnabled = enabled)
+    }
+
+    /**
+     * Enables or disables the user muting feature.
+     *
+     * @param enabled True if user muting is enabled, false otherwise.
+     */
+    public fun setMuteUserEnabled(enabled: Boolean) {
+        messageListViewStyle = messageListViewStyle.copy(muteEnabled = enabled)
+    }
+
+    /**
+     * Enables or disables the message flagging feature.
+     *
+     * @param enabled True if user muting is enabled, false otherwise.
+     */
+    public fun setMessageFlagEnabled(enabled: Boolean) {
+        messageListViewStyle = messageListViewStyle.copy(flagEnabled = enabled)
+    }
+
+    /**
+     * Enables or disables the message reactions feature.
+     *
+     * @param enabled True if user muting is enabled, false otherwise.
+     */
+    public fun setReactionsEnabled(enabled: Boolean) {
+        messageListViewStyle = messageListViewStyle.copy(
+            reactionsEnabled = enabled,
+            itemStyle = messageListViewStyle.itemStyle.copy(reactionsEnabled = enabled)
+        )
+    }
+
+    /**
+     * Enables or disables the message threading feature.
+     *
+     * @param enabled True if user muting is enabled, false otherwise.
+     */
+    public fun setThreadsEnabled(enabled: Boolean) {
+        messageListViewStyle = messageListViewStyle.copy(threadsEnabled = enabled)
+    }
+
     public fun setMessageViewHolderFactory(messageListItemViewHolderFactory: MessageListItemViewHolderFactory) {
         check(::adapter.isInitialized.not()) { "Adapter was already initialized, please set MessageViewHolderFactory first" }
         this.messageListItemViewHolderFactory = messageListItemViewHolderFactory
@@ -670,6 +728,15 @@ public class MessageListView : ConstraintLayout {
         this.messageListItemPredicate = messageListItemPredicate
     }
 
+    public fun setAttachmentViewFactory(attachmentViewFactory: AttachmentViewFactory) {
+        check(::adapter.isInitialized.not()) { "Adapter was already initialized, please set AttachmentViewFactory first" }
+        this.attachmentViewFactory = attachmentViewFactory
+    }
+
+    public fun handleFlagMessageResult(result: Result<Flag>) {
+        flagMessageResultHandler.onHandleResult(result)
+    }
+
     private fun handleNewWrapper(listItem: MessageListItemWrapper) {
         CoroutineScope(DispatcherProvider.IO).launch {
             val filteredList = listItem.items.filter(messageListItemPredicate::predicate)
@@ -678,7 +745,13 @@ public class MessageListView : ConstraintLayout {
 
                 val isThreadStart = !adapter.isThread && listItem.isThread
                 val isOldListEmpty = adapter.currentList.isEmpty()
-
+                if (isThreadStart) {
+                    listItem.items
+                        .asSequence()
+                        .filterIsInstance(MessageListItem.MessageItem::class.java)
+                        .firstOrNull { it.message.parentId == null }
+                        ?.let { enterThreadListener.onThreadEntered(it.message) }
+                }
                 adapter.isThread = listItem.isThread
                 adapter.submitList(filteredList) {
                     scrollHelper.onMessageListChanged(
@@ -789,6 +862,16 @@ public class MessageListView : ConstraintLayout {
     public fun setEnterThreadListener(enterThreadListener: EnterThreadListener?) {
         this.enterThreadListener = enterThreadListener ?: DEFAULT_ENTER_THREAD_LISTENER
     }
+
+    /**
+     * Enables or disables the message threading feature.
+     *
+     * @param enabled True if user muting is enabled, false otherwise.
+     */
+    public fun setRepliesEnabled(enabled: Boolean) {
+        messageListViewStyle = messageListViewStyle.copy(replyEnabled = enabled)
+    }
+
     //endregion
 
     //region Handler setters
@@ -816,6 +899,10 @@ public class MessageListView : ConstraintLayout {
         this.messageFlagHandler = messageFlagHandler
     }
 
+    public fun setFlagMessageResultHandler(flagMessageResultHandler: FlagMessageResultHandler) {
+        this.flagMessageResultHandler = flagMessageResultHandler
+    }
+
     public fun setGiphySendHandler(giphySendHandler: GiphySendHandler) {
         this.giphySendHandler = giphySendHandler
     }
@@ -830,6 +917,10 @@ public class MessageListView : ConstraintLayout {
 
     public fun setUserMuteHandler(userMuteHandler: UserMuteHandler) {
         this.userMuteHandler = userMuteHandler
+    }
+
+    public fun setUserUnmuteHandler(userUnmuteHandler: UserUnmuteHandler) {
+        this.userUnmuteHandler = userUnmuteHandler
     }
 
     public fun setUserBlockHandler(userBlockHandler: UserBlockHandler) {
@@ -848,6 +939,10 @@ public class MessageListView : ConstraintLayout {
         this.confirmDeleteMessageHandler = confirmDeleteMessageHandler
     }
 
+    public fun setConfirmFlagMessageHandler(confirmFlagMessageHandler: ConfirmFlagMessageHandler) {
+        this.confirmFlagMessageHandler = confirmFlagMessageHandler
+    }
+
     public fun setAttachmentReplyOptionClickHandler(handler: AttachmentGalleryActivity.AttachmentReplyOptionHandler) {
         this._attachmentReplyOptionHandler = handler
     }
@@ -863,6 +958,7 @@ public class MessageListView : ConstraintLayout {
     public fun setAttachmentDeleteOptionClickHandler(handler: AttachmentGalleryActivity.AttachmentDeleteOptionHandler) {
         this._attachmentDeleteOptionHandler = handler
     }
+
     //endregion
 
     //region Listener declarations
@@ -939,6 +1035,14 @@ public class MessageListView : ConstraintLayout {
         public fun onMessageFlag(message: Message)
     }
 
+    public fun interface FlagMessageResultHandler {
+        public fun onHandleResult(result: Result<Flag>)
+    }
+
+    public fun interface ConfirmFlagMessageHandler {
+        public fun onConfirmFlagMessage(message: Message, confirmCallback: () -> Unit)
+    }
+
     public fun interface MessageRetryHandler {
         public fun onMessageRetry(message: Message)
     }
@@ -961,6 +1065,10 @@ public class MessageListView : ConstraintLayout {
 
     public fun interface UserMuteHandler {
         public fun onUserMute(user: User)
+    }
+
+    public fun interface UserUnmuteHandler {
+        public fun onUserUnmute(user: User)
     }
 
     public fun interface UserBlockHandler {

@@ -1,10 +1,8 @@
 package io.getstream.chat.ui.sample.application
 
 import android.content.Context
-import com.getstream.sdk.chat.ChatUI
 import io.getstream.chat.android.client.ChatClient
 import io.getstream.chat.android.client.logger.ChatLogLevel
-import io.getstream.chat.android.client.models.User
 import io.getstream.chat.android.client.notifications.handler.NotificationConfig
 import io.getstream.chat.android.livedata.ChatDomain
 import io.getstream.chat.ui.sample.BuildConfig
@@ -13,7 +11,7 @@ import io.getstream.chat.ui.sample.R
 class ChatInitializer(private val context: Context) {
 
     @Suppress("UNUSED_VARIABLE")
-    fun init(apiKey: String, user: User? = null) {
+    fun init(apiKey: String) {
         val notificationConfig =
             NotificationConfig(
                 firebaseMessageIdKey = "message_id",
@@ -29,11 +27,10 @@ class ChatInitializer(private val context: Context) {
             .logLevel(logLevel)
             .build()
 
-        val domain = ChatDomain.Builder(client, user, context)
+        val domain = ChatDomain.Builder(client, context)
+            .userPresenceEnabled()
             .offlineEnabled()
             .build()
-
-        val ui = ChatUI.Builder(context).build()
     }
 
     fun isUserSet(): Boolean {

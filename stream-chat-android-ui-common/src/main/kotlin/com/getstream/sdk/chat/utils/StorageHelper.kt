@@ -28,7 +28,7 @@ public class StorageHelper {
 
     public fun getCachedFileFromUri(
         context: Context,
-        attachmentMetaData: AttachmentMetaData
+        attachmentMetaData: AttachmentMetaData,
     ): File {
         if (attachmentMetaData.file == null && attachmentMetaData.uri == null) {
             throw IllegalStateException("Unable to create cache file for attachment: $attachmentMetaData. Either file or URI cannot be null.")
@@ -36,7 +36,7 @@ public class StorageHelper {
         if (attachmentMetaData.file != null) {
             return attachmentMetaData.file!!
         }
-        val cachedFile = File(context.cacheDir, getFileName(attachmentMetaData))
+        val cachedFile = File(getUniqueCacheFolder(context), attachmentMetaData.getTitleWithExtension())
         context.contentResolver.openInputStream(attachmentMetaData.uri!!)?.use { inputStream ->
             cachedFile.outputStream().use {
                 inputStream.copyTo(it)
@@ -47,7 +47,11 @@ public class StorageHelper {
     }
 
     public fun getFileAttachments(context: Context): List<AttachmentMetaData> {
-        return getFilteredAttachments(context, null)
+        // Excluding files with empty mime type just to be sure that we won't include folder and unknown files
+        return getFilteredAttachments(
+            context,
+            selection = "${MediaStore.Files.FileColumns.MIME_TYPE} IS NOT NULL AND ${MediaStore.Files.FileColumns.MIME_TYPE} != ''",
+        )
     }
 
     public fun getMediaAttachments(context: Context): List<AttachmentMetaData> {
@@ -136,8 +140,10 @@ public class StorageHelper {
         return mimeType?.startsWith("video") ?: false
     }
 
-    private fun getFileName(attachmentMetaData: AttachmentMetaData): String =
-        "$FILE_NAME_PREFIX${dateFormat.format(Date().time)}_${attachmentMetaData.getTitleWithExtension()}"
+    private fun getUniqueCacheFolder(context: Context): File =
+        File(context.cacheDir, "$FILE_NAME_PREFIX${dateFormat.format(Date().time)}").also {
+            it.mkdirs()
+        }
 
     public companion object {
         public const val TIME_FORMAT: String = "HHmmssSSS"
@@ -146,7 +152,7 @@ public class StorageHelper {
 }
 
 private fun AttachmentMetaData.getTitleWithExtension(): String {
-    val extension = MimeTypeMap.getFileExtensionFromUrl(title)
+    val extension = title?.substringAfterLast('.')
     return if (extension.isNullOrEmpty() && !mimeType.isNullOrEmpty()) {
         "$title.${MimeTypeMap.getSingleton().getExtensionFromMimeType(mimeType)}"
     } else {

@@ -1,30 +1,23 @@
 import com.getstream.sdk.chat.Dependencies
 
-apply plugin: 'com.pascalwelsch.gitversioner'
 apply plugin: "com.github.ben-manes.versions"
 apply plugin: "org.jlleitschuh.gradle.ktlint"
-apply plugin: 'io.codearte.nexus-staging'
+apply plugin: 'io.github.gradle-nexus.publish-plugin'
 apply plugin: 'binary-compatibility-validator'
 apply plugin: 'org.jetbrains.dokka'
+apply from: "${rootDir}/scripts/sample-app-versioner.gradle"
 
 buildscript {
     repositories {
         maven { url "https://plugins.gradle.org/m2/" }
         google()
         mavenCentral()
-        maven {
-            url 'https://maven.pkg.jetbrains.space/kotlin/p/dokka/dev'
-            content {
-                includeGroup('org.jetbrains.dokka')
-            }
-        }
     }
 
     dependencies {
         classpath Dependencies.androidGradlePlugin
         classpath Dependencies.kotlinGradlePlugin
         classpath Dependencies.googleServicesPlugin
-        classpath Dependencies.jacoco
         classpath Dependencies.androidMavenGradlePlugin
         classpath Dependencies.androidJunit5GradlePlugin
         classpath Dependencies.gitversionerPlugin
@@ -32,7 +25,7 @@ buildscript {
         classpath Dependencies.ktlintPlugin
         classpath Dependencies.gradleVersionsPlugin
         classpath Dependencies.navigationSafeArgsGradlePlugin
-        classpath Dependencies.gradleNexusStagingPlugin
+        classpath Dependencies.gradleNexusPublishPlugin
         classpath Dependencies.dokka
         classpath Dependencies.kotlinBinaryValidator
     }
@@ -45,29 +38,8 @@ allprojects {
         mavenLocal()
         jcenter() {
             content {
-
-                // Remove when https://github.com/google/ExoPlayer/issues/5246 is closed
-                includeGroup("com.google.android.exoplayer")
-
-                // Remove when https://github.com/facebook/flipper/issues/1775 is closed
-                includeGroup("com.facebook.flipper")
-
-                includeModule("net.yslibrary.keyboardvisibilityevent", "keyboardvisibilityevent")
+                // Remove when https://github.com/ongakuer/PhotoDraweeView/issues/81 is closed
                 includeModule("me.relex", "photodraweeview")
-                // https://youtrack.jetbrains.com/issue/IDEA-261387
-                includeModule("org.jetbrains.trove4j", "trove4j")
-
-                // Remove when https://github.com/korlibs/korte/issues/13 is closed
-                includeModule("com.soywiz.korlibs.korte", "korte-jvm")
-
-                // Remove when https://github.com/Kotlin/kotlinx.html/issues/81 is closed
-                includeModule("org.jetbrains.kotlinx", "kotlinx-html-jvm")
-
-                //Remove when https://github.com/JetBrains/markdown/issues/64 is closed
-                includeModule("org.jetbrains", "markdown")
-
-                // Remove when https://github.com/MarkusAmshove/Kluent/issues/190 is closed
-                includeGroup("org.amshove.kluent")
             }
         }
         maven {
@@ -78,12 +50,9 @@ allprojects {
 
                 // Remove when https://github.com/mrmike/Ok2Curl/issues/60 is closed
                 includeModule("com.github.mrmike", "ok2curl")
-            }
-        }
-        maven {
-            url 'https://maven.pkg.jetbrains.space/kotlin/p/dokka/dev'
-            content {
-                includeGroup('org.jetbrains.dokka')
+
+                // Remove when https://github.com/brianwernick/ExoMedia/issues/723 is closed
+                includeModule("com.github.brianwernick", "ExoMedia")
             }
         }
     }
@@ -91,15 +60,6 @@ allprojects {
 
 task clean(type: Delete) {
     delete rootProject.buildDir
-}
-
-gitVersioner {
-    def branches = ['develop', 'main']
-    baseBranch branchName in branches ? branchName : branches[0]
-    yearFactor 100
-    formatter = { gitVersioner ->
-        "1.${gitVersioner.versionCode}.${gitVersioner.featureBranchCommitCount}.${gitVersioner.currentSha1Short}"
-    }
 }
 
 dependencyUpdates {
@@ -125,3 +85,5 @@ apiValidation {
             'io.getstream.chat.android.core.internal.InternalStreamChatApi',
     ]
 }
+
+apply from: "${rootDir}/scripts/publish-root.gradle"

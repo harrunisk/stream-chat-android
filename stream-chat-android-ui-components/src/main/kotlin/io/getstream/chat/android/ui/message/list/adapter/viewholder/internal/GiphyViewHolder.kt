@@ -3,7 +3,7 @@ package io.getstream.chat.android.ui.message.list.adapter.viewholder.internal
 import android.view.ViewGroup
 import com.getstream.sdk.chat.adapter.MessageListItem
 import com.getstream.sdk.chat.enums.GiphyAction
-import com.getstream.sdk.chat.utils.extensions.inflater
+import io.getstream.chat.android.ui.common.extensions.internal.streamThemeInflater
 import io.getstream.chat.android.ui.databinding.StreamUiItemMessageGiphyBinding
 import io.getstream.chat.android.ui.message.list.adapter.MessageListItemPayloadDiff
 import io.getstream.chat.android.ui.message.list.adapter.MessageListListenerContainer
@@ -15,7 +15,7 @@ internal class GiphyViewHolder(
     decorators: List<Decorator>,
     listeners: MessageListListenerContainer,
     internal val binding: StreamUiItemMessageGiphyBinding = StreamUiItemMessageGiphyBinding.inflate(
-        parent.inflater,
+        parent.streamThemeInflater,
         parent,
         false
     ),
@@ -26,24 +26,26 @@ internal class GiphyViewHolder(
             cancelButton.setOnClickListener {
                 listeners.giphySendListener.onGiphySend(data.message, GiphyAction.CANCEL)
             }
+            shuffleButton.setOnClickListener {
+                listeners.giphySendListener.onGiphySend(data.message, GiphyAction.SHUFFLE)
+            }
             sendButton.setOnClickListener {
                 listeners.giphySendListener.onGiphySend(data.message, GiphyAction.SEND)
             }
-            nextButton.setOnClickListener {
-                listeners.giphySendListener.onGiphySend(data.message, GiphyAction.SHUFFLE)
-            }
+            mediaAttachmentView.giphyBadgeEnabled = false
         }
     }
 
     override fun bindData(data: MessageListItem.MessageItem, diff: MessageListItemPayloadDiff?) {
         super.bindData(data, diff)
+        data.message
+            .attachments
+            .firstOrNull()
+            ?.let(binding.mediaAttachmentView::showAttachment)
 
-        data.message.attachments.firstOrNull()?.let(binding.mediaAttachmentView::showAttachment)
-        binding.giphyTextLabel.text = trimText(data.message.text)
-    }
-
-    private fun trimText(text: String): String {
-        return "\"${text.replace(GIPHY_PREFIX, "")}\""
+        binding.giphyQueryTextView.text = data.message
+            .text
+            .replace(GIPHY_PREFIX, "")
     }
 
     private companion object {

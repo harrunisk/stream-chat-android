@@ -1,39 +1,38 @@
 package io.getstream.chat.android.ui.message.list.adapter.view.internal
 
 import android.content.Context
+import android.graphics.drawable.Drawable
 import android.util.AttributeSet
 import android.view.View
 import android.widget.TextView
-import androidx.annotation.DrawableRes
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.constraintlayout.widget.ConstraintSet
 import androidx.core.view.isVisible
 import com.getstream.sdk.chat.utils.extensions.constrainViewToParentBySide
-import com.getstream.sdk.chat.utils.extensions.inflater
 import com.getstream.sdk.chat.utils.extensions.updateConstraints
 import io.getstream.chat.android.client.models.User
 import io.getstream.chat.android.ui.R
 import io.getstream.chat.android.ui.avatar.AvatarView
+import io.getstream.chat.android.ui.common.extensions.internal.createStreamThemeWrapper
+import io.getstream.chat.android.ui.common.extensions.internal.streamThemeInflater
 import io.getstream.chat.android.ui.databinding.StreamUiItemMessageFootnoteBinding
 import io.getstream.chat.android.ui.databinding.StreamUiMessageThreadsFootnoteBinding
+import io.getstream.chat.android.ui.message.list.MessageListItemStyle
 
 internal class FootnoteView : ConstraintLayout {
 
-    constructor(context: Context) : super(context)
-    constructor(context: Context, attrs: AttributeSet?) : super(context, attrs)
-    constructor(context: Context, attrs: AttributeSet?, defStyleAttr: Int) : super(context, attrs, defStyleAttr)
+    constructor(context: Context) : super(context.createStreamThemeWrapper())
+    constructor(context: Context, attrs: AttributeSet?) : super(context.createStreamThemeWrapper(), attrs)
+    constructor(context: Context, attrs: AttributeSet?, defStyleAttr: Int) : super(context.createStreamThemeWrapper(), attrs, defStyleAttr)
     constructor(context: Context, attrs: AttributeSet?, defStyleAttr: Int, defStyleRes: Int) : super(
-        context,
+        context.createStreamThemeWrapper(),
         attrs,
         defStyleAttr,
         defStyleRes
     )
 
-    private val footnote: StreamUiItemMessageFootnoteBinding =
-        StreamUiItemMessageFootnoteBinding.inflate(inflater).also { addView(it.root) }
-    private val threadsFootnote: StreamUiMessageThreadsFootnoteBinding =
-        StreamUiMessageThreadsFootnoteBinding.inflate(inflater).also { addView(it.root) }
-
+    private val footnote = StreamUiItemMessageFootnoteBinding.inflate(streamThemeInflater).also { addView(it.root) }
+    private val threadsFootnote = StreamUiMessageThreadsFootnoteBinding.inflate(streamThemeInflater).also { addView(it.root) }
     val footerTextLabel: TextView = footnote.messageFooterLabel
 
     init {
@@ -59,7 +58,7 @@ internal class FootnoteView : ConstraintLayout {
         threadsFootnote.root.isVisible = false
     }
 
-    fun showThreadRepliesFootnote(isMine: Boolean, replyCount: Int, threadParticipants: List<User>) {
+    fun showThreadRepliesFootnote(isMine: Boolean, replyCount: Int, threadParticipants: List<User>, style: MessageListItemStyle) {
         footnote.root.isVisible = false
         with(threadsFootnote) {
             root.isVisible = true
@@ -68,6 +67,7 @@ internal class FootnoteView : ConstraintLayout {
 
             threadRepliesButton.text =
                 resources.getQuantityString(R.plurals.stream_ui_thread_messages_indicator, replyCount, replyCount)
+            style.textStyleThreadCounter.apply(threadRepliesButton)
         }
         setupUserAvatars(isMine, threadParticipants)
     }
@@ -110,27 +110,16 @@ internal class FootnoteView : ConstraintLayout {
         footnote.deliveryStatusIcon.isVisible = false
     }
 
-    private fun showStatusIndicator(@DrawableRes drawableRes: Int) {
+    internal fun showStatusIndicator(drawableRes: Drawable) {
         footnote.deliveryStatusIcon.isVisible = true
-        footnote.deliveryStatusIcon.setImageResource(drawableRes)
+        footnote.deliveryStatusIcon.setImageDrawable(drawableRes)
     }
 
-    fun showInProgressStatusIndicator() {
-        showStatusIndicator(R.drawable.stream_ui_ic_clock)
-    }
-
-    fun showSentStatusIndicator() {
-        showStatusIndicator(R.drawable.stream_ui_ic_check_single)
-    }
-
-    fun showReadStatusIndicator() {
-        showStatusIndicator(R.drawable.stream_ui_ic_check_double)
-    }
-
-    fun showTime(time: String) {
+    fun showTime(time: String, style: MessageListItemStyle) {
         footnote.timeView.apply {
             isVisible = true
             text = time
+            style.textStyleMessageDate.apply(this)
         }
     }
 

@@ -12,21 +12,20 @@ import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
 
 internal class SocketFactory(
-    private val eventsParser: EventsParser,
     private val parser: ChatParser,
-    private val tokenManager: TokenManager
+    private val tokenManager: TokenManager,
 ) {
 
     private val logger = ChatLogger.get(SocketFactory::class.java.simpleName)
     private val httpClient = OkHttpClient()
 
-    fun createAnonymousSocket(endpoint: String, apiKey: String): Socket =
-        create(endpoint, apiKey, User(ANONYMOUS_USER_ID), true)
+    fun createAnonymousSocket(eventsParser: EventsParser, endpoint: String, apiKey: String): Socket =
+        create(eventsParser, endpoint, apiKey, User(ANONYMOUS_USER_ID), true)
 
-    fun createNormalSocket(endpoint: String, apiKey: String, user: User): Socket =
-        create(endpoint, apiKey, user, false)
+    fun createNormalSocket(eventsParser: EventsParser, endpoint: String, apiKey: String, user: User): Socket =
+        create(eventsParser, endpoint, apiKey, user, false)
 
-    private fun create(endpoint: String, apiKey: String, user: User, isAnonymous: Boolean): Socket {
+    private fun create(eventsParser: EventsParser, endpoint: String, apiKey: String, user: User, isAnonymous: Boolean): Socket {
         val url = buildUrl(endpoint, apiKey, user, isAnonymous)
         val request = Request.Builder().url(url).build()
         val newWebSocket = httpClient.newWebSocket(request, eventsParser)
@@ -55,10 +54,10 @@ internal class SocketFactory(
 
     private fun buildUserDetailJson(user: User): String {
         val data = mapOf(
-            "user_details" to user,
+            "user_details" to user.reduceUserDetails(),
             "user_id" to user.id,
             "server_determines_connection_id" to true,
-            "X-STREAM-CLIENT" to ChatClient.instance().getVersion()
+            "X-Stream-Client" to ChatClient.instance().getVersion()
         )
         return parser.toJson(data)
     }
@@ -69,5 +68,17 @@ internal class SocketFactory(
          *  as the server will always return the user with "!anon" user id
          */
         private const val ANONYMOUS_USER_ID = "anon"
+    }
+
+    private fun User.reduceUserDetails(): Map<String, Any> {
+        val details = mutableMapOf(
+            "id" to id,
+            "role" to role,
+            "banned" to banned,
+            "invisible" to invisible,
+            "teams" to teams,
+        )
+        details.putAll(extraData)
+        return details
     }
 }

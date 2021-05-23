@@ -7,13 +7,16 @@ import androidx.lifecycle.Transformations
 import androidx.lifecycle.ViewModel
 import com.getstream.sdk.chat.enums.GiphyAction
 import com.getstream.sdk.chat.view.messages.MessageListItemWrapper
+import com.getstream.sdk.chat.viewmodel.messages.MessageListViewModel.DateSeparatorHandler
 import io.getstream.chat.android.client.ChatClient
 import io.getstream.chat.android.client.models.Attachment
 import io.getstream.chat.android.client.models.Channel
 import io.getstream.chat.android.client.models.ChannelUserRead
+import io.getstream.chat.android.client.models.Flag
 import io.getstream.chat.android.client.models.Message
 import io.getstream.chat.android.client.models.Reaction
 import io.getstream.chat.android.client.models.User
+import io.getstream.chat.android.client.utils.Result
 import io.getstream.chat.android.core.internal.exhaustive
 import io.getstream.chat.android.livedata.ChatDomain
 import io.getstream.chat.android.livedata.controller.ChannelController
@@ -36,7 +39,7 @@ public class MessageListViewModel @JvmOverloads constructor(
     private var messageListData: MessageListItemLiveData? = null
     private var threadListData: MessageListItemLiveData? = null
     private val stateMerger = MediatorLiveData<State>()
-    var currentMode: Mode by Delegates.observable(Mode.Normal as Mode) { _, _, newMode -> mode.postValue(newMode) }
+    public var currentMode: Mode by Delegates.observable(Mode.Normal as Mode) { _, _, newMode -> _mode.postValue(newMode) }
     private val _reads: MediatorLiveData<List<ChannelUserRead>> = MediatorLiveData()
     private val reads: LiveData<List<ChannelUserRead>> = _reads
     private val _loadMoreLiveData = MediatorLiveData<Boolean>()
@@ -45,19 +48,21 @@ public class MessageListViewModel @JvmOverloads constructor(
     public val channel: LiveData<Channel> = _channel
     private val _targetMessage: MutableLiveData<Message> = MutableLiveData()
     public val targetMessage: LiveData<Message> = _targetMessage
+    private val _mode: MutableLiveData<Mode> = MutableLiveData(currentMode)
 
     /**
      * Whether the user is viewing a thread
      * @see Mode
      */
-    public val mode: MutableLiveData<Mode> = MutableLiveData(currentMode)
+    public val mode: LiveData<Mode> = _mode
 
     /**
      * Current message list state
      * @see State
      */
     public val state: LiveData<State> = stateMerger
-    public val currentUser: User = domain.currentUser
+    public val currentUser: User
+        get() = domain.currentUser
 
     private var dateSeparatorHandler: DateSeparatorHandler? =
         DateSeparatorHandler { previousMessage: Message?, message: Message ->
@@ -80,14 +85,18 @@ public class MessageListViewModel @JvmOverloads constructor(
     init {
         stateMerger.addSource(MutableLiveData(State.Loading)) { stateMerger.value = it }
 
-        domain.useCases.watchChannel(cid, MESSAGES_LIMIT).enqueue { channelControllerResult ->
+        domain.watchChannel(cid, MESSAGES_LIMIT).enqueue { channelControllerResult ->
             if (channelControllerResult.isSuccess) {
                 val channelController = channelControllerResult.data()
-                _channel.addSource(MutableLiveData(channelController.toChannel())) { _channel.value = it }
+                _channel.addSource(channelController.channelData) {
+                    _channel.value = channelController.toChannel()
+                    // Channel should be propagated only once because it's used to initialize MessageListView
+                    _channel.removeSource(channelController.channelData)
+                }
                 val typingIds = Transformations.map(channelController.typing) { (_, idList) -> idList }
 
                 messageListData = MessageListItemLiveData(
-                    currentUser,
+                    { currentUser.id },
                     channelController.messages,
                     channelController.reads,
                     typingIds,
@@ -114,7 +123,7 @@ public class MessageListViewModel @JvmOverloads constructor(
                         }
                     }
                 } else {
-                    domain.useCases.loadMessageById(
+                    domain.loadMessageById(
                         cid,
                         messageId,
                         MESSAGES_LIMIT,
@@ -134,7 +143,7 @@ public class MessageListViewModel @JvmOverloads constructor(
 
     private fun setThreadMessages(threadMessages: LiveData<List<Message>>) {
         threadListData = MessageListItemLiveData(
-            currentUser,
+            { currentUser.id },
             threadMessages,
             reads,
             null,
@@ -170,7 +179,7 @@ public class MessageListViewModel @JvmOverloads constructor(
                 onEndRegionReached()
             }
             is Event.LastMessageRead -> {
-                domain.useCases.markRead(cid).enqueue()
+                domain.markRead(cid).enqueue()
             }
             is Event.ThreadModeEntered -> {
                 onThreadModeEntered(event.parentMessage)
@@ -179,22 +188,27 @@ public class MessageListViewModel @JvmOverloads constructor(
                 onBackButtonPressed()
             }
             is Event.DeleteMessage -> {
-                domain.useCases.deleteMessage(event.message).enqueue()
+                domain.deleteMessage(event.message).enqueue()
             }
             is Event.FlagMessage -> {
-                client.flagMessage(event.message.id).enqueue()
+                client.flagMessage(event.message.id).enqueue { result ->
+                    event.resultHandler(result)
+                }
             }
             is Event.GiphyActionSelected -> {
                 onGiphyActionSelected(event)
             }
             is Event.RetryMessage -> {
-                domain.useCases.sendMessage(event.message).enqueue()
+                domain.sendMessage(event.message).enqueue()
             }
             is Event.MessageReaction -> {
                 onMessageReaction(event.message, event.reactionType, event.enforceUnique)
             }
             is Event.MuteUser -> {
                 client.muteUser(event.user.id).enqueue()
+            }
+            is Event.UnmuteUser -> {
+                client.unmuteUser(event.user.id).enqueue()
             }
             is Event.BlockUser -> {
                 val channelClient = client.channel(cid)
@@ -205,16 +219,13 @@ public class MessageListViewModel @JvmOverloads constructor(
                 ).enqueue()
             }
             is Event.ReplyMessage -> {
-                domain.useCases.setMessageForReply(event.cid, event.repliedMessage).enqueue()
+                domain.setMessageForReply(event.cid, event.repliedMessage).enqueue()
             }
             is Event.DownloadAttachment -> {
-                domain.useCases.downloadAttachment.invoke(event.attachment).enqueue()
-            }
-            is Event.AttachmentDownload -> {
-                domain.useCases.downloadAttachment.invoke(event.attachment).enqueue()
+                domain.downloadAttachment(event.attachment).enqueue()
             }
             is Event.ShowMessage -> {
-                domain.useCases.loadMessageById(
+                domain.loadMessageById(
                     cid,
                     event.messageId,
                     MESSAGES_LIMIT,
@@ -227,7 +238,7 @@ public class MessageListViewModel @JvmOverloads constructor(
             }
             is Event.RemoveAttachment -> {
                 val attachmentToBeDeleted = event.attachment
-                domain.useCases.loadMessageById(
+                domain.loadMessageById(
                     cid,
                     event.messageId,
                     MESSAGES_LIMIT,
@@ -242,14 +253,14 @@ public class MessageListViewModel @JvmOverloads constructor(
                                 it.imageUrl == attachmentToBeDeleted.imageUrl
                             }
                         }
-                        domain.useCases.editMessage(message).enqueue()
+                        domain.editMessage(message).enqueue()
                     }
                 }
             }
             is Event.ReplyAttachment -> {
                 val messageId = event.repliedMessageId
                 val cid = event.cid
-                domain.useCases.loadMessageById(
+                domain.loadMessageById(
                     cid,
                     messageId,
                     MESSAGES_LIMIT,
@@ -287,13 +298,13 @@ public class MessageListViewModel @JvmOverloads constructor(
     private fun onGiphyActionSelected(event: Event.GiphyActionSelected) {
         when (event.action) {
             GiphyAction.SEND -> {
-                domain.useCases.sendGiphy(event.message).enqueue()
+                domain.sendGiphy(event.message).enqueue()
             }
             GiphyAction.SHUFFLE -> {
-                domain.useCases.shuffleGiphy(event.message).enqueue()
+                domain.shuffleGiphy(event.message).enqueue()
             }
             GiphyAction.CANCEL -> {
-                domain.useCases.cancelMessage(event.message).enqueue()
+                domain.cancelMessage(event.message).enqueue()
             }
         }.exhaustive
     }
@@ -303,13 +314,13 @@ public class MessageListViewModel @JvmOverloads constructor(
             when (this) {
                 is Mode.Normal -> {
                     messageListData?.loadingMoreChanged(true)
-                    domain.useCases.loadOlderMessages(cid, MESSAGES_LIMIT).enqueue {
+                    domain.loadOlderMessages(cid, MESSAGES_LIMIT).enqueue {
                         messageListData?.loadingMoreChanged(false)
                     }
                 }
                 is Mode.Thread -> {
                     threadListData?.loadingMoreChanged(true)
-                    domain.useCases.threadLoadMore(cid, this.parentMessage.id, MESSAGES_LIMIT)
+                    domain.threadLoadMore(cid, this.parentMessage.id, MESSAGES_LIMIT)
                         .enqueue {
                             threadListData?.loadingMoreChanged(false)
                         }
@@ -333,12 +344,12 @@ public class MessageListViewModel @JvmOverloads constructor(
 
     private fun onThreadModeEntered(parentMessage: Message) {
         val parentId: String = parentMessage.id
-        domain.useCases.getThread(cid, parentId).enqueue { threadControllerResult ->
+        domain.getThread(cid, parentId).enqueue { threadControllerResult ->
             if (threadControllerResult.isSuccess) {
                 val threadController = threadControllerResult.data()
                 currentMode = Mode.Thread(parentMessage)
                 setThreadMessages(threadController.messages)
-                domain.useCases.threadLoadMore(cid, parentId, MESSAGES_LIMIT).enqueue()
+                domain.threadLoadMore(cid, parentId, MESSAGES_LIMIT).enqueue()
             }
         }
     }
@@ -350,9 +361,9 @@ public class MessageListViewModel @JvmOverloads constructor(
             score = 1
         }
         if (message.ownReactions.any { it.type == reactionType }) {
-            domain.useCases.deleteReaction(cid, reaction).enqueue()
+            domain.deleteReaction(cid, reaction).enqueue()
         } else {
-            domain.useCases.sendReaction(cid, reaction, enforceUnique = enforceUnique).enqueue()
+            domain.sendReaction(cid, reaction, enforceUnique = enforceUnique).enqueue()
         }
     }
 
@@ -373,7 +384,7 @@ public class MessageListViewModel @JvmOverloads constructor(
         public object LastMessageRead : Event()
         public data class ThreadModeEntered(val parentMessage: Message) : Event()
         public data class DeleteMessage(val message: Message) : Event()
-        public data class FlagMessage(val message: Message) : Event()
+        public data class FlagMessage(val message: Message, val resultHandler: ((Result<Flag>) -> Unit) = { }) : Event()
         public data class GiphyActionSelected(val message: Message, val action: GiphyAction) : Event()
         public data class RetryMessage(val message: Message) : Event()
         public data class MessageReaction(
@@ -381,13 +392,13 @@ public class MessageListViewModel @JvmOverloads constructor(
             val reactionType: String,
             val enforceUnique: Boolean,
         ) : Event()
+
         public data class MuteUser(val user: User) : Event()
+        public data class UnmuteUser(val user: User) : Event()
         public data class BlockUser(val user: User, val cid: String) : Event()
         public data class ReplyMessage(val cid: String, val repliedMessage: Message) : Event()
         public data class ReplyAttachment(val cid: String, val repliedMessageId: String) : Event()
         public data class DownloadAttachment(val attachment: Attachment) : Event()
-        @Deprecated(replaceWith = ReplaceWith("DownloadAttachment"), message = "Deprecated class.")
-        public data class AttachmentDownload(val attachment: Attachment) : Event()
         public data class ShowMessage(val messageId: String) : Event()
         public data class RemoveAttachment(val messageId: String, val attachment: Attachment) : Event()
     }

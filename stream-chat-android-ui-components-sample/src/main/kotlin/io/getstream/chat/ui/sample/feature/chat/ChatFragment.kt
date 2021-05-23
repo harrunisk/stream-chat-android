@@ -7,18 +7,24 @@ import android.view.ViewGroup
 import androidx.activity.OnBackPressedCallback
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
+import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
 import androidx.navigation.fragment.navArgs
 import com.getstream.sdk.chat.viewmodel.MessageInputViewModel
 import com.getstream.sdk.chat.viewmodel.messages.MessageListViewModel
 import com.getstream.sdk.chat.viewmodel.messages.getCreatedAtOrThrow
+import io.getstream.chat.android.client.errors.ChatNetworkError
+import io.getstream.chat.android.client.models.Flag
 import io.getstream.chat.android.client.models.Message
+import io.getstream.chat.android.client.utils.Result
 import io.getstream.chat.android.livedata.utils.EventObserver
-import io.getstream.chat.android.ui.message.input.bindView
+import io.getstream.chat.android.ui.message.input.MessageInputView
+import io.getstream.chat.android.ui.message.input.viewmodel.bindView
 import io.getstream.chat.android.ui.message.list.header.viewmodel.MessageListHeaderViewModel
 import io.getstream.chat.android.ui.message.list.header.viewmodel.bindView
+import io.getstream.chat.android.ui.message.list.viewmodel.bindView
 import io.getstream.chat.android.ui.message.list.viewmodel.factory.MessageListViewModelFactory
-import io.getstream.chat.android.ui.message.view.bindView
+import io.getstream.chat.ui.sample.R
 import io.getstream.chat.ui.sample.common.navigateSafely
 import io.getstream.chat.ui.sample.databinding.FragmentChatBinding
 import io.getstream.chat.ui.sample.feature.common.ConfirmationDialogFragment
@@ -39,6 +45,9 @@ class ChatFragment : Fragment() {
     private var _binding: FragmentChatBinding? = null
     private val binding get() = _binding!!
 
+    private val maxAttachmentFile: Int = 20
+    private var messageListSubtitle: String? = null
+
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
@@ -57,8 +66,31 @@ class ChatFragment : Fragment() {
         headerViewModel.bindView(binding.messagesHeaderView, viewLifecycleOwner)
         initChatViewModel()
         initMessagesViewModel()
+        configureMessageInputView()
         initMessageInputViewModel()
         configureBackButtonHandling()
+    }
+
+    private fun configureMessageInputView() {
+        lifecycleScope.launchWhenCreated {
+            binding.messageInputView.listenForBigAttachments(
+                object : MessageInputView.BigFileSelectionListener {
+                    override fun handleBigFileSelected(hasBigFile: Boolean) {
+                        if (hasBigFile) {
+                            messageListSubtitle = binding.messagesHeaderView.getOnlineStateSubtitle()
+                            binding.messagesHeaderView.setOnlineStateSubtitle(
+                                requireContext().getString(
+                                    R.string.chat_fragment_big_attachment_subtitle,
+                                    maxAttachmentFile
+                                )
+                            )
+                        } else {
+                            messageListSubtitle?.let(binding.messagesHeaderView::setOnlineStateSubtitle)
+                        }
+                    }
+                }
+            )
+        }
     }
 
     override fun onResume() {
@@ -83,15 +115,17 @@ class ChatFragment : Fragment() {
     }
 
     private fun initChatViewModel() {
-        binding.messagesHeaderView.apply {
-            setAvatarClickListener {
-                chatViewModel.onAction(ChatViewModel.Action.HeaderClicked)
-            }
-            setTitleClickListener {
-                chatViewModel.onAction(ChatViewModel.Action.HeaderClicked)
-            }
-            setSubtitleClickListener {
-                chatViewModel.onAction(ChatViewModel.Action.HeaderClicked)
+        chatViewModel.members.observe(viewLifecycleOwner) { members ->
+            binding.messagesHeaderView.apply {
+                setAvatarClickListener {
+                    chatViewModel.onAction(ChatViewModel.Action.HeaderClicked(members))
+                }
+                setTitleClickListener {
+                    chatViewModel.onAction(ChatViewModel.Action.HeaderClicked(members))
+                }
+                setSubtitleClickListener {
+                    chatViewModel.onAction(ChatViewModel.Action.HeaderClicked(members))
+                }
             }
         }
         chatViewModel.navigationEvent.observe(
@@ -119,18 +153,13 @@ class ChatFragment : Fragment() {
                         messageInputViewModel.setActiveThread(it.parentMessage)
                     }
                     is MessageListViewModel.Mode.Normal -> {
-                        headerViewModel.setActiveThread(null)
+                        headerViewModel.resetThread()
                         messageInputViewModel.resetThread()
                     }
                 }
             }
-            binding.messageListView.setMessageEditHandler {
-                editMessage.postValue(it)
-            }
+            binding.messageListView.setMessageEditHandler(::postMessageToEdit)
         }
-
-        // set external suggestion view which is displayed over message list
-        binding.messageInputView.setSuggestionListView(binding.suggestionListView)
     }
 
     private fun initMessagesViewModel() {
@@ -166,11 +195,27 @@ class ChatFragment : Fragment() {
                 }
             }
         }
-        binding.messageListView.setConfirmDeleteMessageHandler { message: Message, confirmCallback: () -> Unit ->
-            ConfirmationDialogFragment.newDeleteMessageInstance(requireContext())
-                .apply {
-                    confirmClickListener = ConfirmationDialogFragment.ConfirmClickListener(confirmCallback::invoke)
-                }.show(parentFragmentManager, null)
+        binding.messageListView.apply {
+            setConfirmDeleteMessageHandler { _, confirmCallback: () -> Unit ->
+                ConfirmationDialogFragment.newDeleteMessageInstance(requireContext())
+                    .apply {
+                        confirmClickListener = ConfirmationDialogFragment.ConfirmClickListener(confirmCallback::invoke)
+                    }.show(parentFragmentManager, null)
+            }
+
+            setConfirmFlagMessageHandler { _, confirmCallback: () -> Unit ->
+                ConfirmationDialogFragment.newFlagMessageInstance(requireContext())
+                    .apply {
+                        confirmClickListener = ConfirmationDialogFragment.ConfirmClickListener(confirmCallback::invoke)
+                    }.show(parentFragmentManager, null)
+            }
+
+            setFlagMessageResultHandler { result ->
+                if (result.isSuccess || result.isAlreadyExistsError()) {
+                    ConfirmationDialogFragment.newMessageFlaggedInstance(requireContext())
+                        .show(parentFragmentManager, null)
+                }
+            }
         }
     }
 
@@ -184,5 +229,13 @@ class ChatFragment : Fragment() {
             get(Calendar.YEAR) to get(Calendar.DAY_OF_YEAR)
         }
         return previousYear != year || previousDayOfYear != dayOfYear
+    }
+
+    private fun Result<Flag>.isAlreadyExistsError(): Boolean {
+        if (!isError) {
+            return false
+        }
+        val chatError = error() as ChatNetworkError
+        return chatError.streamCode == 4
     }
 }

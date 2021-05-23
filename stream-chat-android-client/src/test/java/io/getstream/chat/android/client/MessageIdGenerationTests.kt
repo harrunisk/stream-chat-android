@@ -10,14 +10,21 @@ import io.getstream.chat.android.client.api.models.MessageResponse
 import io.getstream.chat.android.client.models.Message
 import io.getstream.chat.android.client.utils.RetroSuccess
 import io.getstream.chat.android.client.utils.UuidGenerator
+import io.getstream.chat.android.test.TestCoroutineExtension
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.Before
-import org.junit.Test
+import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.extension.RegisterExtension
 
 internal class MessageIdGenerationTests {
 
+    companion object {
+        @JvmField
+        @RegisterExtension
+        val testCoroutines = TestCoroutineExtension()
+    }
+
     val userId = "user-id"
-    val apiKey = "api-key"
     val connectionId = "connection-id"
     val messageId = "message-id"
     val channelType = "channel-type"
@@ -30,17 +37,17 @@ internal class MessageIdGenerationTests {
     private lateinit var retroAnonymousApi: RetrofitAnonymousApi
     private lateinit var api: GsonChatApi
 
-    @Before
+    @BeforeEach
     fun before() {
         retroApi = mock()
         retroAnonymousApi = mock()
         uuidGenerator = mock()
         api = GsonChatApi(
-            apiKey,
             retroApi,
             retroAnonymousApi,
             uuidGenerator,
-            mock()
+            mock(),
+            testCoroutines.scope,
         )
         api.setConnection(userId, connectionId)
     }
@@ -56,8 +63,6 @@ internal class MessageIdGenerationTests {
             retroApi.sendMessage(
                 channelType,
                 channelId,
-                apiKey,
-                userId,
                 connectionId,
                 MessageRequest(message)
             )
@@ -80,8 +85,6 @@ internal class MessageIdGenerationTests {
             retroApi.sendMessage(
                 channelType,
                 channelId,
-                apiKey,
-                userId,
                 connectionId,
                 MessageRequest(message)
             )

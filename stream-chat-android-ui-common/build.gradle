@@ -3,7 +3,6 @@ import com.getstream.sdk.chat.Configuration
 
 apply plugin: 'com.android.library'
 apply plugin: 'com.github.dcendents.android-maven'
-apply plugin: 'com.hiya.jacoco-android'
 apply plugin: 'kotlin-android'
 apply plugin: 'de.mannodermaus.android-junit5'
 apply plugin: 'org.jlleitschuh.gradle.ktlint'
@@ -14,29 +13,15 @@ ext {
     PUBLISH_ARTIFACT_ID = 'stream-chat-android-ui-common'
 }
 
-apply from: "${rootProject.projectDir}/scripts/publish-mavencentral.gradle"
-
+apply from: "${rootDir}/scripts/publish-module.gradle"
+apply from: "${rootDir}/scripts/android.gradle"
 
 android {
-    compileSdkVersion Configuration.compileSdkVersion
-
     defaultConfig {
-        minSdkVersion Configuration.minSdkVersion
-        targetSdkVersion Configuration.targetSdkVersion
-        versionName Configuration.versionName
-
         vectorDrawables.useSupportLibrary = true
     }
 
     resourcePrefix 'stream_'
-
-    compileOptions {
-        sourceCompatibility JavaVersion.VERSION_1_8
-        targetCompatibility JavaVersion.VERSION_1_8
-    }
-    kotlinOptions {
-        jvmTarget = '1.8'
-    }
 
     testOptions {
         unitTests {
@@ -85,19 +70,10 @@ dependencies {
 
     implementation Dependencies.dexter
 
-    api Dependencies.exoplayerCore
-    api Dependencies.exoplayerDash
-    api Dependencies.exoplayerHls
-    api Dependencies.exoplayerSmoothstreaming
+    api Dependencies.exoMedia
 
     implementation Dependencies.fresco
     implementation Dependencies.photodraweeview
-
-    implementation Dependencies.markwonCore
-    implementation Dependencies.markwonLinkify
-    implementation Dependencies.markwonextStrikethrough
-    implementation Dependencies.markwonImage
-
 
     testImplementation project(":stream-chat-android-test")
     testImplementation Dependencies.junitJupiterApi
@@ -108,7 +84,7 @@ dependencies {
     testImplementation Dependencies.threeTenBp
 
     testImplementation Dependencies.androidxArchCoreTest
-    testImplementation Dependencies.burst
+    testImplementation Dependencies.testParameterInjector
     testImplementation Dependencies.kluent
     testImplementation Dependencies.mockito
     testImplementation Dependencies.mockitoKotlin

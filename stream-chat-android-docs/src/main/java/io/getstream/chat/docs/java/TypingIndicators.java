@@ -3,7 +3,6 @@ package io.getstream.chat.docs.java;
 import io.getstream.chat.android.client.channel.ChannelClient;
 import io.getstream.chat.android.client.events.TypingStartEvent;
 import io.getstream.chat.android.client.events.TypingStopEvent;
-import kotlin.Unit;
 
 public class TypingIndicators {
     private ChannelClient channelClient;
@@ -16,8 +15,7 @@ public class TypingIndicators {
         channelClient.keystroke().enqueue();
 
         // Sends a typing.start event for a particular thread
-        String threadId = "threadId";
-        channelClient.keystroke(threadId).enqueue();
+        channelClient.keystroke("threadId").enqueue();
 
         // Sends the typing.stop event
         channelClient.stopTyping().enqueue();

@@ -1,16 +1,17 @@
 package io.getstream.chat.android.client.api
 
 import androidx.annotation.CheckResult
-import io.getstream.chat.android.client.api.models.CompletableResponse
+import io.getstream.chat.android.client.api.models.FilterObject
 import io.getstream.chat.android.client.api.models.QueryChannelRequest
 import io.getstream.chat.android.client.api.models.QueryChannelsRequest
 import io.getstream.chat.android.client.api.models.QuerySort
 import io.getstream.chat.android.client.api.models.QueryUsersRequest
 import io.getstream.chat.android.client.api.models.SearchMessagesRequest
 import io.getstream.chat.android.client.api.models.SendActionRequest
-import io.getstream.chat.android.client.api.models.UpdateChannelRequest
 import io.getstream.chat.android.client.call.Call
 import io.getstream.chat.android.client.events.ChatEvent
+import io.getstream.chat.android.client.models.BannedUser
+import io.getstream.chat.android.client.models.BannedUsersSort
 import io.getstream.chat.android.client.models.Channel
 import io.getstream.chat.android.client.models.Device
 import io.getstream.chat.android.client.models.Flag
@@ -20,7 +21,6 @@ import io.getstream.chat.android.client.models.Message
 import io.getstream.chat.android.client.models.Mute
 import io.getstream.chat.android.client.models.Reaction
 import io.getstream.chat.android.client.models.User
-import io.getstream.chat.android.client.utils.FilterObject
 import io.getstream.chat.android.client.utils.ProgressCallback
 import java.io.File
 import java.util.Date
@@ -74,7 +74,20 @@ internal interface ChatApi {
     fun sendReaction(reaction: Reaction, enforceUnique: Boolean): Call<Reaction>
 
     @CheckResult
-    fun sendReaction(messageId: String, reactionType: String, enforceUnique: Boolean): Call<Reaction>
+    fun sendReaction(
+        messageId: String,
+        reactionType: String,
+        enforceUnique: Boolean,
+    ): Call<Reaction> {
+        return sendReaction(
+            reaction = Reaction(
+                messageId = messageId,
+                type = reactionType,
+                score = 0
+            ),
+            enforceUnique = enforceUnique
+        )
+    }
 
     @CheckResult
     fun deleteReaction(messageId: String, reactionType: String): Call<Message>
@@ -99,7 +112,7 @@ internal interface ChatApi {
     fun muteChannel(channelType: String, channelId: String): Call<Unit>
 
     @CheckResult
-    fun unMuteChannel(channelType: String, channelId: String): Call<Unit>
+    fun unmuteChannel(channelType: String, channelId: String): Call<Unit>
 
     @CheckResult
     fun updateMessage(
@@ -128,7 +141,16 @@ internal interface ChatApi {
     fun updateChannel(
         channelType: String,
         channelId: String,
-        request: UpdateChannelRequest,
+        extraData: Map<String, Any>,
+        updateMessage: Message?,
+    ): Call<Channel>
+
+    @CheckResult
+    fun updateChannelPartial(
+        channelType: String,
+        channelId: String,
+        set: Map<String, Any>,
+        unset: List<String>,
     ): Call<Channel>
 
     @CheckResult
@@ -228,7 +250,13 @@ internal interface ChatApi {
     fun flagUser(userId: String): Call<Flag>
 
     @CheckResult
+    fun unflagUser(userId: String): Call<Flag>
+
+    @CheckResult
     fun flagMessage(messageId: String): Call<Flag>
+
+    @CheckResult
+    fun unflagMessage(messageId: String): Call<Flag>
 
     @CheckResult
     fun banUser(
@@ -238,15 +266,27 @@ internal interface ChatApi {
         channelType: String,
         channelId: String,
         shadow: Boolean,
-    ): Call<CompletableResponse>
+    ): Call<Unit>
 
     @CheckResult
-    fun unBanUser(
+    fun unbanUser(
         targetId: String,
         channelType: String,
         channelId: String,
         shadow: Boolean,
-    ): Call<CompletableResponse>
+    ): Call<Unit>
+
+    @CheckResult
+    fun queryBannedUsers(
+        filter: FilterObject,
+        sort: QuerySort<BannedUsersSort>,
+        offset: Int?,
+        limit: Int?,
+        createdAtAfter: Date?,
+        createdAtAfterOrEqual: Date?,
+        createdAtBefore: Date?,
+        createdAtBeforeOrEqual: Date?,
+    ): Call<List<BannedUser>>
 
     @CheckResult
     fun sendEvent(

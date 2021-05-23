@@ -9,7 +9,6 @@ import okhttp3.RequestBody.Companion.asRequestBody
 import java.io.File
 
 internal class StreamFileUploader(
-    private val apiKey: String,
     private val retrofitCdnApi: RetrofitCdnApi,
 ) : FileUploader {
 
@@ -28,8 +27,6 @@ internal class StreamFileUploader(
             channelType,
             channelId,
             part,
-            apiKey,
-            userId,
             connectionId
         ).execute()
 
@@ -57,8 +54,6 @@ internal class StreamFileUploader(
             channelType,
             channelId,
             part,
-            apiKey,
-            userId,
             connectionId
         ).execute()
 
@@ -85,8 +80,6 @@ internal class StreamFileUploader(
                 channelType,
                 channelId,
                 part,
-                apiKey,
-                userId,
                 connectionId
             ).execute()
 
@@ -114,8 +107,6 @@ internal class StreamFileUploader(
             channelType,
             channelId,
             part,
-            apiKey,
-            userId,
             connectionId
         ).execute()
 
@@ -133,7 +124,7 @@ internal class StreamFileUploader(
         connectionId: String,
         url: String,
     ) {
-        retrofitCdnApi.deleteFile(channelType, channelId, apiKey, connectionId, url).execute()
+        retrofitCdnApi.deleteFile(channelType, channelId, connectionId, url).execute()
     }
 
     override fun deleteImage(
@@ -143,6 +134,6 @@ internal class StreamFileUploader(
         connectionId: String,
         url: String,
     ) {
-        retrofitCdnApi.deleteImage(channelType, channelId, apiKey, connectionId, url).execute()
+        retrofitCdnApi.deleteImage(channelType, channelId, connectionId, url).execute()
     }
 }

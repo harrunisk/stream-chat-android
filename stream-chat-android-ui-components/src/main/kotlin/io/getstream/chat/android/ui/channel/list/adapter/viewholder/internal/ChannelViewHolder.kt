@@ -1,13 +1,14 @@
 package io.getstream.chat.android.ui.channel.list.adapter.viewholder.internal
 
+import android.content.res.ColorStateList
 import android.view.View
 import android.view.ViewGroup
 import androidx.core.view.doOnNextLayout
 import androidx.core.view.isVisible
 import com.getstream.sdk.chat.utils.DateFormatter
-import com.getstream.sdk.chat.utils.extensions.inflater
 import com.getstream.sdk.chat.utils.extensions.isDirectMessaging
 import com.getstream.sdk.chat.utils.formatDate
+import io.getstream.chat.android.client.extensions.isMuted
 import io.getstream.chat.android.client.models.Channel
 import io.getstream.chat.android.client.models.Message
 import io.getstream.chat.android.client.utils.SyncStatus
@@ -25,8 +26,9 @@ import io.getstream.chat.android.ui.common.extensions.internal.getLastMessage
 import io.getstream.chat.android.ui.common.extensions.internal.getLastMessagePreviewText
 import io.getstream.chat.android.ui.common.extensions.internal.isMessageRead
 import io.getstream.chat.android.ui.common.extensions.internal.isNotNull
-import io.getstream.chat.android.ui.common.extensions.internal.setTextSizePx
+import io.getstream.chat.android.ui.common.extensions.internal.streamThemeInflater
 import io.getstream.chat.android.ui.common.extensions.isCurrentUserOwnerOrAdmin
+import io.getstream.chat.android.ui.databinding.StreamUiChannelListItemBackgroundViewBinding
 import io.getstream.chat.android.ui.databinding.StreamUiChannelListItemForegroundViewBinding
 import io.getstream.chat.android.ui.databinding.StreamUiChannelListItemViewBinding
 
@@ -40,7 +42,7 @@ internal class ChannelViewHolder @JvmOverloads constructor(
     private val swipeListener: ChannelListView.SwipeListener,
     private val style: ChannelListViewStyle,
     private val binding: StreamUiChannelListItemViewBinding = StreamUiChannelListItemViewBinding.inflate(
-        parent.inflater,
+        parent.streamThemeInflater,
         parent,
         false
     ),
@@ -66,6 +68,8 @@ internal class ChannelViewHolder @JvmOverloads constructor(
                 deleteImageView.setOnClickListener {
                     channelDeleteListener.onClick(channel)
                 }
+
+                applyStyle(style)
             }
 
             itemForegroundView.apply {
@@ -99,7 +103,7 @@ internal class ChannelViewHolder @JvmOverloads constructor(
     override fun bind(channel: Channel, diff: ChannelListPayloadDiff) {
         this.channel = channel
 
-        configureForeground(diff)
+        configureForeground(diff, channel)
         configureBackground()
 
         listener?.onRestoreSwipePosition(this, absoluteAdapterPosition)
@@ -123,24 +127,39 @@ internal class ChannelViewHolder @JvmOverloads constructor(
         return openedX.coerceAtMost(closedX)..openedX.coerceAtLeast(closedX)
     }
 
-    private fun configureBackground() {
-        configureDeleteButton()
+    override fun isSwipeEnabled(): Boolean {
+        return optionsCount > 0 && style.swipeEnabled
     }
 
-    private fun configureDeleteButton() {
-        val canDeleteChannel = channel.members.isCurrentUserOwnerOrAdmin()
-        binding.itemBackgroundView.deleteImageView.apply {
-            if (canDeleteChannel) {
-                optionsCount = 2
+    private fun configureBackground() {
+        configureBackgroundButtons()
+    }
+
+    private fun configureBackgroundButtons() {
+        var optionsCount = 0
+
+        binding.itemBackgroundView.moreOptionsImageView.apply {
+            if (style.optionsEnabled) {
                 isVisible = true
+                optionsCount++
             } else {
-                optionsCount = 1
                 isVisible = false
             }
         }
+        binding.itemBackgroundView.deleteImageView.apply {
+            val canDeleteChannel = channel.members.isCurrentUserOwnerOrAdmin()
+            if (canDeleteChannel && style.deleteEnabled) {
+                isVisible = true
+                optionsCount++
+            } else {
+                isVisible = false
+            }
+        }
+
+        this.optionsCount = optionsCount
     }
 
-    private fun configureForeground(diff: ChannelListPayloadDiff) {
+    private fun configureForeground(diff: ChannelListPayloadDiff, channel: Channel) {
         binding.itemForegroundView.apply {
             diff.run {
                 if (nameChanged) {
@@ -163,6 +182,8 @@ internal class ChannelViewHolder @JvmOverloads constructor(
                 if (unreadCountChanged) {
                     configureUnreadCountBadge()
                 }
+
+                muteIcon.isVisible = channel.isMuted
             }
         }
     }
@@ -219,11 +240,11 @@ internal class ChannelViewHolder @JvmOverloads constructor(
         val lastMessageByCurrentUserWasRead = channel.isMessageRead(lastMessage)
         when {
             !currentUserSentLastMessage || lastMessageByCurrentUserWasRead -> {
-                messageStatusImageView.setImageResource(R.drawable.stream_ui_ic_check_double)
+                messageStatusImageView.setImageDrawable(style.indicatorReadIcon)
             }
 
             currentUserSentLastMessage && !lastMessageByCurrentUserWasRead -> {
-                messageStatusImageView.setImageResource(R.drawable.stream_ui_ic_check_single)
+                messageStatusImageView.setImageDrawable(style.indicatorSentIcon)
             }
 
             else -> determineLastMessageSyncStatus(lastMessage)
@@ -233,11 +254,11 @@ internal class ChannelViewHolder @JvmOverloads constructor(
     private fun StreamUiChannelListItemForegroundViewBinding.determineLastMessageSyncStatus(message: Message) {
         when (message.syncStatus) {
             SyncStatus.IN_PROGRESS, SyncStatus.SYNC_NEEDED -> {
-                messageStatusImageView.setImageResource(R.drawable.stream_ui_ic_clock)
+                messageStatusImageView.setImageDrawable(style.indicatorPendingSyncIcon)
             }
 
             SyncStatus.COMPLETED -> {
-                messageStatusImageView.setImageResource(R.drawable.stream_ui_ic_check_single)
+                messageStatusImageView.setImageDrawable(style.indicatorSentIcon)
             }
 
             SyncStatus.FAILED_PERMANENTLY -> {
@@ -246,11 +267,21 @@ internal class ChannelViewHolder @JvmOverloads constructor(
         }
     }
 
+    private fun StreamUiChannelListItemBackgroundViewBinding.applyStyle(style: ChannelListViewStyle) {
+        root.setBackgroundColor(style.backgroundLayoutColor)
+        deleteImageView.setImageDrawable(style.deleteIcon)
+        moreOptionsImageView.setImageDrawable(style.optionsIcon)
+    }
+
     private fun StreamUiChannelListItemForegroundViewBinding.applyStyle(style: ChannelListViewStyle) {
-        binding.apply {
-            channelNameLabel.setTextSizePx(style.channelTitleTextSize)
-            lastMessageLabel.setTextSizePx(style.lastMessageSize)
-            lastMessageTimeLabel.setTextSizePx(style.lastMessageDateTextSize)
-        }
+        root.backgroundTintList = ColorStateList.valueOf(style.foregroundLayoutColor)
+        style.channelTitleText.apply(channelNameLabel)
+        style.lastMessageText.apply(lastMessageLabel)
+        style.lastMessageDateText.apply(lastMessageTimeLabel)
+        style.unreadMessageCounterText.apply(unreadCountBadge)
+        unreadCountBadge.backgroundTintList = ColorStateList.valueOf(style.unreadMessageCounterBackgroundColor)
+        muteIcon.setImageDrawable(
+            style.mutedChannelIcon.apply { setTint(style.mutedChannelIconTint) }
+        )
     }
 }

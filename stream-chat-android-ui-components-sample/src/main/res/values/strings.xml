@@ -6,6 +6,7 @@
     <string name="delete">Delete</string>
     <string name="leave">Leave</string>
     <string name="remove">Remove</string>
+    <string name="ok">Ok</string>
 
     <!--User Login Screen-->
     <string name="user_login_screen_title">Welcome to Stream Chat</string>
@@ -88,4 +89,11 @@
     <string name="chat_group_info_user_option_remove">Remove From Group</string>
     <string name="chat_group_info_user_remove_title">Remove %s</string>
     <string name="chat_group_info_user_remove_description">Are you sure you want to remove %s from %s?</string>
+
+    <!-- Chat fragment -->
+    <string name="chat_fragment_big_attachment_subtitle">File too big - max %d mb</string>
+
+    <!-- Flag message -->
+    <string name="message_flagged_title">Message Flagged</string>
+    <string name="message_flagged_description">The message has been reported to a moderator.</string>
 </resources>

@@ -1,20 +1,24 @@
 package io.getstream.chat.docs.java;
 
-import android.view.ViewGroup;
-
+import android.content.res.ColorStateList;
+import android.graphics.Bitmap;
+import android.graphics.Typeface;
+import android.graphics.drawable.Drawable;
+import android.util.Log;
 import android.view.Gravity;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
+import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
+import androidx.lifecycle.LiveData;
 import androidx.lifecycle.ViewModelProvider;
 
-import com.getstream.sdk.chat.ChatUI;
 import com.getstream.sdk.chat.adapter.MessageListItem;
+import com.getstream.sdk.chat.navigation.ChatNavigationHandler;
 import com.getstream.sdk.chat.utils.DateFormatter;
-
 import com.getstream.sdk.chat.view.messages.MessageListItemWrapper;
 import com.getstream.sdk.chat.viewmodel.MessageInputViewModel;
 import com.getstream.sdk.chat.viewmodel.messages.MessageListViewModel;
@@ -25,16 +29,31 @@ import org.threeten.bp.LocalDateTime;
 import org.threeten.bp.LocalTime;
 import org.threeten.bp.format.DateTimeFormatter;
 
-import org.jetbrains.annotations.NotNull;
-
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Date;
 import java.util.List;
 
-import io.getstream.chat.android.client.models.Message;
+import io.getstream.chat.android.client.ChatClient;
+import io.getstream.chat.android.client.api.models.FilterObject;
+import io.getstream.chat.android.client.api.models.QueryChannelRequest;
+import io.getstream.chat.android.client.api.models.QuerySort;
+import io.getstream.chat.android.client.errors.ChatError;
+import io.getstream.chat.android.client.events.ChatEvent;
+import io.getstream.chat.android.client.models.Channel;
+import io.getstream.chat.android.client.models.ChannelUserRead;
 import io.getstream.chat.android.client.models.Filters;
-import io.getstream.chat.android.client.utils.FilterObject;
+import io.getstream.chat.android.client.models.Message;
+import io.getstream.chat.android.client.models.User;
 import io.getstream.chat.android.livedata.ChatDomain;
+import io.getstream.chat.android.livedata.controller.ChannelController;
+import io.getstream.chat.android.livedata.controller.QueryChannelsController;
+import io.getstream.chat.android.livedata.controller.ThreadController;
+import io.getstream.chat.android.livedata.utils.RetryPolicy;
+import io.getstream.chat.android.ui.ChatUI;
+import io.getstream.chat.android.ui.TransformStyle;
+import io.getstream.chat.android.ui.avatar.AvatarBitmapFactory;
+import io.getstream.chat.android.ui.avatar.AvatarStyle;
 import io.getstream.chat.android.ui.channel.list.ChannelListView;
 import io.getstream.chat.android.ui.channel.list.adapter.ChannelListItem;
 import io.getstream.chat.android.ui.channel.list.adapter.viewholder.BaseChannelListItemViewHolder;
@@ -45,22 +64,30 @@ import io.getstream.chat.android.ui.channel.list.header.viewmodel.ChannelListHea
 import io.getstream.chat.android.ui.channel.list.viewmodel.ChannelListViewModel;
 import io.getstream.chat.android.ui.channel.list.viewmodel.ChannelListViewModelBinding;
 import io.getstream.chat.android.ui.channel.list.viewmodel.factory.ChannelListViewModelFactory;
+import io.getstream.chat.android.ui.common.UrlSigner;
+import io.getstream.chat.android.ui.common.markdown.ChatMarkdown;
+import io.getstream.chat.android.ui.common.navigation.ChatNavigator;
+import io.getstream.chat.android.ui.common.style.TextStyle;
 import io.getstream.chat.android.ui.gallery.AttachmentGalleryDestination;
 import io.getstream.chat.android.ui.gallery.AttachmentGalleryItem;
+import io.getstream.chat.android.ui.message.input.MessageInputView;
+import io.getstream.chat.android.ui.message.input.MessageInputViewStyle;
+import io.getstream.chat.android.ui.message.input.attachment.internal.AttachmentDialogStyle;
+import io.getstream.chat.android.ui.message.input.viewmodel.MessageInputViewModelBinding;
 import io.getstream.chat.android.ui.message.list.MessageListView;
 import io.getstream.chat.android.ui.message.list.adapter.BaseMessageItemViewHolder;
 import io.getstream.chat.android.ui.message.list.adapter.MessageListItemViewHolderFactory;
-import io.getstream.chat.android.ui.message.input.MessageInputView;
-import io.getstream.chat.android.ui.message.input.MessageInputViewModelBinding;
 import io.getstream.chat.android.ui.message.list.header.MessageListHeaderView;
 import io.getstream.chat.android.ui.message.list.header.viewmodel.MessageListHeaderViewModel;
 import io.getstream.chat.android.ui.message.list.header.viewmodel.MessageListHeaderViewModelBinding;
-import io.getstream.chat.android.ui.message.view.MessageListViewModelBinding;
+import io.getstream.chat.android.ui.message.list.viewmodel.MessageListViewModelBinding;
+import io.getstream.chat.android.ui.message.list.viewmodel.factory.MessageListViewModelFactory;
 import io.getstream.chat.android.ui.search.SearchInputView;
 import io.getstream.chat.android.ui.search.list.SearchResultListView;
 import io.getstream.chat.android.ui.search.list.viewmodel.SearchViewModel;
 import io.getstream.chat.android.ui.search.list.viewmodel.SearchViewModelBinding;
 import io.getstream.chat.docs.R;
+import kotlin.coroutines.Continuation;
 
 import static java.util.Collections.singletonList;
 
@@ -183,6 +210,14 @@ public class Android {
             // Set custom view holder factory
             channelListView.setViewHolderFactory(customFactory);
         }
+
+        public void otherCustomizations() {
+            TransformStyle.INSTANCE.setChannelListStyleTransformer(viewStyle -> {
+                        // Modify default view style
+                        return viewStyle;
+                    }
+            );
+        }
     }
 
     /**
@@ -193,11 +228,29 @@ public class Android {
 
         public void bindingWithViewModel() {
             // Get ViewModel
+            MessageListViewModelFactory factory = new MessageListViewModelFactory("channelType:channelId");
             MessageInputViewModel viewModel =
-                    new ViewModelProvider(this).get(MessageInputViewModel.class);
+                    new ViewModelProvider(this, factory).get(MessageInputViewModel.class);
             // Bind it with MessageInputView
             MessageInputViewModelBinding
                     .bind(viewModel, messageInputView, getViewLifecycleOwner());
+        }
+
+        public void handlingUserInteractions() {
+            messageInputView.setOnSendButtonClickListener(() -> {
+                // Handle send button click
+            });
+            messageInputView.setTypingListener(new MessageInputView.TypingListener() {
+                @Override
+                public void onKeystroke() {
+                    // Handle send button click
+                }
+
+                @Override
+                public void onStopTyping() {
+                    // Handle stop typing case
+                }
+            });
         }
     }
 
@@ -209,11 +262,21 @@ public class Android {
 
         public void bindingWithViewModel() {
             // Get ViewModel
+            MessageListViewModelFactory factory = new MessageListViewModelFactory("channelType:channelId");
             MessageListHeaderViewModel viewModel =
-                    new ViewModelProvider(this).get(MessageListHeaderViewModel.class);
+                    new ViewModelProvider(this, factory).get(MessageListHeaderViewModel.class);
             // Bind it with MessageListHeaderView
             MessageListHeaderViewModelBinding
                     .bind(viewModel, messageListHeaderView, getViewLifecycleOwner());
+        }
+
+        public void handlingUserInteractions() {
+            messageListHeaderView.setAvatarClickListener(() -> {
+                // Handle avatar click
+            });
+            messageListHeaderView.setTitleClickListener(() -> {
+                // Handle title click
+            });
         }
     }
 
@@ -284,8 +347,6 @@ public class Android {
 
             destination.register(getActivity().getActivityResultRegistry());
             destination.setData(attachmentGalleryItems, 0);
-
-            ChatUI.instance().getNavigator().navigate(destination);
         }
     }
 
@@ -294,6 +355,8 @@ public class Android {
      */
     class MessageListViewDocs extends Fragment {
         MessageListView messageListView;
+        private final MessageListViewModel viewModel =
+                new ViewModelProvider(this).get(MessageListViewModel.class);
 
         public void emptyState() {
             messageListView.showEmptyStateView();
@@ -345,11 +408,69 @@ public class Android {
             });
         }
 
-        public void bindWithViewModel() {
-            MessageListViewModel viewModel =
-                    new ViewModelProvider(this).get(MessageListViewModel.class);
+        public void usingTransformStyle() {
+            TransformStyle.INSTANCE.setMessageListStyleTransformer(defaultMessageListViewStyle -> {
+                // Modify default MessageListView style
+                return defaultMessageListViewStyle;
+            });
 
+            TransformStyle.INSTANCE.setMessageListItemStyleTransformer(defaultMessageListItemStyle -> {
+                // Modify default MessageListItem style
+                return defaultMessageListItemStyle;
+            });
+        }
+
+        public void setNewMessageBehaviour() {
+            messageListView.setNewMessagesBehaviour(
+                    MessageListView.NewMessagesBehaviour.COUNT_UPDATE
+            );
+        }
+
+        public void setEndRegionReachedHandler() {
+            messageListView.setEndRegionReachedHandler(() -> {
+                // Handle pagination and include new logic
+
+                // Option to log the event and use the viewModel
+                viewModel.onEvent(MessageListViewModel.Event.EndRegionReached.INSTANCE);
+                Log.e("LogTag", "On load more");
+            });
+        }
+
+        public void bindWithViewModel() {
+            // Get ViewModel
+            MessageListViewModelFactory factory = new MessageListViewModelFactory("channelType:channelId");
+            MessageListViewModel viewModel =
+                    new ViewModelProvider(this, factory).get(MessageListViewModel.class);
+
+            // Bind it with MessageListView
             MessageListViewModelBinding.bind(viewModel, messageListView, getViewLifecycleOwner());
+        }
+
+        public void handlingUserInteractions() {
+            messageListView.setMessageClickListener((message) -> {
+                // Handle click on message
+            });
+            messageListView.setMessageLongClickListener((message) -> {
+                // Handle long click on message
+            });
+            messageListView.setAttachmentClickListener((message, attachment) -> {
+                // Handle click on attachment
+            });
+            messageListView.setUserClickListener((user) -> {
+                // Handle click on user avatar
+            });
+        }
+
+        public void handlers() {
+            messageListView.setMessageEditHandler((message) -> {
+                // Handle edit message
+            });
+            messageListView.setMessageDeleteHandler((message) -> {
+                // Handle delete message
+            });
+            messageListView.setAttachmentDownloadHandler((attachment) -> {
+                // Handle attachment download
+            });
         }
 
         public void displayNewMessage() {
@@ -373,6 +494,436 @@ public class Android {
                 // Create a new type of view holder here, if needed
                 return super.createViewHolder(parentView, viewType);
             }
+        }
+    }
+
+    /**
+     * @see <a href="https://getstream.io/nessy/docs/chat_docs/android_chat_ux/combining_view_models">Combining Views and View Models</a>
+     */
+    class CombiningViewsAndViewModels extends Fragment {
+        MessageListView messageListView;
+        MessageListHeaderView messageListHeaderView;
+        MessageListViewModel messageListViewModel;
+        MessageListHeaderViewModel messageListHeaderViewModel;
+        MessageInputViewModel messageInputViewModel;
+
+        public void handlingThreads() {
+            messageListViewModel.getMode().observe(getViewLifecycleOwner(), (mode) -> {
+                if (mode instanceof MessageListViewModel.Mode.Thread) {
+                    // Handle entering thread mode
+                    Message parentMessage = ((MessageListViewModel.Mode.Thread) mode).getParentMessage();
+                    messageListHeaderViewModel.setActiveThread(parentMessage);
+                    messageInputViewModel.setActiveThread(parentMessage);
+                } else if (mode instanceof MessageListViewModel.Mode.Normal) {
+                    // Handle leaving thread mode
+                    messageListHeaderViewModel.resetThread();
+                    messageInputViewModel.resetThread();
+                }
+            });
+        }
+
+        public void editingMessage() {
+            messageListView.setMessageEditHandler((message) -> {
+                messageInputViewModel.getEditMessage().postValue(message);
+            });
+        }
+
+        public void handlingBackButtonClicks() {
+            messageListHeaderView.setBackButtonClickListener(() -> {
+                messageListViewModel.onEvent(MessageListViewModel.Event.BackButtonPressed.INSTANCE);
+            });
+        }
+    }
+
+    /**
+     * @see <a href="https://getstream.io/chat/docs/android/android_offline/?language=java">Android Offline</a>
+     */
+    public class AndroidOffline extends Fragment {
+
+        public void initializeChatDomain() {
+            ChatClient chatClient =
+                    new ChatClient.Builder("apiKey", requireContext()).build();
+            ChatDomain chatDomain = new ChatDomain.Builder(chatClient, requireContext())
+                    .offlineEnabled()
+                    .userPresenceEnabled()
+                    .build();
+        }
+
+        public void getChatDomainInstance() {
+            ChatDomain chatDomain = ChatDomain.instance();
+
+            ChatClient chatClient = ChatClient.instance();
+            chatClient.disconnect();
+        }
+
+        public void customizeRetryPolicy() {
+            ChatDomain chatDomain = ChatDomain.instance();
+
+            chatDomain.setRetryPolicy(new RetryPolicy() {
+                @Override
+                public boolean shouldRetry(@NotNull ChatClient client, int attempt, @NotNull ChatError error) {
+                    return attempt < 3;
+                }
+
+                @Override
+                public int retryTimeout(@NotNull ChatClient client, int attempt, @NotNull ChatError error) {
+                    return 1000 * attempt;
+                }
+            });
+        }
+
+        public void watchChannel() {
+            ChatDomain chatDomain = ChatDomain.instance();
+
+            chatDomain.watchChannel("messaging:123", 0)
+                    .enqueue(result -> {
+                        if (result.isSuccess()) {
+                            ChannelController channelController = result.data();
+
+                            // LiveData objects to observe
+                            channelController.getMessages();
+                            channelController.getReads();
+                            channelController.getTyping();
+                        }
+                    });
+        }
+
+        public void loadMoreMessages() {
+            ChatDomain chatDomain = ChatDomain.instance();
+
+            chatDomain.loadOlderMessages("messaging:123", 10)
+                    .enqueue(result -> {
+                        if (result.isSuccess()) {
+                            Channel channel = result.data();
+                        }
+                    });
+        }
+
+        public void sendMessage() {
+            ChatDomain chatDomain = ChatDomain.instance();
+            Message message = new Message();
+            message.setText("Hello world");
+
+            chatDomain.sendMessage(message)
+                    .enqueue(result -> {
+                        if (result.isSuccess()) {
+                            Message message1 = result.data();
+                        }
+                    });
+        }
+
+        public void queryChannels() {
+            ChatDomain chatDomain = ChatDomain.instance();
+
+            List<String> members = new ArrayList<>();
+            members.add("thierry");
+
+            FilterObject filter = Filters.and(
+                    Filters.eq("type", "messaging"),
+                    Filters.in("members", members)
+            );
+            QuerySort<Channel> sort = new QuerySort<>();
+
+            int limit = 10;
+            int messageLimit = 1;
+
+            chatDomain.queryChannels(filter, sort, limit, messageLimit)
+                    .enqueue(result -> {
+                        if (result.isSuccess()) {
+                            final QueryChannelsController controller = result.data();
+
+                            // LiveData objects to observe
+                            controller.getChannels();
+                            controller.getLoading();
+                            controller.getEndOfChannels();
+                        }
+                    });
+        }
+
+        public void loadMoreFromChannel() {
+            ChatDomain chatDomain = ChatDomain.instance();
+
+            List<String> members = new ArrayList<>();
+            members.add("thierry");
+
+            FilterObject filter = Filters.and(
+                    Filters.eq("type", "messaging"),
+                    Filters.in("members", members)
+            );
+            QuerySort<Channel> sort = new QuerySort<>();
+            int limit = 10;
+            int messageLimit = 1;
+
+            chatDomain.queryChannelsLoadMore(filter, sort, limit, messageLimit)
+                    .enqueue(result -> {
+                        if (result.isSuccess()) {
+                            final List<Channel> channels = result.data();
+                        }
+                    });
+        }
+
+        public void unreadCount() {
+            ChatDomain chatDomain = ChatDomain.instance();
+
+            // LiveData objects to observe
+            LiveData<Integer> totalUnreadCount = chatDomain.getTotalUnreadCount();
+            LiveData<Integer> unreadChannelCount = chatDomain.getChannelUnreadCount();
+        }
+
+        public void messagesFromThread() {
+            ChatDomain chatDomain = ChatDomain.instance();
+
+            chatDomain.getThread("cid", "parentId")
+                    .enqueue(result -> {
+                        if (result.isSuccess()) {
+                            final ThreadController threadController = result.data();
+
+                            // LiveData objects to observe
+                            threadController.getMessages();
+                            threadController.getLoadingOlderMessages();
+                            threadController.getEndOfOlderMessages();
+                        }
+                    });
+        }
+
+        public void loadMoreFromThread() {
+            ChatDomain chatDomain = ChatDomain.instance();
+            int messageLimit = 1;
+
+            chatDomain.threadLoadMore("cid", "parentId", messageLimit)
+                    .enqueue(result -> {
+                        if (result.isSuccess()) {
+                            final List<Message> messages = result.data();
+                        }
+                    });
+        }
+    }
+
+    /**
+     * @see <a href="hhttps://getstream.io/nessy/docs/chat_docs/events/event_listening/?language=java">Listening for events</a>
+     */
+    public class SyncHistory extends Fragment {
+
+        public void getSyncHistory(ChatClient chatClient) {
+            List<String> cidList = new ArrayList<>();
+            cidList.add("messaging:123");
+
+            Date lastSeenExample = new Date();
+
+            chatClient.getSyncHistory(cidList, lastSeenExample).enqueue(result -> {
+                if (result.isSuccess()) {
+                    List<ChatEvent> events = result.data();
+                } else {
+                    // Handle result.error()
+                }
+            });
+        }
+    }
+
+    /**
+     * @see <a href="https://getstream.io/chat/docs/android/unread_channel/?language=java">Channels</a>
+     */
+    public class UnreadCount extends Fragment {
+
+        public void unreadCountInfo() {
+            // Get channel
+            QueryChannelRequest queryChannelRequest = new QueryChannelRequest().withState();
+
+            Channel channel = ChatClient.instance().queryChannel(
+                    "channel-type",
+                    "channel-id",
+                    queryChannelRequest
+            )
+                    .execute()
+                    .data();
+
+            // readState is the list of read states for each user on the channel
+            List<ChannelUserRead> readState = channel.getRead();
+        }
+
+        public void getUnreadCountInfoChatDomain() {
+            // Get channel
+            Channel channel = ChatDomain.instance()
+                    .watchChannel("messaging:123", 0)
+                    .execute()
+                    .data()
+                    .toChannel();
+
+            // readState is the list of read states for each user on the channel
+            List<ChannelUserRead> userReadList = channel.getRead();
+        }
+
+        public void getUnreadCountForCurrentUser() {
+            // Get channel
+            QueryChannelRequest queryChannelRequest = new QueryChannelRequest().withState();
+
+            Channel channel = ChatClient.instance().queryChannel(
+                    "channel-type",
+                    "channel-id",
+                    queryChannelRequest
+            )
+                    .execute()
+                    .data();
+
+            // Unread count for current user
+            int unreadCount = channel.getUnreadCount();
+        }
+
+        public void getUnreadCountForCurrentUserChatDomain() {
+            // Get channel controller
+            ChannelController channelController = ChatDomain.instance()
+                    .watchChannel("messaging:123", 0)
+                    .execute()
+                    .data();
+
+            //Unread count for current user
+            LiveData<Integer> unreadCount = channelController.getUnreadCount();
+        }
+
+        public void markAllRead() {
+            ChatClient.instance().markAllRead().enqueue(result -> {
+                if (result.isSuccess()) {
+                    //Handle success
+                } else {
+                    //Handle failure
+                }
+            });
+        }
+    }
+
+    /**
+     * @see <a href="https://getstream.io/nessy/docs/chat_docs/android_chat_ux/message_input_view?language=java">Message Input View</a>
+     */
+    public class TransformStyleMessageInput extends Fragment {
+        public void messageInputCustomisation() {
+            TextStyle textStyleGeneric = new TextStyle(
+                    0,
+                    "fontAsserts",
+                    Typeface.NORMAL,
+                    requireContext().getResources().getDimensionPixelSize(R.dimen.stream_ui_text_medium),
+                    ContextCompat.getColor(getContext(), R.color.stream_ui_black),
+                    "some hint",
+                    ContextCompat.getColor(getContext(), R.color.stream_ui_black),
+                    Typeface.DEFAULT
+            );
+
+            int colorBlack = ContextCompat.getColor(getContext(), R.color.stream_ui_black);
+
+            Drawable genericDrawable =
+                    ContextCompat.getDrawable(getContext(), R.drawable.stream_ui_ic_command);
+
+            AttachmentDialogStyle attachmentDialogStyle = new AttachmentDialogStyle(
+                    genericDrawable,
+                    ColorStateList.valueOf(colorBlack),
+                    genericDrawable,
+                    ColorStateList.valueOf(colorBlack),
+                    genericDrawable,
+                    ColorStateList.valueOf(colorBlack)
+            );
+
+            TransformStyle.INSTANCE.setMessageInputStyleTransformer(
+                    viewStyle ->
+                        new MessageInputViewStyle(
+                                true,
+                                genericDrawable,
+                                true,
+                                genericDrawable,
+                                requireContext().getResources().getDimension(R.dimen.stream_ui_text_medium),
+                                colorBlack,
+                                colorBlack,
+                                textStyleGeneric,
+                                true,
+                                true,
+                                true,
+                                genericDrawable,
+                                genericDrawable,
+                                true,
+                                true,
+                                textStyleGeneric,
+                                textStyleGeneric,
+                                textStyleGeneric,
+                                true,
+                                textStyleGeneric,
+                                textStyleGeneric,
+                                genericDrawable,
+                                colorBlack,
+                                colorBlack,
+                                genericDrawable,
+                                genericDrawable,
+                                20,
+                                genericDrawable,
+                                attachmentDialogStyle
+                        )
+
+            );
+        }
+    }
+
+    class Navigation {
+        public void customizeNavigation() {
+            ChatNavigationHandler navigationHandler = destination -> {
+                // Some custom logic here!
+                return true;
+            };
+
+            ChatNavigator chatNavigator = new ChatNavigator(navigationHandler);
+
+            ChatUI.INSTANCE.setNavigator(chatNavigator);
+        }
+    }
+
+    class UrlSignerCustomization {
+
+        public void customizeUrlSigner() {
+            UrlSigner urlSigner = new UrlSigner() {
+                @NotNull
+                @Override
+                public String signFileUrl(@NotNull String url) {
+                    return url + "new added text";
+                }
+
+                @NotNull
+                @Override
+                public String signImageUrl(@NotNull String url) {
+                    return url + "new added text";
+                }
+            };
+
+            ChatUI.INSTANCE.setUrlSigner(urlSigner);
+        }
+    }
+
+    class MarkdownCustomization {
+        public void customizeMarkdown() {
+            ChatMarkdown markdown = (textView, text) -> {
+                textView.setText(applyMarkdown(text));
+            };
+
+            ChatUI.INSTANCE.setMarkdown(markdown);
+        }
+
+        private String applyMarkdown(String text) {
+            return text;
+        }
+    }
+
+    class BitmapFactoryCustomization extends Fragment {
+        public void bitmapFactoryCustomization() {
+            AvatarBitmapFactory factory = new AvatarBitmapFactory(requireContext()) {
+                @Nullable
+                @Override
+                public Object createUserBitmap(
+                        @NotNull User user,
+                        @NotNull AvatarStyle style,
+                        int avatarSize,
+                        @NotNull Continuation<? super Bitmap> $completion
+                ) {
+                    // Return your version of bitmap here!
+                    return super.createUserBitmap(user, style, avatarSize, $completion);
+                }
+            };
+
+            ChatUI.INSTANCE.setAvatarBitmapFactory(factory);
         }
     }
 }

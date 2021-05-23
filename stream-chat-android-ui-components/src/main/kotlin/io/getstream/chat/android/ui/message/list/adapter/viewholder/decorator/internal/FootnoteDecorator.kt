@@ -21,61 +21,27 @@ import io.getstream.chat.android.ui.common.extensions.internal.leftDrawable
 import io.getstream.chat.android.ui.common.extensions.isDeleted
 import io.getstream.chat.android.ui.common.extensions.isEphemeral
 import io.getstream.chat.android.ui.common.extensions.isGiphyNotEphemeral
+import io.getstream.chat.android.ui.message.list.MessageListItemStyle
 import io.getstream.chat.android.ui.message.list.adapter.view.internal.FootnoteView
 import io.getstream.chat.android.ui.message.list.adapter.viewholder.internal.GiphyViewHolder
 import io.getstream.chat.android.ui.message.list.adapter.viewholder.internal.MessageDeletedViewHolder
 import io.getstream.chat.android.ui.message.list.adapter.viewholder.internal.MessagePlainTextViewHolder
-import io.getstream.chat.android.ui.message.list.adapter.viewholder.internal.OnlyFileAttachmentsViewHolder
-import io.getstream.chat.android.ui.message.list.adapter.viewholder.internal.OnlyMediaAttachmentsViewHolder
-import io.getstream.chat.android.ui.message.list.adapter.viewholder.internal.PlainTextWithFileAttachmentsViewHolder
-import io.getstream.chat.android.ui.message.list.adapter.viewholder.internal.PlainTextWithMediaAttachmentsViewHolder
+import io.getstream.chat.android.ui.message.list.adapter.viewholder.internal.TextAndAttachmentsViewHolder
 
 internal class FootnoteDecorator(
     private val dateFormatter: DateFormatter,
-    private val isDirectMessage: Boolean,
+    private val isDirectMessage: () -> Boolean,
+    private val style: MessageListItemStyle,
 ) : BaseDecorator() {
 
-    override fun decoratePlainTextWithFileAttachmentsMessage(
-        viewHolder: PlainTextWithFileAttachmentsViewHolder,
+    override fun decorateTextAndAttachmentsMessage(
+        viewHolder: TextAndAttachmentsViewHolder,
         data: MessageListItem.MessageItem,
     ) = setupFootnote(
         viewHolder.binding.footnote,
         viewHolder.binding.root,
         viewHolder.binding.threadGuideline,
         viewHolder.binding.messageContainer,
-        data,
-    )
-
-    override fun decorateOnlyFileAttachmentsMessage(
-        viewHolder: OnlyFileAttachmentsViewHolder,
-        data: MessageListItem.MessageItem,
-    ) = setupFootnote(
-        viewHolder.binding.footnote,
-        viewHolder.binding.root,
-        viewHolder.binding.threadGuideline,
-        viewHolder.binding.fileAttachmentsView,
-        data,
-    )
-
-    override fun decoratePlainTextWithMediaAttachmentsMessage(
-        viewHolder: PlainTextWithMediaAttachmentsViewHolder,
-        data: MessageListItem.MessageItem,
-    ) = setupFootnote(
-        viewHolder.binding.footnote,
-        viewHolder.binding.root,
-        viewHolder.binding.threadGuideline,
-        viewHolder.binding.messageContainer,
-        data,
-    )
-
-    override fun decorateOnlyMediaAttachmentsMessage(
-        viewHolder: OnlyMediaAttachmentsViewHolder,
-        data: MessageListItem.MessageItem,
-    ) = setupFootnote(
-        viewHolder.binding.footnote,
-        viewHolder.binding.root,
-        viewHolder.binding.threadGuideline,
-        viewHolder.binding.mediaAttachmentsGroupView,
         data,
     )
 
@@ -144,7 +110,7 @@ internal class FootnoteDecorator(
 
     private fun setupSimpleFootnote(footnoteView: FootnoteView, data: MessageListItem.MessageItem) {
         footnoteView.showSimpleFootnote()
-        setupMessageFooterLabel(footnoteView.footerTextLabel, data)
+        setupMessageFooterLabel(footnoteView.footerTextLabel, data, style)
         setupMessageFooterTime(footnoteView, data)
         setupDeliveryStateIndicator(footnoteView, data)
     }
@@ -155,18 +121,31 @@ internal class FootnoteDecorator(
         threadGuideline: View,
         data: MessageListItem.MessageItem,
     ) {
+        if (!style.threadsEnabled) {
+            return
+        }
         root.updateConstraints {
             clear(footnoteView.id, ConstraintSet.TOP)
             connect(footnoteView.id, ConstraintSet.TOP, threadGuideline.id, ConstraintSet.BOTTOM)
         }
-        footnoteView.showThreadRepliesFootnote(data.isMine, data.message.replyCount, data.message.threadParticipants)
+        footnoteView.showThreadRepliesFootnote(
+            data.isMine,
+            data.message.replyCount,
+            data.message.threadParticipants,
+            style
+        )
     }
 
-    private fun setupMessageFooterLabel(textView: TextView, data: MessageListItem.MessageItem) {
+    private fun setupMessageFooterLabel(
+        textView: TextView,
+        data: MessageListItem.MessageItem,
+        style: MessageListItemStyle,
+    ) {
         when {
-            data.isBottomPosition() && !isDirectMessage && data.isTheirs -> {
+            data.isBottomPosition() && !isDirectMessage() && data.isTheirs -> {
                 textView.text = data.message.user.name
                 textView.isVisible = true
+                style.textStyleUserName.apply(textView)
             }
             data.isNotBottomPosition() -> textView.isVisible = false
             !data.message.isEphemeral() && !data.message.isDeleted() -> textView.isVisible = false
@@ -186,9 +165,12 @@ internal class FootnoteDecorator(
         when {
             data.isNotBottomPosition() || createdAt == null -> footnoteView.hideTimeLabel()
             data.message.isGiphyNotEphemeral() && updatedAt != null -> footnoteView.showTime(
-                dateFormatter.formatTime(updatedAt)
+                dateFormatter.formatTime(
+                    updatedAt
+                ),
+                style
             )
-            else -> footnoteView.showTime(dateFormatter.formatTime(createdAt))
+            else -> footnoteView.showTime(dateFormatter.formatTime(createdAt), style)
         }
     }
 
@@ -201,10 +183,10 @@ internal class FootnoteDecorator(
             data.message.isDeleted() -> footnoteView.hideStatusIndicator()
             else -> when (status) {
                 SyncStatus.FAILED_PERMANENTLY -> footnoteView.hideStatusIndicator()
-                SyncStatus.IN_PROGRESS, SyncStatus.SYNC_NEEDED -> footnoteView.showInProgressStatusIndicator()
+                SyncStatus.IN_PROGRESS, SyncStatus.SYNC_NEEDED -> footnoteView.showStatusIndicator(style.iconIndicatorPendingSync)
                 SyncStatus.COMPLETED -> {
-                    if (data.isMessageRead) footnoteView.showReadStatusIndicator()
-                    else footnoteView.showSentStatusIndicator()
+                    if (data.isMessageRead) footnoteView.showStatusIndicator(style.iconIndicatorRead)
+                    else footnoteView.showStatusIndicator(style.iconIndicatorSent)
                 }
             }.exhaustive
         }

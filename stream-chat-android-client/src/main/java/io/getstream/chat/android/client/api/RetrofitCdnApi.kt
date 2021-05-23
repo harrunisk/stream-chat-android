@@ -19,9 +19,7 @@ internal interface RetrofitCdnApi {
         @Path("type") channelType: String,
         @Path("id") channelId: String,
         @Part file: MultipartBody.Part,
-        @Query("api_key") apiKey: String,
-        @Query("user_id") userId: String,
-        @Query("client_id") connectionId: String
+        @Query(QueryParams.CONNECTION_ID) connectionId: String,
     ): RetrofitCall<UploadFileResponse>
 
     @Multipart
@@ -30,26 +28,22 @@ internal interface RetrofitCdnApi {
         @Path("type") channelType: String,
         @Path("id") channelId: String,
         @Part file: MultipartBody.Part,
-        @Query("api_key") apiKey: String,
-        @Query("user_id") userId: String,
-        @Query("client_id") connectionId: String
+        @Query(QueryParams.CONNECTION_ID) connectionId: String,
     ): RetrofitCall<UploadFileResponse>
 
     @DELETE("/channels/{type}/{id}/file")
     fun deleteFile(
         @Path("type") channelType: String,
         @Path("id") channelId: String,
-        @Query("api_key") apiKey: String,
-        @Query("client_id") connectionId: String,
-        @Query("url") url: String
+        @Query(QueryParams.CONNECTION_ID) connectionId: String,
+        @Query("url") url: String,
     ): RetrofitCall<CompletableResponse>
 
     @DELETE("/channels/{type}/{id}/image")
     fun deleteImage(
         @Path("type") channelType: String,
         @Path("id") channelId: String,
-        @Query("api_key") apiKey: String,
-        @Query("client_id") connectionId: String,
-        @Query("url") url: String
+        @Query(QueryParams.CONNECTION_ID) connectionId: String,
+        @Query("url") url: String,
     ): RetrofitCall<CompletableResponse>
 }
