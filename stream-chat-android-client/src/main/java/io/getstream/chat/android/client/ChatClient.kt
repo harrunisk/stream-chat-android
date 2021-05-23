@@ -1,8 +1,11 @@
+@file:Suppress("DEPRECATION_ERROR")
+
 package io.getstream.chat.android.client
 
 import android.content.Context
 import android.util.Base64
 import androidx.annotation.CheckResult
+import androidx.annotation.VisibleForTesting
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleObserver
 import androidx.lifecycle.LifecycleOwner
@@ -10,16 +13,17 @@ import androidx.lifecycle.OnLifecycleEvent
 import com.google.firebase.messaging.RemoteMessage
 import io.getstream.chat.android.client.api.ChatApi
 import io.getstream.chat.android.client.api.ChatClientConfig
+import io.getstream.chat.android.client.api.models.FilterObject
 import io.getstream.chat.android.client.api.models.QueryChannelRequest
 import io.getstream.chat.android.client.api.models.QueryChannelsRequest
 import io.getstream.chat.android.client.api.models.QuerySort
 import io.getstream.chat.android.client.api.models.QueryUsersRequest
 import io.getstream.chat.android.client.api.models.SearchMessagesRequest
 import io.getstream.chat.android.client.api.models.SendActionRequest
-import io.getstream.chat.android.client.api.models.UpdateChannelRequest
 import io.getstream.chat.android.client.call.Call
 import io.getstream.chat.android.client.call.await
 import io.getstream.chat.android.client.call.map
+import io.getstream.chat.android.client.call.toUnitCall
 import io.getstream.chat.android.client.channel.ChannelClient
 import io.getstream.chat.android.client.clientstate.ClientState
 import io.getstream.chat.android.client.clientstate.ClientStateService
@@ -36,6 +40,8 @@ import io.getstream.chat.android.client.logger.ChatLogLevel
 import io.getstream.chat.android.client.logger.ChatLogger
 import io.getstream.chat.android.client.logger.ChatLoggerHandler
 import io.getstream.chat.android.client.models.Attachment
+import io.getstream.chat.android.client.models.BannedUser
+import io.getstream.chat.android.client.models.BannedUsersSort
 import io.getstream.chat.android.client.models.Channel
 import io.getstream.chat.android.client.models.ConnectionData
 import io.getstream.chat.android.client.models.Device
@@ -54,16 +60,15 @@ import io.getstream.chat.android.client.notifications.handler.NotificationConfig
 import io.getstream.chat.android.client.socket.ChatSocket
 import io.getstream.chat.android.client.socket.InitConnectionListener
 import io.getstream.chat.android.client.socket.SocketListener
+import io.getstream.chat.android.client.token.ConstantTokenProvider
 import io.getstream.chat.android.client.token.TokenManager
 import io.getstream.chat.android.client.token.TokenManagerImpl
 import io.getstream.chat.android.client.token.TokenProvider
 import io.getstream.chat.android.client.uploader.FileUploader
-import io.getstream.chat.android.client.utils.FilterObject
-import io.getstream.chat.android.client.utils.ImmediateTokenProvider
+import io.getstream.chat.android.client.uploader.StreamCdnImageMimeTypes
 import io.getstream.chat.android.client.utils.ProgressCallback
 import io.getstream.chat.android.client.utils.Result
 import io.getstream.chat.android.client.utils.observable.ChatEventsObservable
-import io.getstream.chat.android.client.utils.observable.ChatObservable
 import io.getstream.chat.android.client.utils.observable.Disposable
 import io.getstream.chat.android.core.internal.InternalStreamChatApi
 import io.getstream.chat.android.core.internal.exhaustive
@@ -72,6 +77,7 @@ import java.io.File
 import java.nio.charset.StandardCharsets
 import java.util.Calendar
 import java.util.Date
+import java.util.concurrent.Executor
 
 /**
  * The ChatClient is the main entry point for all low-level operations on chat
@@ -84,8 +90,8 @@ public class ChatClient internal constructor(
     private val notifications: ChatNotifications,
     private val tokenManager: TokenManager = TokenManagerImpl(),
     private val clientStateService: ClientStateService = ClientStateService(),
+    private val queryChannelsPostponeHelper: QueryChannelsPostponeHelper,
 ) {
-    private val queryChannelsPostponeHelper = QueryChannelsPostponeHelper(api, clientStateService)
 
     @InternalStreamChatApi
     public val notificationHandler: ChatNotificationHandler = notifications.handler
@@ -115,6 +121,7 @@ public class ChatClient internal constructor(
                     clientStateService.onConnected(user, connectionId)
                     api.setConnection(user.id, connectionId)
                     lifecycleObserver.observe()
+                    notifications.onSetUser()
                 }
                 is DisconnectedEvent -> {
                     clientStateService.onDisconnected()
@@ -170,20 +177,28 @@ public class ChatClient internal constructor(
      */
     @Deprecated(
         message = "Use connectUser instead",
-        replaceWith = ReplaceWith("this.connectUser(user, token).enqueue { result -> TODO(\"Handle result\") })")
+        replaceWith = ReplaceWith("this.connectUser(user, token).enqueue { result -> TODO(\"Handle result\") })"),
+        level = DeprecationLevel.ERROR,
     )
     public fun setUser(user: User, token: String, listener: InitConnectionListener? = null) {
-        setUser(user, ImmediateTokenProvider(token), listener)
+        setUser(user, ConstantTokenProvider(token), listener)
     }
 
     /**
      * Initializes [ChatClient] for a specific user using the given user [token].
      *
-     * @see ChatClient.connectUser with [TokenProvider] parameter for advanced use cases
+     * @param user Instance of [User] type.
+     * @param token Instance of JWT token. It must be unique for each user.
+     * Check out [docs](https://getstream.io/chat/docs/android/init_and_users/) for more info about tokens.
+     * Also visit [this site](https://jwt.io) to find more about Json Web Token standard.
+     * You can generate the JWT token on using one of the available libraries or use our manual
+     * [tool](https://getstream.io/chat/docs/react/token_generator/) for token generation.
+     *
+     * @see ChatClient.connectUser with [TokenProvider] parameter for advanced use cases.
      */
     @CheckResult
     public fun connectUser(user: User, token: String): Call<ConnectionData> {
-        return connectUser(user, ImmediateTokenProvider(token))
+        return connectUser(user, ConstantTokenProvider(token))
     }
 
     /**
@@ -201,7 +216,8 @@ public class ChatClient internal constructor(
      */
     @Deprecated(
         message = "Use connectUser instead",
-        replaceWith = ReplaceWith("this.connectUser(user, tokenProvider).enqueue { result -> TODO(\"Handle result\") })")
+        replaceWith = ReplaceWith("this.connectUser(user, tokenProvider).enqueue { result -> TODO(\"Handle result\") })"),
+        level = DeprecationLevel.ERROR,
     )
     public fun setUser(
         user: User,
@@ -211,18 +227,21 @@ public class ChatClient internal constructor(
         if (!ensureUserNotSet(listener)) {
             return
         }
+        initializeClientWithUser(user, tokenProvider)
+        connectionListener = listener
+        socket.connect(user)
+    }
+
+    private fun initializeClientWithUser(
+        user: User,
+        tokenProvider: TokenProvider,
+    ) {
         clientStateService.onSetUser(user)
         // fire a handler here that the chatDomain and chatUI can use
         notifySetUser(user)
-        connectionListener = listener
         config.isAnonymous = false
         tokenManager.setTokenProvider(tokenProvider)
-
         warmUp()
-        notifications.onSetUser()
-        getTokenAndConnect {
-            socket.connect(user)
-        }
     }
 
     /**
@@ -239,7 +258,26 @@ public class ChatClient internal constructor(
      */
     @CheckResult
     public fun connectUser(user: User, tokenProvider: TokenProvider): Call<ConnectionData> {
+        @Suppress("DEPRECATION_ERROR")
         return createInitListenerCall { initListener -> setUser(user, tokenProvider, initListener) }
+    }
+
+    /**
+     * Initializes [ChatClient] for a specific user and a given [userToken].
+     * Caution: This method doesn't establish connection to the web socket, you should use [connectUser] instead.
+     *
+     * This method initializes [ChatClient] to allow the use of Stream REST API client.
+     * Moreover, it warms up the connection, and sets up notifications.
+     *
+     * @param user the user to set
+     * @param userToken the user token
+     */
+    @InternalStreamChatApi
+    public fun setUserWithoutConnecting(user: User, userToken: String) {
+        if (isUserSet()) {
+            return
+        }
+        initializeClientWithUser(user, ConstantTokenProvider(userToken))
     }
 
     private fun notifySetUser(user: User) {
@@ -248,7 +286,8 @@ public class ChatClient internal constructor(
 
     @Deprecated(
         message = "Use connectAnonymousUser instead",
-        replaceWith = ReplaceWith("this.connectAnonymousUser().enqueue { result -> TODO(\"Handle result\") })")
+        replaceWith = ReplaceWith("this.connectAnonymousUser().enqueue { result -> TODO(\"Handle result\") })"),
+        level = DeprecationLevel.ERROR,
     )
     public fun setAnonymousUser(listener: InitConnectionListener? = null) {
         clientStateService.onSetAnonymousUser()
@@ -264,9 +303,7 @@ public class ChatClient internal constructor(
         }
         config.isAnonymous = true
         warmUp()
-        getTokenAndConnect {
-            socket.connectAnonymously()
-        }
+        socket.connectAnonymously()
     }
 
     @CheckResult
@@ -276,7 +313,8 @@ public class ChatClient internal constructor(
 
     @Deprecated(
         message = "Use connectGuestUser instead",
-        replaceWith = ReplaceWith("this.connectGuestUser(userId, username).enqueue { result -> TODO(\"Handle result\") })")
+        replaceWith = ReplaceWith("this.connectGuestUser(userId, username).enqueue { result -> TODO(\"Handle result\") })"),
+        level = DeprecationLevel.ERROR,
     )
     public fun setGuestUser(userId: String, username: String, listener: InitConnectionListener? = null) {
         getGuestToken(userId, username).enqueue {
@@ -299,6 +337,37 @@ public class ChatClient internal constructor(
     }
 
     @CheckResult
+    public fun queryMembers(
+        channelType: String,
+        channelId: String,
+        offset: Int,
+        limit: Int,
+        filter: FilterObject,
+        sort: QuerySort<Member>,
+        members: List<Member>,
+    ): Call<List<Member>> {
+        return api.queryMembers(channelType, channelId, offset, limit, filter, sort, members)
+    }
+
+    /**
+     * Uploads a file for the given channel. Progress can be accessed via [callback].
+     *
+     * The Stream CDN imposes the following restrictions on file uploads:
+     * - The maximum file size is 20 MB
+     *
+     * @param channelType the channel type. ie messaging
+     * @param channelId the channel id. ie 123
+     * @param file the file that needs to be uploaded
+     * @param callback the callback to track progress
+     *
+     * @return executable async [Call] which completes with [Result] having data equal to the URL of the uploaded file
+     * if the file was successfully uploaded.
+     *
+     * @see FileUploader
+     * @see <a href="https://getstream.io/chat/docs/android/file_uploads/?language=kotlin">File Uploads</a>
+     */
+    @CheckResult
+    @JvmOverloads
     public fun sendFile(
         channelType: String,
         channelId: String,
@@ -308,7 +377,27 @@ public class ChatClient internal constructor(
         return api.sendFile(channelType, channelId, file, callback)
     }
 
+    /**
+     * Uploads an image for the given channel. Progress can be accessed via [callback].
+     *
+     * The Stream CDN imposes the following restrictions on image uploads:
+     * - The maximum image size is 20 MB
+     * - Supported MIME types are listed in [StreamCdnImageMimeTypes.SUPPORTED_IMAGE_MIME_TYPES]
+     *
+     * @param channelType the channel type. ie messaging
+     * @param channelId the channel id. ie 123
+     * @param file the image file that needs to be uploaded
+     * @param callback the callback to track progress
+     *
+     * @return executable async [Call] which completes with [Result] having data equal to the URL of the uploaded image
+     * if the image was successfully uploaded.
+     *
+     * @see FileUploader
+     * @see StreamCdnImageMimeTypes.SUPPORTED_IMAGE_MIME_TYPES
+     * @see <a href="https://getstream.io/chat/docs/android/file_uploads/?language=kotlin">File Uploads</a>
+     */
     @CheckResult
+    @JvmOverloads
     public fun sendImage(
         channelType: String,
         channelId: String,
@@ -318,24 +407,35 @@ public class ChatClient internal constructor(
         return api.sendImage(channelType, channelId, file, callback)
     }
 
-    @CheckResult
-    public fun queryMembers(
-        channelType: String,
-        channelId: String,
-        offset: Int,
-        limit: Int,
-        filter: FilterObject,
-        sort: QuerySort<Member> = DEFAULT_SORT,
-        members: List<Member> = emptyList(),
-    ): Call<List<Member>> {
-        return api.queryMembers(channelType, channelId, offset, limit, filter, sort, members)
-    }
-
+    /**
+     * Deletes the file represented by [url] from the given channel.
+     *
+     * @param channelType the channel type. ie messaging
+     * @param channelId the channel id. ie 123
+     * @param url the URL of the file to be deleted
+     *
+     * @return executable async [Call] responsible for deleting a file
+     *
+     * @see FileUploader
+     * @see <a href="https://getstream.io/chat/docs/android/file_uploads/?language=kotlin">File Uploads</a>
+     */
     @CheckResult
     public fun deleteFile(channelType: String, channelId: String, url: String): Call<Unit> {
         return api.deleteFile(channelType, channelId, url)
     }
 
+    /**
+     * Deletes the image represented by [url] from the given channel.
+     *
+     * @param channelType the channel type. ie messaging
+     * @param channelId the channel id. ie 123
+     * @param url the URL of the image to be deleted
+     *
+     * @return executable async [Call] responsible for deleting an image
+     *
+     * @see FileUploader
+     * @see <a href="https://getstream.io/chat/docs/android/file_uploads/?language=kotlin">File Uploads</a>
+     */
     @CheckResult
     public fun deleteImage(channelType: String, channelId: String, url: String): Call<Unit> {
         return api.deleteImage(channelType, channelId, url)
@@ -392,12 +492,10 @@ public class ChatClient internal constructor(
         socket.removeListener(listener)
     }
 
-    @Deprecated(message = "Use subscribe() on the client directly instead")
-    public fun events(): ChatObservable {
-        return socket.events()
-    }
-
-    @Deprecated(message = "Use subscribe with ChatEventListener parameter")
+    @Deprecated(
+        message = "Use subscribe with ChatEventListener parameter",
+        level = DeprecationLevel.ERROR,
+    )
     @SinceKotlin("99999.9")
     public fun subscribe(
         listener: (event: ChatEvent) -> Unit,
@@ -416,7 +514,10 @@ public class ChatClient internal constructor(
      *
      * @see [io.getstream.chat.android.client.models.EventType] for type constants
      */
-    @Deprecated(message = "Use subscribeFor with ChatEventListener parameter")
+    @Deprecated(
+        message = "Use subscribeFor with ChatEventListener parameter",
+        level = DeprecationLevel.ERROR,
+    )
     @SinceKotlin("99999.9")
     public fun subscribeFor(
         vararg eventTypes: String,
@@ -448,7 +549,10 @@ public class ChatClient internal constructor(
      *
      * Only receives events when the lifecycle is in a STARTED state, otherwise events are dropped.
      */
-    @Deprecated(message = "Use subscribeFor with ChatEventListener parameter")
+    @Deprecated(
+        message = "Use subscribeFor with ChatEventListener parameter",
+        level = DeprecationLevel.ERROR,
+    )
     @SinceKotlin("99999.9")
     public fun subscribeFor(
         lifecycleOwner: LifecycleOwner,
@@ -510,7 +614,10 @@ public class ChatClient internal constructor(
     /**
      * Subscribes to the specific [eventTypes] of the client.
      */
-    @Deprecated("Use subscribeFor with ChatEventListener parameter")
+    @Deprecated(
+        message = "Use subscribeFor with ChatEventListener parameter",
+        level = DeprecationLevel.ERROR,
+    )
     @SinceKotlin("99999.9")
     public fun subscribeFor(
         vararg eventTypes: Class<out ChatEvent>,
@@ -540,7 +647,10 @@ public class ChatClient internal constructor(
      *
      * Only receives events when the lifecycle is in a STARTED state, otherwise events are dropped.
      */
-    @Deprecated("Use subscribeFor with ChatEventListener parameter")
+    @Deprecated(
+        message = "Use subscribeFor with ChatEventListener parameter",
+        level = DeprecationLevel.ERROR,
+    )
     @SinceKotlin("99999.9")
     public fun subscribeFor(
         lifecycleOwner: LifecycleOwner,
@@ -602,7 +712,10 @@ public class ChatClient internal constructor(
     /**
      * Subscribes for the next event with the given [eventType].
      */
-    @Deprecated("Use subscribeForSingle with ChatEventListener parameter")
+    @Deprecated(
+        message = "Use subscribeForSingle with ChatEventListener parameter",
+        level = DeprecationLevel.ERROR,
+    )
     @SinceKotlin("99999.9")
     public fun subscribeForSingle(
         eventType: String,
@@ -630,7 +743,10 @@ public class ChatClient internal constructor(
     /**
      * Subscribes for the next event with the given [eventType].
      */
-    @Deprecated("Use subscribeForSingle with ChatEventListener parameter")
+    @Deprecated(
+        message = "Use subscribeForSingle with ChatEventListener parameter",
+        level = DeprecationLevel.ERROR,
+    )
     @SinceKotlin("99999.9")
     public fun <T : ChatEvent> subscribeForSingle(
         eventType: Class<T>,
@@ -662,7 +778,6 @@ public class ChatClient internal constructor(
     }
 
     public fun disconnect() {
-
         // fire a handler here that the chatDomain and chatUI can use
         runCatching {
             clientStateService.state.userOrError().let { user ->
@@ -672,6 +787,7 @@ public class ChatClient internal constructor(
         connectionListener = null
         clientStateService.onDisconnectRequested()
         socket.disconnect()
+        lifecycleObserver.dispose()
     }
 
     //region: api calls
@@ -883,8 +999,32 @@ public class ChatClient internal constructor(
         api.updateChannel(
             channelType,
             channelId,
-            UpdateChannelRequest(channelExtraData, updateMessage)
+            channelExtraData,
+            updateMessage,
         )
+
+    /**
+     * Updates specific fields of channel data retaining the custom data fields which were set previously.
+     *
+     * @param channelType the channel type. ie messaging
+     * @param channelId the channel id. ie 123
+     * @param set the key-value data which will be added to the existing channel data object
+     * @param unset the list of fields which will be removed from the existing channel data object
+     */
+    @CheckResult
+    public fun updateChannelPartial(
+        channelType: String,
+        channelId: String,
+        set: Map<String, Any> = emptyMap(),
+        unset: List<String> = emptyList(),
+    ): Call<Channel> {
+        return api.updateChannelPartial(
+            channelType = channelType,
+            channelId = channelId,
+            set = set,
+            unset = unset
+        )
+    }
 
     @CheckResult
     public fun enableSlowMode(
@@ -985,8 +1125,18 @@ public class ChatClient internal constructor(
     }
 
     @CheckResult
+    @Deprecated(
+        message = "Use the unmuteChannel(channelType, channelId) method instead",
+        replaceWith = ReplaceWith("this.unmuteChannel(channelType, channelId)"),
+        level = DeprecationLevel.ERROR,
+    )
     public fun unMuteChannel(channelType: String, channelId: String): Call<Unit> {
-        return api.unMuteChannel(channelType, channelId)
+        return api.unmuteChannel(channelType, channelId)
+    }
+
+    @CheckResult
+    public fun unmuteChannel(channelType: String, channelId: String): Call<Unit> {
+        return api.unmuteChannel(channelType, channelId)
     }
 
     @CheckResult
@@ -999,17 +1149,16 @@ public class ChatClient internal constructor(
     public fun muteCurrentUser(): Call<Mute> = api.muteCurrentUser()
 
     @CheckResult
-    @Deprecated(
-        message = "We are going to replace with flagUser()",
-        replaceWith = ReplaceWith("this.flagUser(userId)")
-    )
-    public fun flag(userId: String): Call<Flag> = flagUser(userId)
-
-    @CheckResult
     public fun flagUser(userId: String): Call<Flag> = api.flagUser(userId)
 
     @CheckResult
+    public fun unflagUser(userId: String): Call<Flag> = api.unflagUser(userId)
+
+    @CheckResult
     public fun flagMessage(messageId: String): Call<Flag> = api.flagMessage(messageId)
+
+    @CheckResult
+    public fun unflagMessage(messageId: String): Call<Flag> = api.unflagMessage(messageId)
 
     @CheckResult
     public fun translate(messageId: String, language: String): Call<Message> =
@@ -1029,23 +1178,36 @@ public class ChatClient internal constructor(
         reason = reason,
         timeout = timeout,
         shadow = false
-    ).map {
-        Unit
-    }
+    ).toUnitCall()
 
     @CheckResult
+    @Deprecated(
+        message = "Use the unbanUser(targetId, channelType, channelId) method instead",
+        replaceWith = ReplaceWith("this.unbanUser(targetId, channelType, channelId)"),
+        level = DeprecationLevel.ERROR,
+    )
     public fun unBanUser(
         targetId: String,
         channelType: String,
         channelId: String,
-    ): Call<Unit> = api.unBanUser(
+    ): Call<Unit> = api.unbanUser(
         targetId = targetId,
         channelType = channelType,
         channelId = channelId,
         shadow = false
-    ).map {
-        Unit
-    }
+    ).toUnitCall()
+
+    @CheckResult
+    public fun unbanUser(
+        targetId: String,
+        channelType: String,
+        channelId: String,
+    ): Call<Unit> = api.unbanUser(
+        targetId = targetId,
+        channelType = channelType,
+        channelId = channelId,
+        shadow = false
+    ).toUnitCall()
 
     @CheckResult
     public fun shadowBanUser(
@@ -1061,22 +1223,42 @@ public class ChatClient internal constructor(
         reason = reason,
         timeout = timeout,
         shadow = true
-    ).map {
-        Unit
-    }
+    ).toUnitCall()
 
     @CheckResult
     public fun removeShadowBan(
         targetId: String,
         channelType: String,
         channelId: String,
-    ): Call<Unit> = api.unBanUser(
+    ): Call<Unit> = api.unbanUser(
         targetId = targetId,
         channelType = channelType,
         channelId = channelId,
         shadow = true
-    ).map {
-        Unit
+    ).toUnitCall()
+
+    @CheckResult
+    @JvmOverloads
+    public fun queryBannedUsers(
+        filter: FilterObject,
+        sort: QuerySort<BannedUsersSort> = QuerySort.asc(BannedUsersSort::createdAt),
+        offset: Int? = null,
+        limit: Int? = null,
+        createdAtAfter: Date? = null,
+        createdAtAfterOrEqual: Date? = null,
+        createdAtBefore: Date? = null,
+        createdAtBeforeOrEqual: Date? = null,
+    ): Call<List<BannedUser>> {
+        return api.queryBannedUsers(
+            filter = filter,
+            sort = sort,
+            offset = offset,
+            limit = limit,
+            createdAtAfter = createdAtAfter,
+            createdAtAfterOrEqual = createdAtAfterOrEqual,
+            createdAtBefore = createdAtBefore,
+            createdAtBeforeOrEqual = createdAtBeforeOrEqual,
+        )
     }
 
     //endregion
@@ -1098,7 +1280,14 @@ public class ChatClient internal constructor(
     }
 
     public fun getCurrentToken(): String? {
-        return runCatching { clientStateService.state.tokenOrError() }.getOrNull()
+        return runCatching {
+            when (clientStateService.state) {
+                is ClientState.User.Pending,
+                is ClientState.User.Authorized,
+                -> if (tokenManager.hasToken()) tokenManager.getToken() else null
+                else -> null
+            }
+        }.getOrNull()
     }
 
     public fun isSocketConnected(): Boolean {
@@ -1189,17 +1378,6 @@ public class ChatClient internal constructor(
         connectionListener = null
     }
 
-    private fun getTokenAndConnect(connect: () -> Unit) {
-        tokenManager.loadAsync {
-            if (it.isSuccess) {
-                clientStateService.onTokenReceived(it.data())
-            } else {
-                clientStateService.onTokenReceived("")
-            }
-            connect()
-        }
-    }
-
     private fun warmUp() {
         if (config.warmUp) {
             api.warmUp()
@@ -1207,7 +1385,7 @@ public class ChatClient internal constructor(
     }
 
     private fun ensureUserNotSet(listener: InitConnectionListener?): Boolean {
-        return if (clientStateService.state !is ClientState.Idle) {
+        return if (isUserSet()) {
             logger.logE("Trying to set user without disconnecting the previous one - make sure that previously set user is disconnected.")
             listener?.onError(ChatError("User cannot be set until previous one is disconnected."))
             false
@@ -1215,6 +1393,8 @@ public class ChatClient internal constructor(
             true
         }
     }
+
+    private fun isUserSet() = clientStateService.state !is ClientState.Idle
 
     private fun isValidRemoteMessage(remoteMessage: RemoteMessage): Boolean =
         notifications.isValidRemoteMessage(remoteMessage)
@@ -1232,10 +1412,12 @@ public class ChatClient internal constructor(
 
         private var baseUrl: String = "chat-us-east-1.stream-io-api.com"
         private var cdnUrl: String = baseUrl
-        private var baseTimeout = 10000L
-        private var cdnTimeout = 10000L
-        private var logLevel = ChatLogLevel.ALL
+        private var baseTimeout = 30_000L
+        private var cdnTimeout = 30_000L
+        private var enableMoshi = true
+        private var logLevel = ChatLogLevel.NOTHING
         private var warmUp: Boolean = true
+        private var callbackExecutor: Executor? = null
         private var loggerHandler: ChatLoggerHandler? = null
         private var notificationsHandler: ChatNotificationHandler =
             ChatNotificationHandler(appContext)
@@ -1265,6 +1447,24 @@ public class ChatClient internal constructor(
         public fun fileUploader(fileUploader: FileUploader): Builder {
             this.fileUploader = fileUploader
             return this
+        }
+
+        /**
+         * A new serialization implementation is now used by default by the SDK.
+         *
+         * If you experience any issues with the new implementation, call this builder method with `false`
+         * as the parameter to revert to the old implementation. Note that the old implementation will be
+         * removed soon.
+         *
+         * To check for issues caused by new serialization, enable error logs using the [logLevel]
+         * method and look for the NEW_SERIALIZATION_ERROR tag in your logs.
+         */
+        @Deprecated(
+            message = "Old serialization will be removed soon",
+            level = DeprecationLevel.WARNING,
+        )
+        public fun useNewSerialization(enabled: Boolean): Builder = apply {
+            this.enableMoshi = enabled
         }
 
         public fun baseTimeout(timeout: Long): Builder {
@@ -1311,6 +1511,12 @@ public class ChatClient internal constructor(
             return this
         }
 
+        @InternalStreamChatApi
+        @VisibleForTesting
+        public fun callbackExecutor(callbackExecutor: Executor): Builder = apply {
+            this.callbackExecutor = callbackExecutor
+        }
+
         public fun build(): ChatClient {
 
             if (apiKey.isEmpty()) {
@@ -1318,28 +1524,29 @@ public class ChatClient internal constructor(
             }
 
             val config = ChatClientConfig(
-                apiKey,
-                "https://$baseUrl/",
-                "https://$cdnUrl/",
-                "wss://$baseUrl/",
-                baseTimeout,
-                cdnTimeout,
-                warmUp,
-                ChatLogger.Config(logLevel, loggerHandler),
+                apiKey = apiKey,
+                httpUrl = "https://$baseUrl/",
+                cdnHttpUrl = "https://$cdnUrl/",
+                wssUrl = "wss://$baseUrl/",
+                baseTimeout = baseTimeout,
+                cdnTimeout = cdnTimeout,
+                warmUp = warmUp,
+                loggerConfig = ChatLogger.Config(logLevel, loggerHandler),
             )
 
-            // Should not be set by clients yet, only for development
-            config.enableMoshi = false
+            config.enableMoshi = enableMoshi
 
             val module =
-                ChatModule(appContext, config, notificationsHandler, fileUploader, tokenManager)
+                ChatModule(appContext, config, notificationsHandler, fileUploader, tokenManager, callbackExecutor)
 
             val result = ChatClient(
                 config,
                 module.api(),
                 module.socket(),
                 module.notifications(),
-                tokenManager
+                tokenManager,
+                module.clientStateService,
+                module.queryChannelsPostponeHelper
             )
 
             instance = result

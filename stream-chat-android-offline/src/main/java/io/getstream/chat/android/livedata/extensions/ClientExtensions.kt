@@ -8,7 +8,6 @@ import io.getstream.chat.android.client.models.Member
 import io.getstream.chat.android.client.models.Message
 import io.getstream.chat.android.client.models.Reaction
 import io.getstream.chat.android.client.models.User
-import io.getstream.chat.android.livedata.request.AnyChannelPaginationRequest
 
 fun Message.users(): List<User> = latestReactions.mapNotNull(Reaction::user) + user + (replyTo?.users().orEmpty())
 
@@ -81,10 +80,6 @@ public fun ChatError.isPermanent(): Boolean {
     }
     return isPermanent
 }
-
-internal fun Collection<Channel>.applyPagination(pagination: AnyChannelPaginationRequest): List<Channel> =
-    asSequence().sortedWith(pagination.sort.comparator).drop(pagination.channelOffset)
-        .take(pagination.channelLimit).toList()
 
 internal fun String?.isImageMimetype() = this?.contains("image") ?: false
 

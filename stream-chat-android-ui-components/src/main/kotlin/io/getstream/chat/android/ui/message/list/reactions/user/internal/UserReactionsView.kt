@@ -4,26 +4,28 @@ import android.content.Context
 import android.util.AttributeSet
 import android.widget.FrameLayout
 import androidx.recyclerview.widget.GridLayoutManager
-import com.getstream.sdk.chat.utils.extensions.inflater
 import io.getstream.chat.android.client.models.Message
 import io.getstream.chat.android.client.models.User
 import io.getstream.chat.android.core.internal.InternalStreamChatApi
+import io.getstream.chat.android.ui.ChatUI
 import io.getstream.chat.android.ui.R
-import io.getstream.chat.android.ui.common.UiUtils
+import io.getstream.chat.android.ui.common.extensions.internal.createStreamThemeWrapper
+import io.getstream.chat.android.ui.common.extensions.internal.streamThemeInflater
 import io.getstream.chat.android.ui.common.extensions.supportedLatestReactions
 import io.getstream.chat.android.ui.databinding.StreamUiUserReactionsViewBinding
+import io.getstream.chat.android.ui.message.list.MessageListViewStyle
 
 @InternalStreamChatApi
 public class UserReactionsView : FrameLayout {
 
-    private val binding = StreamUiUserReactionsViewBinding.inflate(context.inflater, this, true)
+    private val binding = StreamUiUserReactionsViewBinding.inflate(streamThemeInflater, this, true)
 
     private val userReactionsAdapter: UserReactionAdapter = UserReactionAdapter()
     private val gridLayoutManager: GridLayoutManager
 
-    public constructor(context: Context) : super(context)
-    public constructor(context: Context, attrs: AttributeSet?) : super(context, attrs)
-    public constructor(context: Context, attrs: AttributeSet?, defStyleAttr: Int) : super(context, attrs, defStyleAttr)
+    public constructor(context: Context) : super(context.createStreamThemeWrapper())
+    public constructor(context: Context, attrs: AttributeSet?) : super(context.createStreamThemeWrapper(), attrs)
+    public constructor(context: Context, attrs: AttributeSet?, defStyleAttr: Int) : super(context.createStreamThemeWrapper(), attrs, defStyleAttr)
 
     init {
         binding.recyclerView.adapter = userReactionsAdapter
@@ -35,9 +37,14 @@ public class UserReactionsView : FrameLayout {
         bindReactionList(message, currentUser)
     }
 
+    internal fun configure(messageListViewStyle: MessageListViewStyle) {
+        binding.userReactionsContainer.setCardBackgroundColor(messageListViewStyle.userReactionsBackgroundColor)
+        messageListViewStyle.userReactionsTitleText.apply(binding.userReactionsTitleTextView)
+    }
+
     private fun bindTitle(message: Message) {
         val reactionCount = message.supportedLatestReactions.size
-        binding.messageMembersTextView.text = context.resources.getQuantityString(
+        binding.userReactionsTitleTextView.text = context.resources.getQuantityString(
             R.plurals.stream_ui_user_reactions_title,
             reactionCount,
             reactionCount
@@ -47,13 +54,13 @@ public class UserReactionsView : FrameLayout {
     private fun bindReactionList(message: Message, currentUser: User) {
         val userReactionItems = message.supportedLatestReactions.mapNotNull {
             val user = it.user
-            val iconDrawableRes = UiUtils.getReactionIcon(it.type)
-            if (user != null && iconDrawableRes != null) {
+            val reactionDrawable = ChatUI.supportedReactions.getReactionDrawable(it.type)
+            if (user != null && reactionDrawable != null) {
                 UserReactionItem(
                     user = user,
                     reaction = it,
                     isMine = user.id == currentUser.id,
-                    iconDrawableRes = iconDrawableRes
+                    reactionDrawable = reactionDrawable
                 )
             } else {
                 null

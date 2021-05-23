@@ -1,28 +1,25 @@
+@file:Suppress("DEPRECATION_ERROR")
+
 package io.getstream.chat.android.client.channel
 
 import androidx.annotation.CheckResult
 import androidx.lifecycle.LifecycleOwner
 import io.getstream.chat.android.client.ChatClient
 import io.getstream.chat.android.client.ChatEventListener
+import io.getstream.chat.android.client.api.models.FilterObject
 import io.getstream.chat.android.client.api.models.QueryChannelRequest
 import io.getstream.chat.android.client.api.models.QuerySort
 import io.getstream.chat.android.client.api.models.SendActionRequest
 import io.getstream.chat.android.client.api.models.WatchChannelRequest
 import io.getstream.chat.android.client.call.Call
-import io.getstream.chat.android.client.controllers.ChannelController
-import io.getstream.chat.android.client.events.ChannelCreatedEvent
 import io.getstream.chat.android.client.events.ChannelDeletedEvent
 import io.getstream.chat.android.client.events.ChannelHiddenEvent
-import io.getstream.chat.android.client.events.ChannelMuteEvent
 import io.getstream.chat.android.client.events.ChannelTruncatedEvent
-import io.getstream.chat.android.client.events.ChannelUnmuteEvent
 import io.getstream.chat.android.client.events.ChannelUpdatedByUserEvent
 import io.getstream.chat.android.client.events.ChannelUpdatedEvent
 import io.getstream.chat.android.client.events.ChannelUserBannedEvent
 import io.getstream.chat.android.client.events.ChannelUserUnbannedEvent
 import io.getstream.chat.android.client.events.ChannelVisibleEvent
-import io.getstream.chat.android.client.events.ChannelsMuteEvent
-import io.getstream.chat.android.client.events.ChannelsUnmuteEvent
 import io.getstream.chat.android.client.events.ChatEvent
 import io.getstream.chat.android.client.events.ConnectedEvent
 import io.getstream.chat.android.client.events.ConnectingEvent
@@ -44,6 +41,7 @@ import io.getstream.chat.android.client.events.NotificationChannelDeletedEvent
 import io.getstream.chat.android.client.events.NotificationChannelMutesUpdatedEvent
 import io.getstream.chat.android.client.events.NotificationChannelTruncatedEvent
 import io.getstream.chat.android.client.events.NotificationInviteAcceptedEvent
+import io.getstream.chat.android.client.events.NotificationInviteRejectedEvent
 import io.getstream.chat.android.client.events.NotificationInvitedEvent
 import io.getstream.chat.android.client.events.NotificationMarkReadEvent
 import io.getstream.chat.android.client.events.NotificationMessageNewEvent
@@ -56,54 +54,50 @@ import io.getstream.chat.android.client.events.TypingStartEvent
 import io.getstream.chat.android.client.events.TypingStopEvent
 import io.getstream.chat.android.client.events.UnknownEvent
 import io.getstream.chat.android.client.events.UserDeletedEvent
-import io.getstream.chat.android.client.events.UserMutedEvent
 import io.getstream.chat.android.client.events.UserPresenceChangedEvent
 import io.getstream.chat.android.client.events.UserStartWatchingEvent
 import io.getstream.chat.android.client.events.UserStopWatchingEvent
-import io.getstream.chat.android.client.events.UserUnmutedEvent
 import io.getstream.chat.android.client.events.UserUpdatedEvent
-import io.getstream.chat.android.client.events.UsersMutedEvent
-import io.getstream.chat.android.client.events.UsersUnmutedEvent
 import io.getstream.chat.android.client.models.Attachment
+import io.getstream.chat.android.client.models.BannedUser
+import io.getstream.chat.android.client.models.BannedUsersSort
 import io.getstream.chat.android.client.models.Channel
 import io.getstream.chat.android.client.models.EventType
+import io.getstream.chat.android.client.models.Filters
 import io.getstream.chat.android.client.models.Member
 import io.getstream.chat.android.client.models.Message
 import io.getstream.chat.android.client.models.Mute
 import io.getstream.chat.android.client.models.Reaction
-import io.getstream.chat.android.client.utils.FilterObject
+import io.getstream.chat.android.client.uploader.FileUploader
+import io.getstream.chat.android.client.uploader.StreamCdnImageMimeTypes
 import io.getstream.chat.android.client.utils.ProgressCallback
-import io.getstream.chat.android.client.utils.observable.ChatObservable
+import io.getstream.chat.android.client.utils.Result
 import io.getstream.chat.android.client.utils.observable.Disposable
 import java.io.File
 import java.util.Date
 
 public class ChannelClient internal constructor(
-    override val channelType: String,
-    override val channelId: String,
+    public val channelType: String,
+    public val channelId: String,
     private val client: ChatClient,
-) : ChannelController {
+) {
 
-    override val cid: String = "$channelType:$channelId"
+    public val cid: String = "$channelType:$channelId"
 
     @CheckResult
-    override fun create(members: List<String>, extraData: Map<String, Any>): Call<Channel> {
+    public fun create(members: List<String>, extraData: Map<String, Any> = emptyMap()): Call<Channel> {
         return client.createChannel(channelType, channelId, members, extraData)
     }
 
     @CheckResult
-    override fun create(extraData: Map<String, Any>): Call<Channel> {
-        return client.createChannel(channelType, channelId, emptyList())
-    }
-
-    override fun events(): ChatObservable {
-        return client.events().filter(this::isRelevantForChannel)
+    public fun create(extraData: Map<String, Any> = emptyMap()): Call<Channel> {
+        return client.createChannel(channelType, channelId, extraData)
     }
 
     @Suppress("NEWER_VERSION_IN_SINCE_KOTLIN")
-    @Deprecated("User subscribe with ChatEventListener")
+    @Deprecated("Use subscribe with ChatEventListener")
     @SinceKotlin("99999.9")
-    override fun subscribe(listener: (event: ChatEvent) -> Unit): Disposable {
+    public fun subscribe(listener: (event: ChatEvent) -> Unit): Disposable {
         return client.subscribe(filterRelevantEvents(listener))
     }
 
@@ -112,9 +106,9 @@ public class ChannelClient internal constructor(
     }
 
     @Suppress("NEWER_VERSION_IN_SINCE_KOTLIN")
-    @Deprecated("User subscribeFor with ChatEventListener")
+    @Deprecated("Use subscribeFor with ChatEventListener")
     @SinceKotlin("99999.9")
-    override fun subscribeFor(
+    public fun subscribeFor(
         vararg eventTypes: String,
         listener: (event: ChatEvent) -> Unit,
     ): Disposable {
@@ -129,9 +123,9 @@ public class ChannelClient internal constructor(
     }
 
     @Suppress("NEWER_VERSION_IN_SINCE_KOTLIN")
-    @Deprecated("User subscribeFor with ChatEventListener")
+    @Deprecated("Use subscribeFor with ChatEventListener")
     @SinceKotlin("99999.9")
-    override fun subscribeFor(
+    public fun subscribeFor(
         lifecycleOwner: LifecycleOwner,
         vararg eventTypes: String,
         listener: (event: ChatEvent) -> Unit,
@@ -156,9 +150,9 @@ public class ChannelClient internal constructor(
     }
 
     @Suppress("NEWER_VERSION_IN_SINCE_KOTLIN")
-    @Deprecated("User subscribeFor with ChatEventListener")
+    @Deprecated("Use subscribeFor with ChatEventListener")
     @SinceKotlin("99999.9")
-    override fun subscribeFor(
+    public fun subscribeFor(
         vararg eventTypes: Class<out ChatEvent>,
         listener: (event: ChatEvent) -> Unit,
     ): Disposable {
@@ -173,9 +167,9 @@ public class ChannelClient internal constructor(
     }
 
     @Suppress("NEWER_VERSION_IN_SINCE_KOTLIN")
-    @Deprecated("User subscribeFor with ChatEventListener")
+    @Deprecated("Use subscribeFor with ChatEventListener")
     @SinceKotlin("99999.9")
-    override fun subscribeFor(
+    public fun subscribeFor(
         lifecycleOwner: LifecycleOwner,
         vararg eventTypes: Class<out ChatEvent>,
         listener: (event: ChatEvent) -> Unit,
@@ -200,9 +194,9 @@ public class ChannelClient internal constructor(
     }
 
     @Suppress("NEWER_VERSION_IN_SINCE_KOTLIN")
-    @Deprecated("User subscribeForSingle with ChatEventListener")
+    @Deprecated("Use subscribeForSingle with ChatEventListener")
     @SinceKotlin("99999.9")
-    override fun subscribeForSingle(
+    public fun subscribeForSingle(
         eventType: String,
         listener: (event: ChatEvent) -> Unit,
     ): Disposable {
@@ -217,9 +211,9 @@ public class ChannelClient internal constructor(
     }
 
     @Suppress("NEWER_VERSION_IN_SINCE_KOTLIN")
-    @Deprecated("User subscribeForSingle with ChatEventListener")
+    @Deprecated("Use subscribeForSingle with ChatEventListener")
     @SinceKotlin("99999.9")
-    override fun <T : ChatEvent> subscribeForSingle(
+    public fun <T : ChatEvent> subscribeForSingle(
         eventType: Class<T>,
         listener: (event: T) -> Unit,
     ): Disposable {
@@ -245,14 +239,9 @@ public class ChannelClient internal constructor(
 
     private fun isRelevantForChannel(event: ChatEvent): Boolean {
         return when (event) {
-            is ChannelCreatedEvent -> event.cid == cid
             is ChannelDeletedEvent -> event.cid == cid
             is ChannelHiddenEvent -> event.cid == cid
-            is ChannelMuteEvent -> event.channelMute.channel.cid == cid
-            is ChannelsMuteEvent -> event.channelsMute.any { it.channel.cid == cid }
             is ChannelTruncatedEvent -> event.cid == cid
-            is ChannelUnmuteEvent -> event.channelMute.channel.cid == cid
-            is ChannelsUnmuteEvent -> event.channelsMute.any { it.channel.cid == cid }
             is ChannelUpdatedEvent -> event.cid == cid
             is ChannelUpdatedByUserEvent -> event.cid == cid
             is ChannelVisibleEvent -> event.cid == cid
@@ -267,6 +256,7 @@ public class ChannelClient internal constructor(
             is NotificationChannelDeletedEvent -> event.cid == cid
             is NotificationChannelTruncatedEvent -> event.cid == cid
             is NotificationInviteAcceptedEvent -> event.cid == cid
+            is NotificationInviteRejectedEvent -> event.cid == cid
             is NotificationInvitedEvent -> event.cid == cid
             is NotificationMarkReadEvent -> event.cid == cid
             is NotificationMessageNewEvent -> event.cid == cid
@@ -286,12 +276,8 @@ public class ChannelClient internal constructor(
             is NotificationMutesUpdatedEvent,
             is GlobalUserBannedEvent,
             is UserDeletedEvent,
-            is UserMutedEvent,
-            is UsersMutedEvent,
             is UserPresenceChangedEvent,
             is GlobalUserUnbannedEvent,
-            is UserUnmutedEvent,
-            is UsersUnmutedEvent,
             is UserUpdatedEvent,
             is ConnectedEvent,
             is ConnectingEvent,
@@ -303,54 +289,54 @@ public class ChannelClient internal constructor(
     }
 
     @CheckResult
-    override fun query(request: QueryChannelRequest): Call<Channel> {
+    public fun query(request: QueryChannelRequest): Call<Channel> {
         return client.queryChannel(channelType, channelId, request)
     }
 
     @CheckResult
-    override fun watch(request: WatchChannelRequest): Call<Channel> {
+    public fun watch(request: WatchChannelRequest): Call<Channel> {
         return client.queryChannel(channelType, channelId, request)
     }
 
     @CheckResult
-    override fun watch(data: Map<String, Any>): Call<Channel> {
+    public fun watch(data: Map<String, Any>): Call<Channel> {
         val request = WatchChannelRequest()
         request.data.putAll(data)
         return watch(request)
     }
 
     @CheckResult
-    override fun watch(): Call<Channel> {
+    public fun watch(): Call<Channel> {
         return client.queryChannel(channelType, channelId, WatchChannelRequest())
     }
 
     @CheckResult
-    override fun stopWatching(): Call<Unit> {
+    public fun stopWatching(): Call<Unit> {
         return client.stopWatching(channelType, channelId)
     }
 
     @CheckResult
-    override fun getMessage(messageId: String): Call<Message> {
+    public fun getMessage(messageId: String): Call<Message> {
         return client.getMessage(messageId)
     }
 
     @CheckResult
-    override fun updateMessage(message: Message): Call<Message> {
+    public fun updateMessage(message: Message): Call<Message> {
         return client.updateMessage(message)
     }
 
     @CheckResult
-    override fun deleteMessage(messageId: String): Call<Message> {
+    public fun deleteMessage(messageId: String): Call<Message> {
         return client.deleteMessage(messageId)
     }
 
     @CheckResult
-    override fun sendMessage(message: Message): Call<Message> {
+    public fun sendMessage(message: Message): Call<Message> {
         return client.sendMessage(channelType, channelId, message)
     }
 
     @CheckResult
-    override fun banUser(targetId: String, reason: String?, timeout: Int?): Call<Unit> {
+    public fun banUser(targetId: String, reason: String?, timeout: Int?): Call<Unit> {
         return client.banUser(
             targetId = targetId,
             channelType = channelType,
@@ -361,8 +347,13 @@ public class ChannelClient internal constructor(
     }
 
     @CheckResult
-    override fun unBanUser(targetId: String, reason: String?, timeout: Int?): Call<Unit> {
-        return client.unBanUser(
+    @Deprecated(
+        message = "Use the unbanUser(targetId) method instead",
+        replaceWith = ReplaceWith("this.unbanUser(targetId)"),
+        level = DeprecationLevel.ERROR,
+    )
+    public fun unBanUser(targetId: String): Call<Unit> {
+        return client.unbanUser(
             targetId = targetId,
             channelType = channelType,
             channelId = channelId,
@@ -370,7 +361,16 @@ public class ChannelClient internal constructor(
     }
 
     @CheckResult
-    override fun shadowBanUser(targetId: String, reason: String?, timeout: Int?): Call<Unit> {
+    public fun unbanUser(targetId: String): Call<Unit> {
+        return client.unbanUser(
+            targetId = targetId,
+            channelType = channelType,
+            channelId = channelId,
+        )
+    }
+
+    @CheckResult
+    public fun shadowBanUser(targetId: String, reason: String?, timeout: Int?): Call<Unit> {
         return client.shadowBanUser(
             targetId = targetId,
             channelType = channelType,
@@ -381,7 +381,7 @@ public class ChannelClient internal constructor(
     }
 
     @CheckResult
-    override fun removeShadowBan(targetId: String): Call<Unit> {
+    public fun removeShadowBan(targetId: String): Call<Unit> {
         return client.removeShadowBan(
             targetId = targetId,
             channelType = channelType,
@@ -390,72 +390,151 @@ public class ChannelClient internal constructor(
     }
 
     @CheckResult
-    override fun markMessageRead(messageId: String): Call<Unit> {
+    @JvmOverloads
+    public fun queryBannedUsers(
+        filter: FilterObject? = null,
+        sort: QuerySort<BannedUsersSort> = QuerySort.asc(BannedUsersSort::createdAt),
+        offset: Int? = null,
+        limit: Int? = null,
+        createdAtAfter: Date? = null,
+        createdAtAfterOrEqual: Date? = null,
+        createdAtBefore: Date? = null,
+        createdAtBeforeOrEqual: Date? = null,
+    ): Call<List<BannedUser>> {
+        val channelCidFilter = Filters.eq("channel_cid", cid)
+        return client.queryBannedUsers(
+            filter = filter?.let { Filters.and(channelCidFilter, it) } ?: channelCidFilter,
+            sort = sort,
+            offset = offset,
+            limit = limit,
+            createdAtAfter = createdAtAfter,
+            createdAtAfterOrEqual = createdAtAfterOrEqual,
+            createdAtBefore = createdAtBefore,
+            createdAtBeforeOrEqual = createdAtBeforeOrEqual,
+        )
+    }
+
+    @CheckResult
+    public fun markMessageRead(messageId: String): Call<Unit> {
         return client.markMessageRead(channelType, channelId, messageId)
     }
 
     @CheckResult
-    override fun markRead(): Call<Unit> {
+    public fun markRead(): Call<Unit> {
         return client.markRead(channelType, channelId)
     }
 
     @CheckResult
-    override fun delete(): Call<Channel> {
+    public fun delete(): Call<Channel> {
         return client.deleteChannel(channelType, channelId)
     }
 
     @CheckResult
-    override fun show(): Call<Unit> {
+    public fun show(): Call<Unit> {
         return client.showChannel(channelType, channelId)
     }
 
     @CheckResult
-    override fun hide(clearHistory: Boolean): Call<Unit> {
+    public fun hide(clearHistory: Boolean = false): Call<Unit> {
         return client.hideChannel(channelType, channelId, clearHistory)
     }
 
+    /**
+     * Uploads a file for the given channel. Progress can be accessed via [callback].
+     *
+     * The Stream CDN imposes the following restrictions on file uploads:
+     * - The maximum file size is 20 MB
+     *
+     * @param file the file that needs to be uploaded
+     * @param callback the callback to track progress
+     *
+     * @return executable async [Call] which completes with [Result] having data equal to the URL of the uploaded file
+     * if the file was successfully uploaded.
+     *
+     * @see FileUploader
+     * @see <a href="https://getstream.io/chat/docs/android/file_uploads/?language=kotlin">File Uploads</a>
+     */
     @CheckResult
-    override fun sendFile(file: File): Call<String> {
-        return client.sendFile(channelType, channelId, file)
+    @JvmOverloads
+    public fun sendFile(file: File, callback: ProgressCallback? = null): Call<String> {
+        return client.sendFile(channelType, channelId, file, callback)
+    }
+
+    /**
+     * Uploads an image for the given channel. Progress can be accessed via [callback].
+     *
+     * The Stream CDN imposes the following restrictions on image uploads:
+     * - The maximum image size is 20 MB
+     * - Supported MIME types are listed in [StreamCdnImageMimeTypes.SUPPORTED_IMAGE_MIME_TYPES]
+     *
+     * @param file the image file that needs to be uploaded
+     * @param callback the callback to track progress
+     *
+     * @return executable async [Call] which completes with [Result] having data equal to the URL of the uploaded image
+     * if the image was successfully uploaded.
+     *
+     * @see FileUploader
+     * @see StreamCdnImageMimeTypes.SUPPORTED_IMAGE_MIME_TYPES
+     * @see <a href="https://getstream.io/chat/docs/android/file_uploads/?language=kotlin">File Uploads</a>
+     */
+    @CheckResult
+    @JvmOverloads
+    public fun sendImage(file: File, callback: ProgressCallback? = null): Call<String> {
+        return client.sendImage(channelType, channelId, file, callback)
+    }
+
+    /**
+     * Deletes the file represented by [url] from the given channel.
+     *
+     * @param url the URL of the file to be deleted
+     *
+     * @return executable async [Call] responsible for deleting a file
+     *
+     * @see FileUploader
+     * @see <a href="https://getstream.io/chat/docs/android/file_uploads/?language=kotlin">File Uploads</a>
+     */
+    @CheckResult
+    public fun deleteFile(url: String): Call<Unit> {
+        return client.deleteFile(channelType, channelId, url)
+    }
+
+    /**
+     * Deletes the image represented by [url] from the given channel.
+     *
+     * @param url the URL of the image to be deleted
+     *
+     * @return executable async [Call] responsible for deleting an image
+     *
+     * @see FileUploader
+     * @see <a href="https://getstream.io/chat/docs/android/file_uploads/?language=kotlin">File Uploads</a>
+     */
+    @CheckResult
+    public fun deleteImage(url: String): Call<Unit> {
+        return client.deleteImage(channelType, channelId, url)
     }
 
     @CheckResult
-    override fun sendImage(file: File): Call<String> {
-        return client.sendImage(channelType, channelId, file)
-    }
-
-    @CheckResult
-    override fun sendFile(file: File, callback: ProgressCallback): Call<String> {
-        return client.sendFile(channelType, channelId, file)
-    }
-
-    @CheckResult
-    override fun sendImage(file: File, callback: ProgressCallback): Call<String> {
-        return client.sendImage(channelType, channelId, file)
-    }
-
-    @CheckResult
-    override fun sendReaction(reaction: Reaction, enforceUnique: Boolean): Call<Reaction> {
+    public fun sendReaction(reaction: Reaction, enforceUnique: Boolean = false): Call<Reaction> {
         return client.sendReaction(reaction, enforceUnique)
     }
 
     @CheckResult
-    override fun sendAction(request: SendActionRequest): Call<Message> {
+    public fun sendAction(request: SendActionRequest): Call<Message> {
         return client.sendAction(request)
     }
 
     @CheckResult
-    override fun deleteReaction(messageId: String, reactionType: String): Call<Message> {
+    public fun deleteReaction(messageId: String, reactionType: String): Call<Message> {
         return client.deleteReaction(messageId, reactionType)
     }
 
     @CheckResult
-    override fun getReactions(messageId: String, offset: Int, limit: Int): Call<List<Reaction>> {
+    public fun getReactions(messageId: String, offset: Int, limit: Int): Call<List<Reaction>> {
         return client.getReactions(messageId, offset, limit)
     }
 
     @CheckResult
-    override fun getReactions(
+    public fun getReactions(
         messageId: String,
         firstReactionId: String,
         limit: Int,
@@ -464,70 +543,75 @@ public class ChannelClient internal constructor(
     }
 
     @CheckResult
-    override fun update(message: Message?, extraData: Map<String, Any>): Call<Channel> {
+    public fun update(message: Message? = null, extraData: Map<String, Any> = emptyMap()): Call<Channel> {
         return client.updateChannel(channelType, channelId, message, extraData)
     }
 
     @CheckResult
-    override fun enableSlowMode(cooldownTimeInSeconds: Int): Call<Channel> =
+    public fun updatePartial(set: Map<String, Any> = emptyMap(), unset: List<String> = emptyList()): Call<Channel> {
+        return client.updateChannelPartial(channelType, channelId, set, unset)
+    }
+
+    @CheckResult
+    public fun enableSlowMode(cooldownTimeInSeconds: Int): Call<Channel> =
         client.enableSlowMode(channelType, channelId, cooldownTimeInSeconds)
 
     @CheckResult
-    override fun disableSlowMode(): Call<Channel> =
+    public fun disableSlowMode(): Call<Channel> =
         client.disableSlowMode(channelType, channelId)
 
     @CheckResult
-    override fun addMembers(vararg userIds: String): Call<Channel> {
+    public fun addMembers(vararg userIds: String): Call<Channel> {
         return client.addMembers(channelType, channelId, userIds.toList())
     }
 
     @CheckResult
-    override fun removeMembers(vararg userIds: String): Call<Channel> {
+    public fun removeMembers(vararg userIds: String): Call<Channel> {
         return client.removeMembers(channelType, channelId, userIds.toList())
     }
 
     @CheckResult
-    override fun acceptInvite(message: String?): Call<Channel> {
+    public fun acceptInvite(message: String?): Call<Channel> {
         return client.acceptInvite(channelType, channelId, message)
     }
 
     @CheckResult
-    override fun rejectInvite(): Call<Channel> {
+    public fun rejectInvite(): Call<Channel> {
         return client.rejectInvite(channelType, channelId)
     }
 
     @CheckResult
-    override fun muteCurrentUser(): Call<Mute> {
+    public fun muteCurrentUser(): Call<Mute> {
         return client.muteCurrentUser()
     }
 
     @CheckResult
-    override fun mute(): Call<Unit> {
+    public fun mute(): Call<Unit> {
         return client.muteChannel(channelType, channelId)
     }
 
     @CheckResult
-    override fun unmute(): Call<Unit> {
-        return client.unMuteChannel(channelType, channelId)
+    public fun unmute(): Call<Unit> {
+        return client.unmuteChannel(channelType, channelId)
     }
 
     @CheckResult
-    override fun muteUser(userId: String): Call<Mute> {
+    public fun muteUser(userId: String): Call<Mute> {
         return client.muteUser(userId)
     }
 
     @CheckResult
-    override fun unmuteUser(userId: String): Call<Unit> {
+    public fun unmuteUser(userId: String): Call<Unit> {
         return client.unmuteUser(userId)
     }
 
     @CheckResult
-    override fun unmuteCurrentUser(): Call<Unit> {
+    public fun unmuteCurrentUser(): Call<Unit> {
         return client.unmuteCurrentUser()
     }
 
     @CheckResult
-    override fun keystroke(): Call<ChatEvent> {
+    public fun keystroke(): Call<ChatEvent> {
         return client.sendEvent(EventType.TYPING_START, channelType, channelId)
     }
 
@@ -541,7 +625,7 @@ public class ChannelClient internal constructor(
     }
 
     @CheckResult
-    override fun stopTyping(): Call<ChatEvent> {
+    public fun stopTyping(): Call<ChatEvent> {
         return client.sendEvent(EventType.TYPING_STOP, channelType, channelId)
     }
 
@@ -555,12 +639,12 @@ public class ChannelClient internal constructor(
     }
 
     @CheckResult
-    override fun queryMembers(
+    public fun queryMembers(
         offset: Int,
         limit: Int,
         filter: FilterObject,
-        sort: QuerySort<Member>,
-        members: List<Member>,
+        sort: QuerySort<Member> = QuerySort(),
+        members: List<Member> = emptyList(),
     ): Call<List<Member>> {
         return client.queryMembers(channelType, channelId, offset, limit, filter, sort, members)
     }

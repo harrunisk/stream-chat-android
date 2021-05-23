@@ -1,14 +1,17 @@
 package io.getstream.chat.android.ui.message.input.internal
 
+import android.annotation.TargetApi
 import android.content.Context
+import android.graphics.drawable.Drawable
+import android.os.Build
 import android.util.AttributeSet
-import android.view.LayoutInflater
 import android.widget.FrameLayout
 import androidx.annotation.ColorInt
 import androidx.annotation.Px
 import androidx.core.view.isVisible
 import androidx.core.widget.doAfterTextChanged
 import com.getstream.sdk.chat.model.AttachmentMetaData
+import com.getstream.sdk.chat.utils.AttachmentConstants
 import com.getstream.sdk.chat.utils.StorageHelper
 import io.getstream.chat.android.client.models.Command
 import io.getstream.chat.android.client.models.Message
@@ -17,17 +20,21 @@ import io.getstream.chat.android.client.models.name
 import io.getstream.chat.android.livedata.ChatDomain
 import io.getstream.chat.android.ui.R
 import io.getstream.chat.android.ui.common.extensions.internal.EMPTY
+import io.getstream.chat.android.ui.common.extensions.internal.createStreamThemeWrapper
 import io.getstream.chat.android.ui.common.extensions.internal.leftDrawable
 import io.getstream.chat.android.ui.common.extensions.internal.setTextSizePx
+import io.getstream.chat.android.ui.common.extensions.internal.streamThemeInflater
 import io.getstream.chat.android.ui.databinding.StreamUiMessageInputFieldBinding
 import io.getstream.chat.android.ui.message.input.attachment.selected.internal.SelectedFileAttachmentAdapter
 import io.getstream.chat.android.ui.message.input.attachment.selected.internal.SelectedMediaAttachmentAdapter
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import java.io.File
 import kotlin.properties.Delegates
 
 internal class MessageInputFieldView : FrameLayout {
     internal val binding: StreamUiMessageInputFieldBinding =
-        StreamUiMessageInputFieldBinding.inflate(LayoutInflater.from(context), this, true)
+        StreamUiMessageInputFieldBinding.inflate(streamThemeInflater, this, true)
 
     private val attachmentModeHint: String = context.getString(R.string.stream_ui_message_input_field_attachment_hint)
     private var normalModeHint: CharSequence? = context.getText(R.string.stream_ui_message_input_field_message_hint)
@@ -38,6 +45,10 @@ internal class MessageInputFieldView : FrameLayout {
     private var selectedAttachments: List<AttachmentMetaData> = emptyList()
     private var contentChangeListener: ContentChangeListener? = null
     private var maxMessageLength: Int = Integer.MAX_VALUE
+    private var attachmentMaxFileSize: Long = AttachmentConstants.MAX_UPLOAD_FILE_SIZE
+
+    private val _hasBigAttachment = MutableStateFlow(false)
+    internal val hasBigAttachment: StateFlow<Boolean> = _hasBigAttachment
 
     var mode: Mode by Delegates.observable(Mode.MessageMode) { _, oldMode, newMode ->
         if (oldMode != newMode) onModeChanged(newMode)
@@ -46,9 +57,10 @@ internal class MessageInputFieldView : FrameLayout {
     var messageText: String
         get() {
             val text = binding.messageEditText.text?.toString() ?: String.EMPTY
-            mode.let {
-                return when (it) {
-                    is Mode.CommandMode -> "/${it.command.name} $text"
+            return mode.let { messageMode ->
+                when (messageMode) {
+                    is Mode.CommandMode -> text.substringAfter("/${messageMode.command.name} ")
+                        .let { "/${messageMode.command.name} $it" }
                     else -> text
                 }
             }
@@ -69,12 +81,12 @@ internal class MessageInputFieldView : FrameLayout {
             binding.messageEditText.hint = hint
         }
 
-    constructor(context: Context) : super(context)
+    constructor(context: Context) : super(context.createStreamThemeWrapper())
 
-    constructor(context: Context, attrs: AttributeSet?) : super(context, attrs)
+    constructor(context: Context, attrs: AttributeSet?) : super(context.createStreamThemeWrapper(), attrs)
 
     constructor(context: Context, attrs: AttributeSet?, defStyleAttr: Int) : super(
-        context,
+        context.createStreamThemeWrapper(),
         attrs,
         defStyleAttr
     )
@@ -96,12 +108,20 @@ internal class MessageInputFieldView : FrameLayout {
                 R.drawable.stream_ui_ic_command,
                 R.dimen.stream_ui_message_input_command_icon_size
             )
-            onModeChanged(mode)
         }
+    }
+
+    @TargetApi(Build.VERSION_CODES.Q)
+    fun setCustomCursor(cursor: Drawable) {
+        binding.messageEditText.textCursorDrawable = cursor
     }
 
     fun setContentChangeListener(contentChangeListener: ContentChangeListener) {
         this.contentChangeListener = contentChangeListener
+    }
+
+    fun setCustomBackgroundDrawable(drawable: Drawable) {
+        binding.containerView.background = drawable
     }
 
     fun setTextColor(@ColorInt color: Int) {
@@ -122,6 +142,19 @@ internal class MessageInputFieldView : FrameLayout {
 
     fun setInputFieldScrollbarFadingEnabled(enabled: Boolean) {
         binding.messageEditText.isVerticalFadingEdgeEnabled = enabled
+    }
+
+    fun setAttachmentMaxFileMb(size: Int) {
+        attachmentMaxFileSize = size * AttachmentConstants.MB_IN_BYTES
+
+        selectedFileAttachmentAdapter.attachmentMaxFileSize = attachmentMaxFileSize
+        selectedMediaAttachmentAdapter.attachmentMaxFileSize = attachmentMaxFileSize
+    }
+
+    fun setTextInputTypefaceStyle(typeface: Int) {
+        val originalTypeface = binding.messageEditText.typeface
+
+        binding.messageEditText.setTypeface(originalTypeface, typeface)
     }
 
     fun autoCompleteCommand(command: Command) {
@@ -173,8 +206,13 @@ internal class MessageInputFieldView : FrameLayout {
         selectedAttachmentsChanged()
     }
 
+    private fun notifyBigAttachments() {
+        _hasBigAttachment.value = selectedAttachments.hasBigAttachment()
+    }
+
     private fun clearSelectedAttachments() {
         selectedAttachments = emptyList()
+        notifyBigAttachments()
         binding.selectedFileAttachmentsRecyclerView.isVisible = false
         selectedFileAttachmentAdapter.clear()
         binding.selectedMediaAttachmentsRecyclerView.isVisible = false
@@ -206,6 +244,7 @@ internal class MessageInputFieldView : FrameLayout {
         binding.messageEditText.hint = attachmentModeHint
 
         selectedAttachments = mode.attachments.toList()
+
         binding.selectedMediaAttachmentsRecyclerView.isVisible = false
         selectedMediaAttachmentAdapter.clear()
         binding.selectedFileAttachmentsRecyclerView.isVisible = true
@@ -253,13 +292,16 @@ internal class MessageInputFieldView : FrameLayout {
     fun clearContent() {
         clearSelectedAttachments()
         binding.messageEditText.setText(String.EMPTY)
+        if (mode is Mode.CommandMode) {
+            resetMode()
+        }
     }
 
     private fun hasText(): Boolean = messageText.isNotBlank()
 
-    fun hasAttachments(): Boolean = selectedAttachments.isNotEmpty()
+    fun hasValidAttachments(): Boolean = selectedAttachments.any { metaData -> metaData.size < attachmentMaxFileSize }
 
-    fun hasContent(): Boolean = hasText() || hasAttachments()
+    fun hasContent(): Boolean = hasText() || hasValidAttachments()
 
     private fun onMessageTextChanged() {
         configInputEditTextError()
@@ -268,6 +310,7 @@ internal class MessageInputFieldView : FrameLayout {
     }
 
     private fun selectedAttachmentsChanged() {
+        notifyBigAttachments()
         resetModeIfNecessary()
         contentChangeListener?.onSelectedAttachmentsChanged(selectedAttachments)
     }
@@ -304,4 +347,6 @@ internal class MessageInputFieldView : FrameLayout {
         data class MediaAttachmentMode(val attachments: List<AttachmentMetaData>) : Mode()
         data class ReplyMessageMode(val repliedMessage: Message) : Mode()
     }
+
+    private fun List<AttachmentMetaData>.hasBigAttachment() = any { metaData -> metaData.size > attachmentMaxFileSize }
 }

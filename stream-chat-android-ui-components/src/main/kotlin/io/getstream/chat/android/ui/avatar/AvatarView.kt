@@ -2,46 +2,37 @@ package io.getstream.chat.android.ui.avatar
 
 import android.content.Context
 import android.graphics.Canvas
-import android.graphics.Color
 import android.graphics.Paint
 import android.util.AttributeSet
 import androidx.appcompat.widget.AppCompatImageView
 import com.getstream.sdk.chat.images.StreamImageLoader.ImageTransformation.Circle
 import com.getstream.sdk.chat.images.load
 import com.getstream.sdk.chat.utils.extensions.getUsers
-import com.getstream.sdk.chat.utils.extensions.isDistinctChannel
+import io.getstream.chat.android.client.extensions.isAnonymousChannel
 import io.getstream.chat.android.client.models.Channel
 import io.getstream.chat.android.client.models.User
 import io.getstream.chat.android.ui.avatar.internal.Avatar
-import io.getstream.chat.android.ui.avatar.internal.AvatarStyle
+import io.getstream.chat.android.ui.common.extensions.internal.createStreamThemeWrapper
 
 public class AvatarView : AppCompatImageView {
-    private val borderPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        style = Paint.Style.STROKE
-    }
-    private val onlineIndicatorOutlinePaint = Paint().apply {
-        style = Paint.Style.FILL
-        color = Color.WHITE
-    }
-    private val onlineIndicatorPaint = Paint().apply {
-        style = Paint.Style.FILL
-        color = Color.GREEN
-    }
+    private val borderPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.STROKE }
+    private val onlineIndicatorOutlinePaint = Paint().apply { style = Paint.Style.FILL }
+    private val onlineIndicatorPaint = Paint().apply { style = Paint.Style.FILL }
 
     private lateinit var avatarStyle: AvatarStyle
     private var isOnline: Boolean = false
     private var avatarViewSize: Int = 0
 
-    public constructor(context: Context) : super(context) {
+    public constructor(context: Context) : super(context.createStreamThemeWrapper()) {
         init(context, null)
     }
 
-    public constructor(context: Context, attrs: AttributeSet?) : super(context, attrs) {
+    public constructor(context: Context, attrs: AttributeSet?) : super(context.createStreamThemeWrapper(), attrs) {
         init(context, attrs)
     }
 
     public constructor(context: Context, attrs: AttributeSet?, defStyleAttr: Int) : super(
-        context,
+        context.createStreamThemeWrapper(),
         attrs,
         defStyleAttr
     ) {
@@ -50,7 +41,7 @@ public class AvatarView : AppCompatImageView {
 
     public fun setChannelData(channel: Channel) {
         val otherUsers = channel.getUsers()
-        if (channel.isDistinctChannel() && otherUsers.size == 1) {
+        if (channel.isAnonymousChannel() && otherUsers.size == 1) {
             setUserData(otherUsers.first())
         } else {
             load(
@@ -93,8 +84,10 @@ public class AvatarView : AppCompatImageView {
         this.avatarStyle = avatarStyle
         borderPaint.color = avatarStyle.avatarBorderColor
         borderPaint.strokeWidth = avatarStyle.avatarBorderWidth.toFloat()
-        val padding = this.avatarStyle.avatarBorderWidth - 1
+        val padding = (avatarStyle.avatarBorderWidth - AVATAR_SIZE_EXTRA).coerceAtLeast(0)
         setPadding(padding, padding, padding, padding)
+        onlineIndicatorOutlinePaint.color = avatarStyle.onlineIndicatorBorderColor
+        onlineIndicatorPaint.color = avatarStyle.onlineIndicatorColor
     }
 
     private fun drawOnlineStatus(canvas: Canvas) {
@@ -120,12 +113,17 @@ public class AvatarView : AppCompatImageView {
         }
     }
 
-    internal enum class OnlineIndicatorPosition {
+    public enum class OnlineIndicatorPosition {
         TOP,
         BOTTOM
     }
 
     internal companion object {
-        const val MAX_AVATAR_SECTIONS = 4
+        /**
+         * A small extra added to the avatar size to prevent anti-aliasing issues
+         */
+        internal const val AVATAR_SIZE_EXTRA = 1
+
+        internal const val MAX_AVATAR_SECTIONS = 4
     }
 }

@@ -1,14 +1,22 @@
 package io.getstream.chat.docs.java;
 
 import android.content.Context;
-import android.util.Log;
+import android.content.Intent;
+
+import com.google.firebase.messaging.FirebaseMessagingService;
+import com.google.firebase.messaging.RemoteMessage;
+
+import org.jetbrains.annotations.NotNull;
+
+import java.util.List;
 
 import io.getstream.chat.android.client.ChatClient;
+import io.getstream.chat.android.client.models.Device;
 import io.getstream.chat.android.client.notifications.handler.ChatNotificationHandler;
 import io.getstream.chat.android.client.notifications.handler.NotificationConfig;
+import io.getstream.chat.android.livedata.service.sync.PushMessageSyncHandler;
+import io.getstream.chat.docs.MainActivity;
 import io.getstream.chat.docs.R;
-
-import static io.getstream.chat.docs.StaticInstances.TAG;
 
 public class Push {
     private Context context;
@@ -27,7 +35,7 @@ public class Push {
                 if (result.isSuccess()) {
                     // Device was successfully registered
                 } else {
-                    Log.e(TAG, String.format("There was an error %s", result.error()), result.error().getCause());
+                    // Handle result.error()
                 }
             });
         }
@@ -62,16 +70,71 @@ public class Push {
                     useProvidedFirebaseInstance
             );
 
+            MyNotificationHandler notificationHandler = new MyNotificationHandler(context, notificationsConfig);
+
             new ChatClient.Builder("{{ api_key }}", context)
-                    .notifications(new ChatNotificationHandler(context, notificationsConfig))
+                    .notifications(notificationHandler)
                     .build();
+        }
+    }
+
+    /**
+     * @see <a href="https://getstream.io/chat/docs/android/push_android/?language=java#redirection-from-notification-to-app">Redirection from notification to app
+    </a>
+     */
+    class MyNotificationHandler extends ChatNotificationHandler {
+
+        final static String EXTRA_CHANNEL_ID = "extra_channel_id";
+        final static String EXTRA_CHANNEL_TYPE = "extra_channel_type";
+        final static String EXTRA_MESSAGE_ID = "extra_message_id";
+
+        public MyNotificationHandler(@NotNull Context context, @NotNull NotificationConfig config) {
+            super(context, config);
+        }
+
+        @NotNull
+        @Override
+        public Intent getNewMessageIntent(
+                @NotNull String messageId,
+                @NotNull String channelType,
+                @NotNull String channelId
+        ) {
+            Intent intent = new Intent(context, MainActivity.class);
+            intent.putExtra(EXTRA_CHANNEL_ID, channelId);
+            intent.putExtra(EXTRA_CHANNEL_TYPE, channelType);
+            intent.putExtra(EXTRA_MESSAGE_ID, messageId);
+            return intent;
+        }
+    }
+
+    /**
+     * @see <a href="https://getstream.io/chat/docs/android/push_android/?language=java#handling-notifications-from-multiple-backend-services">Handling notifications from multiple backend services</a>
+     */
+    class CustomFirebaseMessagingService extends FirebaseMessagingService {
+        private PushMessageSyncHandler pushDataSyncHandler = new PushMessageSyncHandler(this);
+
+        @Override
+        public void onNewToken(String token) {
+            // update device's token on Stream backend
+            pushDataSyncHandler.onNewToken(token);
+        }
+
+        @Override
+        public void onMessageReceived(RemoteMessage message) {
+            if (pushDataSyncHandler.isStreamMessage(message)) {
+                // handle RemoteMessage sent from Stream backend
+                pushDataSyncHandler.onMessageReceived(message);
+            } else {
+                // handle RemoteMessage from other source
+            }
+            stopSelf();
         }
     }
 
     /**
      * @see <a href="https://getstream.io/chat/docs/push_devices/?language=java">Device</a>
      */
-    class Device {
+    class Device_ {
 
         /**
          * @see <a href="https://getstream.io/chat/docs/push_devices/?language=java#register-a-device">Register a Device</a>
@@ -81,7 +144,7 @@ public class Push {
                 if (result.isSuccess()) {
                     // Device was successfully registered
                 } else {
-                    Log.e(TAG, String.format("There was an error %s", result.error()), result.error().getCause());
+                    // Handle result.error()
                 }
             });
         }
@@ -94,7 +157,17 @@ public class Push {
                 if (result.isSuccess()) {
                     // Device was successfully unregistered
                 } else {
-                    Log.e(TAG, String.format("There was an error %s", result.error()), result.error().getCause());
+                    // Handle result.error()
+                }
+            });
+        }
+
+        public void listDevices() {
+            client.getDevices().enqueue(result -> {
+                if (result.isSuccess()) {
+                    List<Device> devices = result.data();
+                } else {
+                    // Handle result.error()
                 }
             });
         }

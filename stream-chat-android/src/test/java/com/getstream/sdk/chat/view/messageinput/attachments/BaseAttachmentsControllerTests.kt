@@ -10,10 +10,9 @@ import com.getstream.sdk.chat.view.messageinput.MessageInputController
 import com.getstream.sdk.chat.view.messageinput.MessageInputView
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.mock
+import com.nhaarman.mockitokotlin2.whenever
 import io.getstream.chat.android.test.TestCoroutineExtension
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import org.amshove.kluent.When
-import org.amshove.kluent.calling
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.extension.RegisterExtension
 
@@ -29,9 +28,11 @@ internal open class BaseAttachmentsControllerTests {
 
     protected lateinit var sut: AttachmentsController
 
-    @JvmField
-    @RegisterExtension
-    val testCoroutines = TestCoroutineExtension()
+    companion object {
+        @JvmField
+        @RegisterExtension
+        val testCoroutines = TestCoroutineExtension()
+    }
 
     @ExperimentalCoroutinesApi
     @BeforeEach
@@ -43,7 +44,7 @@ internal open class BaseAttachmentsControllerTests {
         totalMediaAttachmentAdapter = mock()
         selectedMediaAttachmentAdapter = mock()
         selectedFileAttachmentAdapter = mock()
-        When calling view.context doReturn mock()
+        whenever(view.context) doReturn mock()
         sut = createSut()
     }
 

@@ -2,11 +2,13 @@ package io.getstream.chat.android.client
 
 import com.nhaarman.mockitokotlin2.mock
 import io.getstream.chat.android.client.api.ChatClientConfig
+import io.getstream.chat.android.client.clientstate.ClientStateService
 import io.getstream.chat.android.client.events.ChatEvent
 import io.getstream.chat.android.client.events.ConnectedEvent
 import io.getstream.chat.android.client.events.DisconnectedEvent
 import io.getstream.chat.android.client.events.NewMessageEvent
 import io.getstream.chat.android.client.events.UnknownEvent
+import io.getstream.chat.android.client.helpers.QueryChannelsPostponeHelper
 import io.getstream.chat.android.client.logger.ChatLogLevel
 import io.getstream.chat.android.client.logger.ChatLogger
 import io.getstream.chat.android.client.models.EventType
@@ -14,14 +16,20 @@ import io.getstream.chat.android.client.models.Message
 import io.getstream.chat.android.client.models.User
 import io.getstream.chat.android.client.token.FakeTokenManager
 import io.getstream.chat.android.client.utils.observable.FakeChatSocket
+import io.getstream.chat.android.test.TestCoroutineExtension
 import org.amshove.kluent.shouldBeEqualTo
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.extension.RegisterExtension
 import java.util.Date
 
 internal class ChatClientTest {
 
     companion object {
+        @JvmField
+        @RegisterExtension
+        val testCoroutines = TestCoroutineExtension()
+
         val eventA = ConnectedEvent(EventType.HEALTH_CHECK, Date(), User(), "")
         val eventB = NewMessageEvent(EventType.MESSAGE_NEW, Date(), User(), "type:id", "type", "id", Message(), 0, 0, 0)
         val eventC = DisconnectedEvent(EventType.CONNECTION_DISCONNECTED, Date())
@@ -33,7 +41,6 @@ internal class ChatClientTest {
 
     lateinit var socket: FakeChatSocket
     lateinit var client: ChatClient
-
     lateinit var result: MutableList<ChatEvent>
 
     @BeforeEach
@@ -51,12 +58,16 @@ internal class ChatClientTest {
         )
 
         socket = FakeChatSocket()
+        val clientStateService = ClientStateService()
+        val queryChannelsPostponeHelper = QueryChannelsPostponeHelper(mock(), clientStateService, testCoroutines.scope)
         client = ChatClient(
             config = config,
             api = mock(),
             socket = socket,
             notifications = mock(),
-            tokenManager = FakeTokenManager("")
+            tokenManager = FakeTokenManager(""),
+            clientStateService,
+            queryChannelsPostponeHelper,
         ).apply {
             connectUser(User(), "someToken").enqueue()
         }

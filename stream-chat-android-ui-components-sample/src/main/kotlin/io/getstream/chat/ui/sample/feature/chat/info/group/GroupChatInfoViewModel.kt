@@ -12,13 +12,14 @@ import io.getstream.chat.android.client.models.ChannelMute
 import io.getstream.chat.android.client.models.Member
 import io.getstream.chat.android.livedata.ChatDomain
 import io.getstream.chat.android.livedata.utils.Event
+import io.getstream.chat.android.ui.common.extensions.isOwnerOrAdmin
 import io.getstream.chat.ui.sample.common.name
 import kotlinx.coroutines.launch
 
 class GroupChatInfoViewModel(
     private val cid: String,
     private val chatDomain: ChatDomain = ChatDomain.instance(),
-    private val chatClient: ChatClient = ChatClient.instance()
+    chatClient: ChatClient = ChatClient.instance(),
 ) : ViewModel() {
 
     private val channelClient: ChannelClient = chatClient.channel(cid)
@@ -29,21 +30,31 @@ class GroupChatInfoViewModel(
 
     init {
         _state.value = INITIAL_STATE
-        chatDomain.useCases.getChannelController(cid).enqueue { result ->
+        chatDomain.getChannelController(cid).enqueue { result ->
             if (result.isSuccess) {
                 val controller = result.data()
                 // Update channel mute status
                 updateChannelMuteStatus(chatDomain.currentUser.channelMutes)
 
                 // Update members
-                _state.addSource(controller.members) { members ->
-                    updateMembers(members)
+                _state.addSource(controller.members, this::updateMembers)
+
+                getOwnerOrAdmin(controller.members.value)?.let { member ->
+                    _state.value = _state.value?.copy(
+                        isCurrentUserOwnerOrAdmin = chatDomain.currentUser.id == member.getUserId()
+                    )
                 }
 
                 _state.addSource(controller.channelData) { channelData ->
                     _state.value = _state.value?.copy(channelName = channelData.name)
                 }
             }
+        }
+    }
+
+    private fun getOwnerOrAdmin(members: List<Member>?): Member? {
+        return members?.firstOrNull { member ->
+            member.isOwnerOrAdmin
         }
     }
 
@@ -76,7 +87,7 @@ class GroupChatInfoViewModel(
 
     private fun leaveChannel() {
         viewModelScope.launch {
-            val result = chatDomain.useCases.leaveChannel(cid).await()
+            val result = chatDomain.leaveChannel(cid).await()
             if (result.isSuccess) {
                 _events.value = Event(UiEvent.RedirectToHome)
             } else {
@@ -119,6 +130,7 @@ class GroupChatInfoViewModel(
         val channelMuted: Boolean,
         val shouldExpandMembers: Boolean?,
         val membersToShowCount: Int,
+        val isCurrentUserOwnerOrAdmin: Boolean,
     )
 
     sealed class Action {
@@ -143,7 +155,8 @@ class GroupChatInfoViewModel(
             channelName = "",
             channelMuted = false,
             shouldExpandMembers = null,
-            membersToShowCount = 0
+            membersToShowCount = 0,
+            false,
         )
     }
 }

@@ -5,8 +5,13 @@ import androidx.lifecycle.LiveData
 import io.getstream.chat.android.client.call.Call
 import io.getstream.chat.android.client.call.CoroutineCall
 import io.getstream.chat.android.client.utils.Result
-import io.getstream.chat.android.livedata.ChatDomainImpl
+import io.getstream.chat.android.livedata.ChatDomain
+import kotlinx.coroutines.CoroutineScope
 
+@Deprecated(
+    message = "Use ChatDomain::totalUnreadCount instead",
+    level = DeprecationLevel.ERROR,
+)
 public interface GetTotalUnreadCount {
     /**
      * Returns the total unread messages count for the current user.
@@ -20,10 +25,10 @@ public interface GetTotalUnreadCount {
     public operator fun invoke(): Call<LiveData<Int>>
 }
 
-internal class GetTotalUnreadCountImpl(private val domainImpl: ChatDomainImpl) : GetTotalUnreadCount {
-    override operator fun invoke(): Call<LiveData<Int>> {
-        return CoroutineCall(domainImpl.scope) {
-            Result(domainImpl.totalUnreadCount)
-        }
+@Suppress("DEPRECATION_ERROR")
+internal class GetTotalUnreadCountImpl(private val chatDomain: ChatDomain, private val scope: CoroutineScope) :
+    GetTotalUnreadCount {
+    override operator fun invoke(): Call<LiveData<Int>> = CoroutineCall(scope) {
+        Result(chatDomain.totalUnreadCount)
     }
 }

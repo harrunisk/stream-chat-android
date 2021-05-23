@@ -4,16 +4,19 @@ import android.os.Handler;
 import android.os.Looper;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import io.getstream.chat.android.client.ChatClient;
+import io.getstream.chat.android.client.api.models.FilterObject;
+import io.getstream.chat.android.client.api.models.NeutralFilterObject;
 import io.getstream.chat.android.client.api.models.QueryChannelRequest;
 import io.getstream.chat.android.client.api.models.QueryChannelsRequest;
 import io.getstream.chat.android.client.api.models.QuerySort;
 import io.getstream.chat.android.client.channel.ChannelClient;
-import io.getstream.chat.android.client.events.ChannelsMuteEvent;
+import io.getstream.chat.android.client.events.NotificationChannelMutesUpdatedEvent;
 import io.getstream.chat.android.client.events.UserStartWatchingEvent;
 import io.getstream.chat.android.client.events.UserStopWatchingEvent;
 import io.getstream.chat.android.client.models.Channel;
@@ -22,10 +25,10 @@ import io.getstream.chat.android.client.models.Filters;
 import io.getstream.chat.android.client.models.Member;
 import io.getstream.chat.android.client.models.Message;
 import io.getstream.chat.android.client.models.User;
-import io.getstream.chat.android.client.utils.FilterObject;
 
 import static io.getstream.chat.android.client.api.models.Pagination.LESS_THAN;
 import static java.util.Collections.emptyList;
+import static java.util.Collections.emptyMap;
 
 public class Channels {
     private ChatClient client;
@@ -293,6 +296,50 @@ public class Channels {
      * @see <a href="https://getstream.io/chat/docs/channel_update/?language=java">Updating a Channel</a>
      */
     class UpdatingAChannel {
+
+        /**
+         * @see <a href="https://getstream.io/chat/docs/android/channel_update/?language=java#partial-update">Partial Update</a>
+         */
+        public void partialUpdate() {
+            // Here's a channel with some custom field data that might be useful
+            ChannelClient channelClient = client.channel("messaging", "general");
+
+            List<String> members = Arrays.asList("thierry", "tommaso");
+
+            Map<String, String> channelDetail = new HashMap<>();
+            channelDetail.put("topic", "Plants and Animals");
+            channelDetail.put("rating", "pg");
+
+            Map<String, Integer> userId = new HashMap<>();
+            userId.put("user_id", 123);
+
+            Map<String, Object> extraData = new HashMap<>();
+            extraData.put("source", "user");
+            extraData.put("source_detail", userId);
+            extraData.put("channel_detail", channelDetail);
+
+            channelClient.create(members, extraData).execute();
+
+            // let's change the source of this channel
+            Map<String, Object> setField = Collections.singletonMap("source", "system");
+            channelClient.updatePartial(setField, emptyList()).execute();
+
+            // since it's system generated we no longer need source_detail
+            List<String> unsetField = Collections.singletonList("source_detail");
+            channelClient.updatePartial(emptyMap(), unsetField).execute();
+
+            // and finally update one of the nested fields in the channel_detail
+            Map<String, Object> setNestedField = Collections.singletonMap("channel_detail.topic", "Nature");
+            channelClient.updatePartial(setNestedField, emptyList()).execute();
+
+            // and maybe we decide we no longer need a rating
+            List<String> unsetNestedField = Collections.singletonList("channel_detail.rating");
+            channelClient.updatePartial(emptyMap(), unsetNestedField).execute();
+        }
+
+        /**
+         * @see <a href="https://getstream.io/chat/docs/android/channel_update/?language=java#full-update-(overwrite)">Full Update (overwrite)</a>
+         */
         public void fullUpdate() {
             ChannelClient channelClient = client.channel("messaging", "general");
 
@@ -515,9 +562,10 @@ public class Channels {
         /**
          * @see <a href="https://getstream.io/chat/docs/muting_channels/?language=java#channel-mute">Channel Mute</a>
          */
-        // TODO code in this method doesn't match the CMS, review it
         public void channelMute() {
-            client.muteChannel("channel-type", "channel-id").enqueue(result -> {
+            // Mute a channel
+            ChannelClient channelClient = client.channel("messaging", "general");
+            channelClient.mute().enqueue(result -> {
                 if (result.isSuccess()) {
                     // Channel is muted
                 } else {
@@ -530,16 +578,16 @@ public class Channels {
             user.setId("user-id");
             client.connectUser(user, "token").enqueue(result -> {
                 if (result.isSuccess()) {
-                    // Mutes contains the list of channel mutes
+                    // Result contains the list of channel mutes
                     List<ChannelMute> mutes = result.data().getUser().getChannelMutes();
                 }
             });
 
             // Get updates about muted channels
             client.subscribeFor(
-                    new Class[]{ChannelsMuteEvent.class},
+                    new Class[]{NotificationChannelMutesUpdatedEvent.class},
                     channelsMuteEvent -> {
-                        List<ChannelMute> mutes = ((ChannelsMuteEvent) channelsMuteEvent).getChannelsMute();
+                        List<ChannelMute> mutes = ((NotificationChannelMutesUpdatedEvent) channelsMuteEvent).getMe().getChannelMutes();
                     }
             );
         }
@@ -637,7 +685,7 @@ public class Channels {
             FilterObject filterByPendingInvite = Filters.eq("invite", "pending");
 
             // Query all the members
-            FilterObject filterByNone = new FilterObject();
+            FilterObject filterByNone = NeutralFilterObject.INSTANCE;
 
             // We can order the results too with QuerySort param
             // Here example to order results by member created at descending

@@ -2,9 +2,9 @@ package io.getstream.chat.android.client.api2.mapping
 
 import io.getstream.chat.android.client.api2.model.dto.AttachmentDto
 import io.getstream.chat.android.client.api2.model.dto.DownstreamMessageDto
-import io.getstream.chat.android.client.api2.model.dto.ReactionDto
+import io.getstream.chat.android.client.api2.model.dto.DownstreamReactionDto
+import io.getstream.chat.android.client.api2.model.dto.DownstreamUserDto
 import io.getstream.chat.android.client.api2.model.dto.UpstreamMessageDto
-import io.getstream.chat.android.client.api2.model.dto.UserDto
 import io.getstream.chat.android.client.models.Attachment
 import io.getstream.chat.android.client.models.Message
 import io.getstream.chat.android.client.models.User
@@ -44,16 +44,16 @@ internal fun DownstreamMessageDto.toDomain(): Message =
         html = html,
         i18n = i18n,
         id = id,
-        latestReactions = latest_reactions.mapTo(mutableListOf(), ReactionDto::toDomain),
-        mentionedUsers = mentioned_users.mapTo(mutableListOf(), UserDto::toDomain),
-        ownReactions = own_reactions.mapTo(mutableListOf(), ReactionDto::toDomain),
+        latestReactions = latest_reactions.mapTo(mutableListOf(), DownstreamReactionDto::toDomain),
+        mentionedUsers = mentioned_users.mapTo(mutableListOf(), DownstreamUserDto::toDomain),
+        ownReactions = own_reactions.mapTo(mutableListOf(), DownstreamReactionDto::toDomain),
         parentId = parent_id,
         pinExpires = pin_expires,
         pinned = pinned,
         pinnedAt = pinned_at,
         pinnedBy = pinned_by?.toDomain(),
-        reactionCounts = reaction_counts.toMutableMap(),
-        reactionScores = reaction_scores.toMutableMap(),
+        reactionCounts = reaction_counts.orEmpty().toMutableMap(),
+        reactionScores = reaction_scores.orEmpty().toMutableMap(),
         replyCount = reply_count,
         replyMessageId = quoted_message_id,
         replyTo = quoted_message?.toDomain(),
@@ -61,7 +61,7 @@ internal fun DownstreamMessageDto.toDomain(): Message =
         showInChannel = show_in_channel,
         silent = silent,
         text = text,
-        threadParticipants = thread_participants.map(UserDto::toDomain),
+        threadParticipants = thread_participants.map(DownstreamUserDto::toDomain),
         type = type,
         updatedAt = updated_at,
         user = user.toDomain(),

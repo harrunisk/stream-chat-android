@@ -10,16 +10,21 @@ import com.getstream.sdk.chat.utils.extensions.updateConstraints
 import io.getstream.chat.android.ui.common.extensions.hasReactions
 import io.getstream.chat.android.ui.common.extensions.hasSingleReaction
 import io.getstream.chat.android.ui.common.extensions.internal.dpToPx
+import io.getstream.chat.android.ui.message.list.MessageListItemStyle
 import io.getstream.chat.android.ui.message.list.adapter.viewholder.internal.GiphyViewHolder
 import io.getstream.chat.android.ui.message.list.adapter.viewholder.internal.MessageDeletedViewHolder
 import io.getstream.chat.android.ui.message.list.adapter.viewholder.internal.MessagePlainTextViewHolder
-import io.getstream.chat.android.ui.message.list.adapter.viewholder.internal.OnlyFileAttachmentsViewHolder
-import io.getstream.chat.android.ui.message.list.adapter.viewholder.internal.OnlyMediaAttachmentsViewHolder
-import io.getstream.chat.android.ui.message.list.adapter.viewholder.internal.PlainTextWithFileAttachmentsViewHolder
-import io.getstream.chat.android.ui.message.list.adapter.viewholder.internal.PlainTextWithMediaAttachmentsViewHolder
+import io.getstream.chat.android.ui.message.list.adapter.viewholder.internal.TextAndAttachmentsViewHolder
 import io.getstream.chat.android.ui.message.list.reactions.view.internal.ViewReactionsView
 
-internal class ReactionsDecorator : BaseDecorator() {
+internal class ReactionsDecorator(private val style: MessageListItemStyle) : BaseDecorator() {
+
+    override fun decorateTextAndAttachmentsMessage(
+        viewHolder: TextAndAttachmentsViewHolder,
+        data: MessageListItem.MessageItem,
+    ) = with(viewHolder.binding) {
+        setupReactionsView(root, messageContainer, reactionsSpace, reactionsView, data)
+    }
 
     override fun decoratePlainTextMessage(
         viewHolder: MessagePlainTextViewHolder,
@@ -27,42 +32,6 @@ internal class ReactionsDecorator : BaseDecorator() {
     ) {
         with(viewHolder.binding) {
             setupReactionsView(root, messageContainer, reactionsSpace, reactionsView, data)
-        }
-    }
-
-    override fun decoratePlainTextWithMediaAttachmentsMessage(
-        viewHolder: PlainTextWithMediaAttachmentsViewHolder,
-        data: MessageListItem.MessageItem,
-    ) {
-        with(viewHolder.binding) {
-            setupReactionsView(root, backgroundView, reactionsSpace, reactionsView, data)
-        }
-    }
-
-    override fun decorateOnlyMediaAttachmentsMessage(
-        viewHolder: OnlyMediaAttachmentsViewHolder,
-        data: MessageListItem.MessageItem,
-    ) {
-        with(viewHolder.binding) {
-            setupReactionsView(root, backgroundView, reactionsSpace, reactionsView, data)
-        }
-    }
-
-    override fun decorateOnlyFileAttachmentsMessage(
-        viewHolder: OnlyFileAttachmentsViewHolder,
-        data: MessageListItem.MessageItem,
-    ) {
-        with(viewHolder.binding) {
-            setupReactionsView(root, backgroundView, reactionsSpace, reactionsView, data)
-        }
-    }
-
-    override fun decoratePlainTextWithFileAttachmentsMessage(
-        viewHolder: PlainTextWithFileAttachmentsViewHolder,
-        data: MessageListItem.MessageItem,
-    ) {
-        with(viewHolder.binding) {
-            setupReactionsView(root, backgroundView, reactionsSpace, reactionsView, data)
         }
     }
 
@@ -86,6 +55,8 @@ internal class ReactionsDecorator : BaseDecorator() {
         if (data.message.hasReactions()) {
             reactionsView.isVisible = true
             reactionsSpace.isVisible = true
+
+            reactionsView.applyStyle(style.reactionsViewStyle)
 
             reactionsView.setMessage(data.message, data.isMine) {
                 rootConstraintLayout.updateConstraints {

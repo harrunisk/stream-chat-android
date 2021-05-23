@@ -21,10 +21,10 @@ class UserLoginViewModel : ViewModel() {
     val state: LiveData<State> = _state
     val events: LiveData<Event<UiEvent>> = _events
 
-    fun init(cid: String?) {
+    fun init() {
         val user = App.instance.userRepository.getUser()
         if (user != SampleUser.None) {
-            authenticateUser(user, cid)
+            authenticateUser(user)
         } else {
             _state.postValue(State.AvailableUsers(AppConfig.availableUsers))
         }
@@ -37,14 +37,14 @@ class UserLoginViewModel : ViewModel() {
         }
     }
 
-    private fun authenticateUser(user: SampleUser, cid: String? = null) {
+    private fun authenticateUser(user: SampleUser) {
         App.instance.userRepository.setUser(user)
         val chatUser = ChatUser().apply {
             id = user.id
             image = user.image
             name = user.name
         }
-        initChatSdk(chatUser)
+        initChatSdk(user.apiKey)
 
         ChatClient.instance().connectUser(chatUser, user.token)
             .enqueue { result ->
@@ -55,11 +55,7 @@ class UserLoginViewModel : ViewModel() {
                     logger.logD("Failed to set user ${result.error()}")
                 }
             }
-        if (cid != null) {
-            _events.postValue(Event(UiEvent.RedirectToChannel(cid)))
-        } else {
-            _events.postValue(Event(UiEvent.RedirectToChannels))
-        }
+        _events.postValue(Event(UiEvent.RedirectToChannels))
     }
 
     /**
@@ -67,8 +63,8 @@ class UserLoginViewModel : ViewModel() {
      * but since we allow changing API keys at runtime in this demo app, we have to
      * reinitialize the Chat SDK here with the new API key.
      */
-    private fun initChatSdk(user: ChatUser) {
-        App.instance.chatInitializer.init(AppConfig.apiKey, user)
+    private fun initChatSdk(apiKey: String) {
+        App.instance.chatInitializer.init(apiKey)
     }
 
     sealed class State {
@@ -83,7 +79,6 @@ class UserLoginViewModel : ViewModel() {
     sealed class UiEvent {
         object RedirectToChannels : UiEvent()
         object RedirectToComponentBrowser : UiEvent()
-        data class RedirectToChannel(val cid: String) : UiEvent()
         data class Error(val errorMessage: String?) : UiEvent()
     }
 }

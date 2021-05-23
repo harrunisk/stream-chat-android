@@ -8,12 +8,14 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import io.getstream.chat.android.client.models.Message
 import io.getstream.chat.android.core.internal.InternalStreamChatApi
-import io.getstream.chat.android.ui.common.UiUtils
+import io.getstream.chat.android.ui.ChatUI
 import io.getstream.chat.android.ui.common.extensions.hasSingleReaction
+import io.getstream.chat.android.ui.common.extensions.internal.createStreamThemeWrapper
 import io.getstream.chat.android.ui.common.extensions.supportedReactionCounts
 import io.getstream.chat.android.ui.message.list.reactions.ReactionClickListener
 import io.getstream.chat.android.ui.message.list.reactions.internal.ReactionItem
 import io.getstream.chat.android.ui.message.list.reactions.internal.ReactionsAdapter
+import io.getstream.chat.android.ui.message.list.reactions.view.ViewReactionsViewStyle
 
 @InternalStreamChatApi
 public class ViewReactionsView : RecyclerView {
@@ -26,16 +28,16 @@ public class ViewReactionsView : RecyclerView {
     private var isMyMessage: Boolean = false
     private var isSingleReaction: Boolean = true
 
-    public constructor(context: Context) : super(context) {
+    public constructor(context: Context) : super(context.createStreamThemeWrapper()) {
         init(context, null)
     }
 
-    public constructor(context: Context, attrs: AttributeSet?) : super(context, attrs) {
+    public constructor(context: Context, attrs: AttributeSet?) : super(context.createStreamThemeWrapper(), attrs) {
         init(context, attrs)
     }
 
     public constructor(context: Context, attrs: AttributeSet?, defStyleAttr: Int) : super(
-        context,
+        context.createStreamThemeWrapper(),
         attrs,
         defStyleAttr
     ) {
@@ -64,13 +66,16 @@ public class ViewReactionsView : RecyclerView {
     }
 
     private fun init(context: Context, attrs: AttributeSet?) {
-        this.reactionsViewStyle = ViewReactionsViewStyle(context, attrs)
-        this.bubbleDrawer = ViewReactionsBubbleDrawer(reactionsViewStyle)
-
+        applyStyle(ViewReactionsViewStyle(context, attrs))
         layoutManager = LinearLayoutManager(context, LinearLayoutManager.HORIZONTAL, false)
         itemAnimator = null
         overScrollMode = View.OVER_SCROLL_NEVER
         setWillNotDraw(false)
+    }
+
+    internal fun applyStyle(style: ViewReactionsViewStyle) {
+        this.reactionsViewStyle = style
+        this.bubbleDrawer = ViewReactionsBubbleDrawer(reactionsViewStyle)
         minimumHeight = reactionsViewStyle.totalHeight
         reactionsViewStyle.horizontalPadding.let {
             setPadding(it, 0, it, 0)
@@ -84,11 +89,11 @@ public class ViewReactionsView : RecyclerView {
     private fun createReactionItems(message: Message): List<ReactionItem> {
         return message.supportedReactionCounts.keys
             .mapNotNull { type ->
-                UiUtils.getReactionIcon(type)?.let {
+                ChatUI.supportedReactions.getReactionDrawable(type)?.let {
                     ReactionItem(
                         type = type,
                         isMine = message.ownReactions.any { it.type == type },
-                        iconDrawableRes = it
+                        reactionDrawable = it
                     )
                 }
             }.sortedBy { if (isMyMessage) it.isMine else !it.isMine }

@@ -6,22 +6,13 @@ import com.getstream.sdk.chat.adapter.viewholder.message.BaseMessageListItemView
 import com.getstream.sdk.chat.view.MessageListViewStyle
 import io.getstream.chat.android.client.models.Channel
 
-class MessageListItemAdapter(
+public class MessageListItemAdapter(
     private val channel: Channel,
     private val viewHolderFactory: MessageViewHolderFactory,
     private val style: MessageListViewStyle
 ) : ListAdapter<MessageListItem, BaseMessageListItemViewHolder<*>>(MessageListItemDiffCallback) {
 
-    var isThread: Boolean = false
-
-    @Deprecated(
-        message = "Use submitList instead",
-        replaceWith = ReplaceWith("submitList(newEntities)"),
-        level = DeprecationLevel.ERROR
-    )
-    fun replaceEntities(newEntities: List<MessageListItem>) {
-        submitList(newEntities)
-    }
+    public var isThread: Boolean = false
 
     override fun getItemId(position: Int): Long = getItem(position).getStableId()
 
@@ -55,7 +46,7 @@ class MessageListItemAdapter(
         holder.bindListItem(getItem(position), diff)
     }
 
-    companion object {
+    public companion object {
         private val FULL_MESSAGE_LIST_ITEM_PAYLOAD_DIFF = MessageListItemPayloadDiff(
             text = true,
             reactions = true,

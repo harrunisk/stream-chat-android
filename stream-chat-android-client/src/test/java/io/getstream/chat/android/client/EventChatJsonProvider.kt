@@ -1,18 +1,5 @@
 package io.getstream.chat.android.client
 
-internal fun createChannelCreatedEventStringJson() =
-    createChatEventStringJson(
-        "channel.created",
-        """
-            "channel_type": "channelType",
-            "channel_id": "channelId",
-            "cid": "channelType:channelId",
-            "user": ${createUserJsonString()},
-            "message": ${createMessageJsonString()},
-            "channel": ${createChannelJsonString()}
-        """.trimIndent()
-    )
-
 internal fun createChannelDeletedEventStringJson() =
     createChatEventStringJson(
         "channel.deleted",
@@ -37,24 +24,6 @@ internal fun createChannelHiddenEventStringJson() =
         """.trimIndent()
     )
 
-internal fun createChannelMuteEventStringJson() =
-    createChatEventStringJson(
-        "channel.muted",
-        """
-            "mute": ${createChannelMuteJsonString()}
-        """.trimIndent()
-    )
-
-internal fun createChannelsMuteEventStringJson() =
-    createChatEventStringJson(
-        "channel.muted",
-        """
-            "mutes": [
-                ${createChannelMuteJsonString()}
-            ]
-        """.trimIndent()
-    )
-
 internal fun createChannelTruncatedEventStringJson() =
     createChatEventStringJson(
         "channel.truncated",
@@ -64,22 +33,6 @@ internal fun createChannelTruncatedEventStringJson() =
             "cid": "channelType:channelId",
             "user": ${createUserJsonString()},
             "channel": ${createChannelJsonString()}
-        """.trimIndent()
-    )
-
-internal fun createChannelUnmuteEventStringJson() =
-    createChatEventStringJson(
-        "channel.unmuted",
-        """
-            "mute": ${createChannelMuteJsonString()}
-        """.trimIndent()
-    )
-
-internal fun createChannelsUnmuteEventStringJson() =
-    createChatEventStringJson(
-        "channel.unmuted",
-        """
-            "mutes": [ ${createChannelMuteJsonString()} ]
         """.trimIndent()
     )
 
@@ -163,8 +116,7 @@ internal fun createMessageDeletedEventStringJson() =
             "channel_id": "channelId",
             "cid": "channelType:channelId",
             "watcher_count": 3,
-            "message": ${createMessageJsonString()},
-            "deleted_at": "2020-06-29T06:14:28.000Z"
+            "message": ${createMessageJsonString()}
         """.trimIndent()
     )
 
@@ -200,7 +152,9 @@ internal fun createNotificationAddedToChannelEventStringJson() =
             "channel_type": "channelType",
             "channel_id": "channelId",
             "cid": "channelType:channelId",
-            "channel": ${createChannelJsonString()}
+            "channel": ${createChannelJsonString()},
+            "total_unread_count": 4,
+            "unread_channels": 5
         """.trimIndent()
     )
 
@@ -236,7 +190,21 @@ internal fun createNotificationInviteAcceptedEventStringJson() =
             "channel_id": "channelId",
             "cid": "channelType:channelId",
             "user": ${createUserJsonString()},
-            "member": ${createMemberJsonString()}
+            "member": ${createMemberJsonString()},
+            "channel": ${createChannelJsonString()}
+        """.trimIndent()
+    )
+
+internal fun createNotificationInviteRejectedEventStringJson() =
+    createChatEventStringJson(
+        "notification.invite_rejected",
+        """
+            "channel_type": "channelType",
+            "channel_id": "channelId",
+            "cid": "channelType:channelId",
+            "user": ${createUserJsonString()},
+            "member": ${createMemberJsonString()},
+            "channel": ${createChannelJsonString()}
         """.trimIndent()
     )
 
@@ -289,7 +257,8 @@ internal fun createNotificationRemovedFromChannelEventStringJson() =
             "channel_type": "channelType",
             "channel_id": "channelId",
             "cid": "channelType:channelId",
-            "user": ${createUserJsonString()}
+            "user": ${createUserJsonString()},
+            "member": ${createMemberJsonString()}
         """.trimIndent()
     )
 
@@ -384,24 +353,6 @@ internal fun createUserDeletedEventStringJson() =
         """.trimIndent()
     )
 
-internal fun createUserMutedEventStringJson() =
-    createChatEventStringJson(
-        "user.muted",
-        """
-            "user": ${createUserJsonString()},
-            "target_user": ${createUserJsonString()}
-        """.trimIndent()
-    )
-
-internal fun createUsersMutedEventStringJson() =
-    createChatEventStringJson(
-        "user.muted",
-        """
-            "user": ${createUserJsonString()},
-            "target_users": [ ${createUserJsonString()} ]
-        """.trimIndent()
-    )
-
 internal fun createUserPresenceChangedEventStringJson() =
     createChatEventStringJson(
         "user.presence.changed",
@@ -450,24 +401,6 @@ internal fun createGlobalUserUnbannedEventStringJson() =
         "user.unbanned",
         """
             "user": ${createUserJsonString()}
-        """.trimIndent()
-    )
-
-internal fun createUserUnmutedEventStringJson() =
-    createChatEventStringJson(
-        "user.unmuted",
-        """
-            "user": ${createUserJsonString()},
-            "target_user": ${createUserJsonString()}
-        """.trimIndent()
-    )
-
-internal fun createUsersUnmutedEventStringJson() =
-    createChatEventStringJson(
-        "user.unmuted",
-        """
-            "user": ${createUserJsonString()},
-            "target_users": [ ${createUserJsonString()} ]
         """.trimIndent()
     )
 
@@ -527,6 +460,19 @@ internal fun createNewMessageEventStringJson() =
         """.trimIndent()
     )
 
+internal fun createNewMessageWithoutUnreadCountsEventStringJson() =
+    createChatEventStringJson(
+        "message.new",
+        """
+            "user": ${createUserJsonString()},
+            "channel_type": "channelType",
+            "channel_id": "channelId",
+            "cid": "channelType:channelId",
+            "watcher_count": 3,
+            "message": ${createMessageJsonString()}
+        """.trimIndent()
+    )
+
 internal fun createUnknownEventStringJson(type: String = "unknown_event") =
     createChatEventStringJson(type, null)
 
@@ -552,7 +498,6 @@ private fun createUserJsonString() =
             "devices": [ ],
             "mutes": [ ],
             "channel_mutes": [ ],
-            "unread_count": 26,
             "total_unread_count": 26,
             "unread_channels": 2,
             "image": "https://api.adorable.io/avatars/285/bender.png",
@@ -566,6 +511,7 @@ private fun createMessageJsonString() =
             "id": "09afcd85-9dbb-4da8-8d85-5a6b4268d755",
             "text": "Hello",
             "user": ${createUserJsonString()},
+            "html": "<p>Hello</p>",
             "attachments": [ ],
             "latest_reactions": [ ],
             "own_reactions": [ ],
@@ -576,6 +522,7 @@ private fun createMessageJsonString() =
             "updated_at": "2020-06-29T06:14:28.000Z",
             "mentioned_users": [ ],
             "silent": false,
+            "type": "regular",
             "cid": ""
         }
     """.trimIndent()
@@ -623,11 +570,14 @@ private fun createConfigJsonString() =
           "replies": true,
           "mutes": true,
           "uploads": true,
-          "url_enrichment": true,
+          "url_enrichment":true,
+          "custom_events": true,
+          "push_notifications":true,
           "message_retention": "infinite",
           "max_message_length": 5000,
           "automod": "disabled",
-          "automod_behavior": "flag",
+          "automod_behavior":"flag",
+          "blocklist_behavior":"flag",
           "commands": [
             {
               "name": "giphy",
@@ -636,15 +586,6 @@ private fun createConfigJsonString() =
               "set": "fun_set"
             }
           ]
-        }
-    """.trimIndent()
-
-private fun createChannelMuteJsonString() =
-    """
-        {
-            "user": ${createUserJsonString()},
-            "channel": ${createChannelJsonString()},
-            "created_at": "2020-06-29T06:14:28.000Z"
         }
     """.trimIndent()
 
