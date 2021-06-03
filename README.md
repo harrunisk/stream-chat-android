@@ -1,34 +1,37 @@
-# Official Android SDK for [Stream Chat](https://getstream.io/chat/)
-
-![Build status](https://github.com/GetStream/stream-chat-android/workflows/Build%20and%20test/badge.svg)
+# Official Android SDK for [Stream Chat](https://getstream.io/chat/sdk/android/)
 
 <p align="center">
   <a href="https://getstream.io/tutorials/android-chat/">
-    <img src="/docs/android-chat-messaging-banner.png" width="100%" />
+    <img src="/docs/sdk-hero-android.png"/>
   </a>
 </p>
 
-## 4.x
+<p align="center">
+  <a href="https://github.com/GetStream/stream-chat-android/actions"><img src="https://github.com/GetStream/stream-chat-android/workflows/Build%20and%20test/badge.svg" /></a>
+  <a href="https://github.com/GetStream/stream-chat-android/releases"><img src="https://img.shields.io/github/v/release/GetStream/stream-chat-android" /></a>
+</p>
 
-4.x is based on Kotlin and splits out the client, offline support and UX components. It adds seamless offline support, improved performance, makes it easier to integrate, and has better test coverage.
+This is the official Android SDK for [Stream Chat](https://getstream.io/chat/sdk/android/), a service for building chat and messaging applications. This library includes both a low-level chat SDK and a set of reusable UI components. Most users start with the UI components, and fall back to the lower level API when they want to customize things.
 
-[stream-chat-android](https://github.com/GetStream/stream-chat-android) is the official Android SDK for [Stream Chat](https://getstream.io/chat), a service for building chat and messaging applications. This library includes both a low-level chat SDK and a set of reusable UI components. Most users start with the UI components, and fall back to the lower level API when they want to customize things.
-
-<img align="right" src="https://getstream.imgix.net/images/chat-android/android_chat_art@1x.png?auto=format,enhance" width="50%" />
-
-**Quick Links**
+**Quick Links for getting started**
 
 * [Register](https://getstream.io/chat/trial/) to get an API key for Stream Chat
-* [Kotlin Chat Tutorial](https://getstream.io/tutorials/android-chat/#kotlin)
-* [Java Chat Tutorial](https://getstream.io/tutorials/android-chat/#java)
-* [Kotlin API Docs](https://getstream.io/chat/docs/kotlin/#introduction)
-* [Java API Docs](https://getstream.io/chat/docs/java/#introduction)
-* [Chat UI Kit](https://getstream.io/chat/ui-kit/)
-* [WhatsApp clone Tutorial](https://getstream.io/blog/build-whatsapp-clone/)
+* [Chat Tutorial (Kotlin)](https://getstream.io/tutorials/android-chat/#kotlin)
+* [Chat Tutorial (Java)](https://getstream.io/tutorials/android-chat/#java)
+* [Documentation (Kotlin)](https://getstream.io/chat/docs/android/?language=kotlin)
+* [Documentation (Java)](https://getstream.io/chat/docs/android/?language=java)
+* [API docs (Dokka)](https://getstream.github.io/stream-chat-android/)
+* [Sample app](/stream-chat-android-ui-components-sample)
+* [Wiki (Cookbooks/Docs)](https://github.com/GetStream/stream-chat-android/wiki)
 
 ## Java/Kotlin Chat Tutorial
 
 The best place to start is the [Android Chat Tutorial](https://getstream.io/tutorials/android-chat/#kotlin). It teaches you how to use this SDK and also shows you how to make frequently required changes. You can use either [Java](https://getstream.io/tutorials/android-chat/#java) or [Kotlin](https://getstream.io/tutorials/android-chat/#kotlin) depending on your preference.
+
+## Free for Makers
+
+Stream is free for most side and hobby projects. To qualify your project/company needs to have < 5 team members and < $10k in monthly revenue.
+For complete pricing details visit our [Chat Pricing Page](https://getstream.io/chat/pricing/)
 
 ## Sample App
 
@@ -38,20 +41,23 @@ This repo includes a fully functional example app featuring threads, reactions, 
 git clone git@github.com:GetStream/stream-chat-android.git
 ```
 
-Next, download Android Studio and open up the `stream-chat-android` folder. You'll want to run the `stream-chat-android-sample` app.
-The Gradle sync process can take some time when you first open the project. 
+Next, open [Android Studio](https://developer.android.com/studio) and open the newly created project folder. You'll want to run the [`stream-chat-android-ui-components-sample`](/stream-chat-android-ui-components-sample) app.
+
+> The `stream-chat-android-sample` module contains the sample app for our previous UI implementation. 
 
 ## Docs
 
-The official documentation for the Chat SDK is available [on our website](https://getstream.io/chat/docs/?language=kotlin). Each feature's page shows how to use it with the Android SDK, plus there are further Android-exclusive docs on the [Android Overview page](https://getstream.io/chat/docs/android_overview/?language=kotlin).
+The official documentation for the Chat SDK is available [on our website](https://getstream.io/chat/docs/android/?language=kotlin). Each feature's page shows how to use it with the Android SDK, plus there are further Android-exclusive docs under the Android sections on the top.
 
-The Chat Android SDKs support both Kotlin and Java usage, but *we strongly recommend using Kotlin*. The documentation is available in both languages - see [here](https://getstream.io/chat/docs/?language=java) for the Java version.
+The Chat Android SDKs support both Kotlin and Java usage, but *we strongly recommend using Kotlin*. The documentation is available in both languages.
+
+You can also take a look at the [full API documentation](https://getstream.github.io/stream-chat-android/) (generated by Dokka).
 
 This SDK consists of the following modules / artifacts:
 
-- [Chat client](stream-chat-android-client)
-- [Offline support and `LiveData` APIs](stream-chat-android-offline)
-- [Chat UI/UX](stream-chat-android)
+- [Chat client](/stream-chat-android-client)
+- [Offline support and `LiveData` APIs](/stream-chat-android-offline)
+- [Chat UI/UX](/stream-chat-android-ui-components)
 
 With these modules, the SDK provides:
 
@@ -59,12 +65,15 @@ With these modules, the SDK provides:
 - Offline support and LiveData APIs module
 - Ready to use ViewModels for displaying a list of channels and a conversation 
 - Reusable chat views:
-    - [Channel List](https://getstream.io/chat/docs/channels_view/?language=kotlin)
-    - [Message List](https://getstream.io/chat/docs/message_list_view/?language=kotlin)
-    - [Message Input](https://getstream.io/chat/docs/message_input_view/?language=kotlin)
-    - [Channel Header](https://getstream.io/chat/docs/channel_header_view/?language=kotlin)
-    - [Message Input View](https://getstream.io/chat/docs/message_input_view/?language=kotlin)
-
+    - [Channel List View](https://getstream.io/chat/docs/android/channel_list_view/?language=kotlin)
+    - [Channel List Header View](https://getstream.io/chat/docs/android/channel_list_header_view/?language=kotlin)
+    - [Message List View](https://getstream.io/chat/docs/android/message_list_view/?language=kotlin)
+    - [Message List Header View](https://getstream.io/chat/docs/android/message_list_header_view/?language=kotlin)
+    - [Message Input View](https://getstream.io/chat/docs/android/message_input_view/?language=kotlin)
+    - [Search Input View](https://getstream.io/chat/docs/android/search_input_view/?language=kotlin)
+    - [Search Result List View](https://getstream.io/chat/docs/android/search_result_list_view/?language=kotlin)
+    - [Attachment Gallery](https://getstream.io/chat/docs/android/attachmentgallery/?language=kotlin)
+    
 ## Supported features
 
 - Channels list UI
@@ -88,12 +97,13 @@ With these modules, the SDK provides:
 
 ## Installing the Kotlin/Java Chat SDK
 
-**Step 1**: Add `mavenCentral` to your repositories in your *project* level `build.gradle` file:
+**Step 1**: Add MavenCentral and Jitpack to your repositories in your *project* level `build.gradle` file:
 
 ```gradle
 allprojects {
     repositories {
         mavenCentral()
+        maven { url "https://jitpack.io" }
     }
 }
 ```
@@ -103,24 +113,8 @@ allprojects {
 > See the [releases page](https://github.com/GetStream/stream-chat-android/releases) for the latest version number.
 
 ```gradle
-android {
-    ...
-    compileOptions {
-        sourceCompatibility JavaVersion.VERSION_1_8
-        targetCompatibility JavaVersion.VERSION_1_8
-    }
-
-    // for Kotlin projects
-    kotlinOptions {
-        jvmTarget = '1.8'
-    }
-}
-
 dependencies {
-    implementation "io.getstream:stream-chat-android:$stream_version"
-
-    // for Java projects
-    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
+    implementation "io.getstream:stream-chat-android-ui-components:$stream_version"
 }
 ```
 
@@ -141,8 +135,7 @@ class App : Application() {
         }
 
         val client = ChatClient.Builder(apiKey, this).build()
-        val domain = ChatDomain.Builder(client, user, this).offlineEnabled().build()
-        val ui = ChatUI.Builder(this).build()
+        val domain = ChatDomain.Builder(client, this).offlineEnabled().build()
     }
 }
 ```
@@ -156,7 +149,6 @@ class MainActivity: AppCompatActivity() {
 
         val chatClient = ChatClient.instance()
         val chatDomain = ChatDomain.instance()
-        val chatUI = ChatUI.instance()
     }
 }
 ```
@@ -178,15 +170,13 @@ Markdown support is based on [Markwon 4](https://github.com/noties/Markwon). The
 - [ImagesPlugin](https://noties.io/Markwon/docs/v4/image/)
 - [StrikethroughPlugin](https://noties.io/Markwon/docs/v4/ext-strikethrough/)
 
-If you want to use a library other than Markwon or extend the Markwon plugins, you can use the code below to customize Markdown rendering when you build your `ChatUI` instance:
+If you want to use a library other than Markwon or extend the Markwon plugins, you can use the code below to customize Markdown rendering via the `ChatUI` instance:
 
 ```kotlin
-val ui = ChatUI.Builder(context)
-    .withMarkdown { textView, text ->
-        // do custom rendering here
-        textView.text = text
-    }
-    .build()
+ChatUI.markdown = ChatMarkdown { textView, text ->
+    // Do custom rendering here
+    textView.text = text
+}
 ```
 
 ## Debug and development
@@ -235,3 +225,8 @@ Here's a set of useful tags for debugging network communication:
 - `Chat:Http`
 - `Chat:Events`
 - `Chat:SocketService`
+
+## We are hiring
+We've recently closed a [\$38 million Series B funding round](https://techcrunch.com/2021/03/04/stream-raises-38m-as-its-chat-and-activity-feed-apis-power-communications-for-1b-users/) and we keep actively growing.
+Our APIs are used by more than a billion end-users, and you'll have a chance to make a huge impact on the product within a team of the strongest engineers all over the world.
+Check out our current openings and apply via [Stream's website](https://getstream.io/team/#jobs).

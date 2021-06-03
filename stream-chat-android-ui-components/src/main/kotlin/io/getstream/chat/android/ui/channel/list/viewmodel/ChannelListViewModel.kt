@@ -2,19 +2,22 @@ package io.getstream.chat.android.ui.channel.list.viewmodel
 
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MediatorLiveData
+import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.Transformations
 import androidx.lifecycle.Transformations.map
 import androidx.lifecycle.ViewModel
-import com.getstream.sdk.chat.utils.extensions.isDraft
+import io.getstream.chat.android.client.api.models.FilterObject
 import io.getstream.chat.android.client.api.models.QuerySort
+import io.getstream.chat.android.client.call.enqueue
+import io.getstream.chat.android.client.errors.ChatError
+import io.getstream.chat.android.client.extensions.isMuted
 import io.getstream.chat.android.client.models.Channel
 import io.getstream.chat.android.client.models.Filters
-import io.getstream.chat.android.client.models.Filters.eq
 import io.getstream.chat.android.client.models.TypingEvent
-import io.getstream.chat.android.client.utils.FilterObject
 import io.getstream.chat.android.core.internal.exhaustive
 import io.getstream.chat.android.livedata.ChatDomain
 import io.getstream.chat.android.livedata.controller.QueryChannelsController
+import io.getstream.chat.android.livedata.utils.Event
 
 /**
  * ViewModel class for [io.getstream.chat.android.ui.channel.list.ChannelListView].
@@ -24,16 +27,18 @@ import io.getstream.chat.android.livedata.controller.QueryChannelsController
  * @param filter filter for querying channels, should never be empty
  * @param sort defines the ordering of the channels
  * @param limit the maximum number of channels to fetch
+ * @param messageLimit the number of messages to fetch for each channel
  */
 public class ChannelListViewModel(
     private val chatDomain: ChatDomain = ChatDomain.instance(),
     private val filter: FilterObject = Filters.and(
-        eq("type", "messaging"),
+        Filters.eq("type", "messaging"),
         Filters.`in`("members", listOf(chatDomain.currentUser.id)),
-        Filters.ne("draft", true)
+        Filters.or(Filters.notExists("draft"), Filters.ne("draft", true)),
     ),
     private val sort: QuerySort<Channel> = DEFAULT_SORT,
     private val limit: Int = 30,
+    messageLimit: Int = 1,
 ) : ViewModel() {
     private val stateMerger = MediatorLiveData<State>()
     public val state: LiveData<State> = stateMerger
@@ -42,10 +47,12 @@ public class ChannelListViewModel(
 
     private val paginationStateMerger = MediatorLiveData<PaginationState>()
     public val paginationState: LiveData<PaginationState> = Transformations.distinctUntilChanged(paginationStateMerger)
+    private val _errorEvents: MutableLiveData<Event<ErrorEvent>> = MutableLiveData()
+    public val errorEvents: LiveData<Event<ErrorEvent>> = _errorEvents
 
     init {
         stateMerger.value = INITIAL_STATE
-        chatDomain.useCases.queryChannels(filter, sort, limit).enqueue { queryChannelsControllerResult ->
+        chatDomain.queryChannels(filter, sort, limit, messageLimit).enqueue { queryChannelsControllerResult ->
             val currentState = stateMerger.value!!
             if (queryChannelsControllerResult.isSuccess) {
                 val queryChannelsController = queryChannelsControllerResult.data()
@@ -61,11 +68,21 @@ public class ChannelListViewModel(
                             )
                             is QueryChannelsController.ChannelsState.Result -> currentState.copy(
                                 isLoading = false,
-                                channels = channelState.channels.filterNot { it.hidden == true || it.isDraft },
+                                channels = parseMutedChannels(
+                                    channelState.channels,
+                                    chatDomain.currentUser.channelMutes.map { channelMute -> channelMute.channel.id }
+                                ),
                             )
                         }
                     }
                 ) { state -> stateMerger.value = state }
+
+                stateMerger.addSource(queryChannelsController.mutedChannelIds) { mutedChannels ->
+                    stateMerger.value?.let { state ->
+                        stateMerger.value = state.copy(channels = parseMutedChannels(state.channels, mutedChannels))
+                    }
+                }
+
                 paginationStateMerger.addSource(queryChannelsController.loadingMore) { loadingMore ->
                     setPaginationState { copy(loadingMore = loadingMore) }
                 }
@@ -88,27 +105,44 @@ public class ChannelListViewModel(
     }
 
     public fun leaveChannel(channel: Channel) {
-        chatDomain.useCases.leaveChannel(channel.cid).enqueue()
+        chatDomain.leaveChannel(channel.cid).enqueue(
+            onError = { _errorEvents.postValue(Event(ErrorEvent.LeaveChannelError(it))) }
+        )
     }
 
     public fun deleteChannel(channel: Channel) {
-        chatDomain.useCases.deleteChannel(channel.cid).enqueue()
+        chatDomain.deleteChannel(channel.cid).enqueue(
+            onError = { _errorEvents.postValue(Event(ErrorEvent.DeleteChannelError(it))) }
+        )
     }
 
     public fun hideChannel(channel: Channel) {
-        chatDomain.useCases.hideChannel(channel.cid, true).enqueue()
+        chatDomain.hideChannel(channel.cid, true).enqueue(
+            onError = { _errorEvents.postValue(Event(ErrorEvent.HideChannelError(it))) }
+        )
     }
 
     public fun markAllRead() {
-        chatDomain.useCases.markAllRead().enqueue()
+        chatDomain.markAllRead().enqueue()
     }
 
     private fun requestMoreChannels() {
-        chatDomain.useCases.queryChannelsLoadMore(filter, sort).enqueue()
+        chatDomain.queryChannelsLoadMore(filter, sort).enqueue()
     }
 
     private fun setPaginationState(reducer: PaginationState.() -> PaginationState) {
         paginationStateMerger.value = reducer(paginationStateMerger.value ?: PaginationState())
+    }
+
+    private fun parseMutedChannels(
+        channelsMap: List<Channel>,
+        channelMutesIds: List<String>?,
+    ): List<Channel> {
+        return channelsMap.map { channel ->
+            channel.copy().apply {
+                isMuted = channelMutesIds?.contains(channel.id) ?: false
+            }
+        }
     }
 
     public data class State(val isLoading: Boolean, val channels: List<Channel>)
@@ -120,6 +154,12 @@ public class ChannelListViewModel(
 
     public sealed class Action {
         public object ReachedEndOfList : Action()
+    }
+
+    public sealed class ErrorEvent(public open val chatError: ChatError) {
+        public data class LeaveChannelError(override val chatError: ChatError) : ErrorEvent(chatError)
+        public data class DeleteChannelError(override val chatError: ChatError) : ErrorEvent(chatError)
+        public data class HideChannelError(override val chatError: ChatError) : ErrorEvent(chatError)
     }
 
     public companion object {

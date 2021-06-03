@@ -18,12 +18,14 @@ import io.getstream.chat.android.ui.message.list.header.viewmodel.bindView
 import io.getstream.chat.android.ui.message.list.viewmodel.factory.MessageListViewModelFactory
 import io.getstream.chat.ui.sample.R
 import io.getstream.chat.ui.sample.common.navigateSafely
+import io.getstream.chat.ui.sample.common.showToast
 import io.getstream.chat.ui.sample.databinding.FragmentGroupChatInfoBinding
 import io.getstream.chat.ui.sample.feature.chat.ChatViewModelFactory
 import io.getstream.chat.ui.sample.feature.chat.info.ChatInfoItem
 import io.getstream.chat.ui.sample.feature.chat.info.group.member.GroupChatInfoMemberOptionsDialogFragment
 import io.getstream.chat.ui.sample.feature.chat.info.group.users.GroupChatInfoAddUsersDialogFragment
 import io.getstream.chat.ui.sample.feature.common.ConfirmationDialogFragment
+import io.getstream.chat.ui.sample.util.extensions.autoScrollToTop
 import io.getstream.chat.ui.sample.util.extensions.useAdjustResize
 
 class GroupChatInfoFragment : Fragment() {
@@ -51,8 +53,9 @@ class GroupChatInfoFragment : Fragment() {
             requireActivity().onBackPressed()
         }
         binding.optionsRecyclerView.adapter = adapter
+        binding.optionsRecyclerView.autoScrollToTop()
         headerViewModel.bindView(binding.headerView, viewLifecycleOwner)
-        if (!isDistinctChannel()) {
+        if (!isAnonymousChannel()) {
             binding.addChannelButton.apply {
                 isVisible = true
                 setOnClickListener {
@@ -76,7 +79,7 @@ class GroupChatInfoFragment : Fragment() {
 
     // Distinct channel == channel created without id (based on members).
     // There is no possibility to modify distinct channel members.
-    private fun isDistinctChannel(): Boolean = args.cid.contains("!members")
+    private fun isAnonymousChannel(): Boolean = args.cid.contains("!members")
 
     private fun bindGroupInfoViewModel() {
         subscribeForChannelMutesUpdatedEvents()
@@ -91,6 +94,7 @@ class GroupChatInfoFragment : Fragment() {
                             args.cid,
                             it.channelName,
                             it.member.user,
+                            viewModel.state.value?.isCurrentUserOwnerOrAdmin == true
                         )
                             .show(parentFragmentManager, GroupChatInfoMemberOptionsDialogFragment.TAG)
                     GroupChatInfoViewModel.UiEvent.RedirectToHome -> findNavController().popBackStack(
@@ -100,7 +104,6 @@ class GroupChatInfoFragment : Fragment() {
                 }
             }
         )
-
         viewModel.state.observe(viewLifecycleOwner) { state ->
             val members = if (state.shouldExpandMembers != false) {
                 state.members.map { ChatInfoItem.MemberItem(it) }
@@ -120,6 +123,16 @@ class GroupChatInfoFragment : Fragment() {
                     )
             )
         }
+        viewModel.errorEvents.observe(
+            viewLifecycleOwner,
+            EventObserver {
+                when (it) {
+                    is GroupChatInfoViewModel.ErrorEvent.ChangeGroupNameError -> R.string.chat_group_info_error_change_name
+                    is GroupChatInfoViewModel.ErrorEvent.MuteChannelError -> R.string.chat_group_info_error_mute_channel
+                    is GroupChatInfoViewModel.ErrorEvent.LeaveChannelError -> R.string.chat_group_info_error_leave_channel
+                }.let(::showToast)
+            }
+        )
     }
 
     private fun setOnClickListeners() {

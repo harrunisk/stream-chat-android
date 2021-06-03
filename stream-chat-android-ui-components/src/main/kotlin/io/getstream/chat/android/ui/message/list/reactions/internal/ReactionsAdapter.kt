@@ -5,10 +5,7 @@ import androidx.annotation.Px
 import androidx.core.view.updateLayoutParams
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
-import com.getstream.sdk.chat.utils.extensions.inflater
-import io.getstream.chat.android.ui.R
-import io.getstream.chat.android.ui.common.extensions.internal.context
-import io.getstream.chat.android.ui.common.extensions.internal.getColorCompat
+import io.getstream.chat.android.ui.common.extensions.internal.streamThemeInflater
 import io.getstream.chat.android.ui.databinding.StreamUiItemMessageReactionBinding
 import io.getstream.chat.android.ui.message.list.reactions.ReactionClickListener
 
@@ -19,7 +16,7 @@ internal class ReactionsAdapter(
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ReactionViewHolder {
         return StreamUiItemMessageReactionBinding
-            .inflate(parent.inflater, parent, false)
+            .inflate(parent.streamThemeInflater, parent, false)
             .let { ReactionViewHolder(it, itemSize, reactionClickListener) }
     }
 
@@ -47,14 +44,7 @@ internal class ReactionsAdapter(
 
         fun bind(reactionItem: ReactionItem) {
             this.reactionItem = reactionItem
-
-            binding.reactionIcon.setImageResource(reactionItem.iconDrawableRes)
-            val iconTintResId = if (reactionItem.isMine) {
-                R.color.stream_ui_accent_blue
-            } else {
-                R.color.stream_ui_grey
-            }
-            binding.reactionIcon.setColorFilter(context.getColorCompat(iconTintResId))
+            binding.reactionIcon.setImageDrawable(reactionItem.drawable)
         }
     }
 }

@@ -5,9 +5,14 @@ import androidx.lifecycle.LiveData
 import io.getstream.chat.android.client.call.Call
 import io.getstream.chat.android.client.call.CoroutineCall
 import io.getstream.chat.android.client.utils.Result
-import io.getstream.chat.android.livedata.ChatDomainImpl
+import io.getstream.chat.android.livedata.ChatDomain
+import kotlinx.coroutines.CoroutineScope
 
-public interface GetUnreadChannelCount {
+@Deprecated(
+    message = "Use ChatDomain::channelUnreadCount instead",
+    level = DeprecationLevel.ERROR,
+)
+public sealed interface GetUnreadChannelCount {
     /**
      * Returns the number of channels with unread messages for the given user.
      * You might also be interested in GetTotalUnreadCount
@@ -20,10 +25,12 @@ public interface GetUnreadChannelCount {
     public operator fun invoke(): Call<LiveData<Int>>
 }
 
-internal class GetUnreadChannelCountImpl(private val domainImpl: ChatDomainImpl) : GetUnreadChannelCount {
-    override operator fun invoke(): Call<LiveData<Int>> {
-        return CoroutineCall(domainImpl.scope) {
-            Result(domainImpl.channelUnreadCount)
-        }
+@Suppress("DEPRECATION_ERROR")
+internal class GetUnreadChannelCountImpl(
+    private val chatDomain: ChatDomain,
+    private val scope: CoroutineScope,
+) : GetUnreadChannelCount {
+    override operator fun invoke(): Call<LiveData<Int>> = CoroutineCall(scope) {
+        Result(chatDomain.channelUnreadCount)
     }
 }

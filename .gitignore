@@ -87,7 +87,6 @@ lint/tmp/
 
 /.idea/*
 !/.idea/codeInsightSettings.xml
-!/.idea/compiler.xml
 !/.idea/codeStyles/
 !/.idea/inspectionProfiles/
 .DS_Store
@@ -98,3 +97,8 @@ lint/tmp/
 /projectFilesBackup/
 /projectFilesBackup1/
 *.gpg
+
+# Ignore Dokka files into docusaurus project
+docusaurus/docs/Android/Dokka
+# Ignore Algolia credentials
+docusaurus/.env

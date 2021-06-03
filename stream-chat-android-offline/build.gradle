@@ -4,11 +4,8 @@ import com.getstream.sdk.chat.Configuration
 apply plugin: 'com.android.library'
 apply plugin: 'kotlin-android'
 apply plugin: 'kotlin-kapt'
-apply plugin: 'com.github.dcendents.android-maven'
 apply plugin: 'de.mannodermaus.android-junit5'
 apply plugin: 'org.jlleitschuh.gradle.ktlint'
-apply plugin: "com.hiya.jacoco-android"
-
 
 ext {
     PUBLISH_GROUP_ID = Configuration.artifactGroup
@@ -16,23 +13,12 @@ ext {
     PUBLISH_ARTIFACT_ID = 'stream-chat-android-offline'
 }
 
-apply from: "${rootProject.projectDir}/scripts/publish-mavencentral.gradle"
+apply from: "${rootDir}/scripts/publish-module.gradle"
+apply from: "${rootDir}/scripts/android.gradle"
 
 android {
-    compileSdkVersion Configuration.compileSdkVersion
     defaultConfig {
-        minSdkVersion Configuration.minSdkVersion
-        targetSdkVersion Configuration.targetSdkVersion
-        versionName Configuration.versionName
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
-    }
-
-    compileOptions {
-        sourceCompatibility JavaVersion.VERSION_1_8
-        targetCompatibility JavaVersion.VERSION_1_8
-    }
-    kotlinOptions {
-        jvmTarget = '1.8'
     }
 
     testOptions.unitTests {
@@ -86,8 +72,6 @@ dependencies {
     implementation Dependencies.androidxAppCompat
     implementation Dependencies.androidxCoreKtx
     implementation Dependencies.androidxLifecycleLiveDataKtx
-    implementation Dependencies.androidxSecurityCrypto
-    implementation Dependencies.firebaseMessaging
     implementation Dependencies.roomRuntime
     implementation Dependencies.roomKtx
     kapt Dependencies.roomCompiler
@@ -129,4 +113,7 @@ dependencies {
     androidTestImplementation Dependencies.kluent
     androidTestImplementation Dependencies.mockito
     androidTestImplementation Dependencies.mockitoKotlin
+
+    dokkaHtmlPlugin(Dependencies.dokkasaurus)
+    dokkaHtmlPartialPlugin(Dependencies.dokkasaurus)
 }

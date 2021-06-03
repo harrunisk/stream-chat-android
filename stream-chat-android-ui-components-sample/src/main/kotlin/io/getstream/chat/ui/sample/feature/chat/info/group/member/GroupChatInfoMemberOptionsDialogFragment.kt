@@ -15,6 +15,7 @@ import io.getstream.chat.android.livedata.utils.EventObserver
 import io.getstream.chat.android.ui.common.extensions.getLastSeenText
 import io.getstream.chat.ui.sample.R
 import io.getstream.chat.ui.sample.common.navigateSafely
+import io.getstream.chat.ui.sample.common.showToast
 import io.getstream.chat.ui.sample.databinding.ChatInfoGroupMemberOptionsFragmentBinding
 import io.getstream.chat.ui.sample.feature.chat.info.UserData
 import io.getstream.chat.ui.sample.feature.chat.info.group.GroupChatInfoFragmentDirections
@@ -36,6 +37,10 @@ class GroupChatInfoMemberOptionsDialogFragment : BottomSheetDialogFragment() {
     private val user: User by lazy {
         userData.toUser()
     }
+    private val isOwnerOrAdmin: Boolean by lazy {
+        requireArguments().getBoolean(ARG_IS_OWNER_OR_ADMIN)
+    }
+
     private val viewModel: GroupChatInfoMemberOptionsViewModel by viewModels {
         GroupChatInfoMemberOptionsViewModelFactory(cid, user.id)
     }
@@ -72,25 +77,36 @@ class GroupChatInfoMemberOptionsDialogFragment : BottomSheetDialogFragment() {
             optionMessage.setOnClickListener {
                 viewModel.onAction(GroupChatInfoMemberOptionsViewModel.Action.MessageClicked)
             }
-            optionRemove.setOnClickListener {
-                ConfirmationDialogFragment.newInstance(
-                    iconResId = R.drawable.ic_delete,
-                    iconTintResId = R.color.red,
-                    title = getString(R.string.chat_group_info_user_remove_title, user.name),
-                    description = getString(R.string.chat_group_info_user_remove_description, user.name, channelName),
-                    confirmText = getString(R.string.remove),
-                    cancelText = getString(R.string.cancel),
-                ).apply {
-                    confirmClickListener = ConfirmationDialogFragment.ConfirmClickListener {
-                        viewModel.onAction(GroupChatInfoMemberOptionsViewModel.Action.RemoveFromChannel)
-                    }
-                }.show(parentFragmentManager, ConfirmationDialogFragment.TAG)
+
+            if (isAnonymousChannel(cid) || !isOwnerOrAdmin) {
+                optionRemove.isVisible = false
+            } else {
+                optionRemove.setOnClickListener {
+                    ConfirmationDialogFragment.newInstance(
+                        iconResId = R.drawable.ic_delete,
+                        iconTintResId = R.color.red,
+                        title = getString(R.string.chat_group_info_user_remove_title, user.name),
+                        description = getString(
+                            R.string.chat_group_info_user_remove_description,
+                            user.name,
+                            channelName
+                        ),
+                        confirmText = getString(R.string.remove),
+                        cancelText = getString(R.string.cancel),
+                    ).apply {
+                        confirmClickListener = ConfirmationDialogFragment.ConfirmClickListener {
+                            viewModel.onAction(GroupChatInfoMemberOptionsViewModel.Action.RemoveFromChannel)
+                        }
+                    }.show(parentFragmentManager, ConfirmationDialogFragment.TAG)
+                }
             }
             optionCancel.setOnOptionClickListener {
                 dismiss()
             }
         }
     }
+
+    private fun isAnonymousChannel(cid: String): Boolean = cid.contains("!members")
 
     private fun initViewModel() {
         viewModel.state.observe(viewLifecycleOwner) { state ->
@@ -121,6 +137,14 @@ class GroupChatInfoMemberOptionsDialogFragment : BottomSheetDialogFragment() {
                 }
             }
         )
+        viewModel.errorEvents.observe(
+            viewLifecycleOwner,
+            EventObserver {
+                when (it) {
+                    is GroupChatInfoMemberOptionsViewModel.ErrorEvent.RemoveMemberError -> R.string.chat_group_info_error_remove_member
+                }.let(::showToast)
+            }
+        )
     }
 
     override fun onDestroyView() {
@@ -133,11 +157,17 @@ class GroupChatInfoMemberOptionsDialogFragment : BottomSheetDialogFragment() {
         private const val ARG_CID = "cid"
         private const val ARG_CHANNEL_NAME = "channel_name"
         private const val ARG_USER_DATA = "user_data"
+        private const val ARG_IS_OWNER_OR_ADMIN = "is_owner_or_admin"
 
-        fun newInstance(cid: String, channelName: String, user: User) =
+        fun newInstance(cid: String, channelName: String, user: User, isOwnerOrAdmin: Boolean) =
             GroupChatInfoMemberOptionsDialogFragment().apply {
                 arguments =
-                    bundleOf(ARG_CID to cid, ARG_CHANNEL_NAME to channelName, ARG_USER_DATA to user.toUserData())
+                    bundleOf(
+                        ARG_CID to cid,
+                        ARG_CHANNEL_NAME to channelName,
+                        ARG_USER_DATA to user.toUserData(),
+                        ARG_IS_OWNER_OR_ADMIN to isOwnerOrAdmin,
+                    )
             }
     }
 }

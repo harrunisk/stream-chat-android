@@ -1,6 +1,6 @@
 @file:JvmName("MessageListViewModelBinding")
 
-package io.getstream.chat.android.ui.message.view
+package io.getstream.chat.android.ui.message.list.viewmodel
 
 import androidx.lifecycle.LifecycleOwner
 import com.getstream.sdk.chat.viewmodel.messages.MessageListViewModel
@@ -16,23 +16,27 @@ import com.getstream.sdk.chat.viewmodel.messages.MessageListViewModel.Event.Mute
 import com.getstream.sdk.chat.viewmodel.messages.MessageListViewModel.Event.ReplyMessage
 import com.getstream.sdk.chat.viewmodel.messages.MessageListViewModel.Event.RetryMessage
 import com.getstream.sdk.chat.viewmodel.messages.MessageListViewModel.Event.ThreadModeEntered
+import io.getstream.chat.android.livedata.utils.EventObserver
 import io.getstream.chat.android.ui.gallery.toAttachment
 import io.getstream.chat.android.ui.message.list.MessageListView
 
 /**
- * Binds [MessageListView] with [MessageListViewModel].
- * Sets the View's handlers and displays new messages based on the ViewModel's state.
+ * Binds [MessageListView] with [MessageListViewModel], updating the view's state
+ * based on data provided by the ViewModel, and forwarding View events to the ViewModel.
+ *
+ * This function sets listeners on the view and ViewModel. Call this method
+ * before setting any additional listeners on these objects yourself.
  */
 @JvmName("bind")
 public fun MessageListViewModel.bindView(view: MessageListView, lifecycleOwner: LifecycleOwner) {
     channel.observe(lifecycleOwner) {
-        view.init(it, currentUser)
+        view.init(it) { currentUser }
     }
     view.setEndRegionReachedHandler { onEvent(EndRegionReached) }
     view.setLastMessageReadHandler { onEvent(LastMessageRead) }
     view.setMessageDeleteHandler { onEvent(DeleteMessage(it)) }
     view.setThreadStartHandler { onEvent(ThreadModeEntered(it)) }
-    view.setMessageFlagHandler { onEvent(FlagMessage(it)) }
+    view.setMessageFlagHandler { onEvent(FlagMessage(it, view::handleFlagMessageResult)) }
     view.setGiphySendHandler { message, giphyAction ->
         onEvent(GiphyActionSelected(message, giphyAction))
     }
@@ -41,6 +45,7 @@ public fun MessageListViewModel.bindView(view: MessageListView, lifecycleOwner: 
         onEvent(MessageReaction(message, reactionType, enforceUnique = true))
     }
     view.setUserMuteHandler { onEvent(MuteUser(it)) }
+    view.setUserUnmuteHandler { onEvent(MessageListViewModel.Event.UnmuteUser(it)) }
     view.setUserBlockHandler { user, cid -> onEvent(BlockUser(user, cid)) }
     view.setMessageReplyHandler { cid, message -> onEvent(ReplyMessage(cid, message)) }
     view.setAttachmentDownloadHandler { attachment -> onEvent(DownloadAttachment(attachment)) }
@@ -79,4 +84,10 @@ public fun MessageListViewModel.bindView(view: MessageListView, lifecycleOwner: 
             )
         )
     }
+    errorEvents.observe(
+        lifecycleOwner,
+        EventObserver {
+            view.showError(it)
+        }
+    )
 }

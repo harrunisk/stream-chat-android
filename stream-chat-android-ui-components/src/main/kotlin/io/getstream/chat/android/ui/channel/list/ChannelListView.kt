@@ -11,15 +11,21 @@ import androidx.annotation.DrawableRes
 import androidx.core.content.res.use
 import androidx.core.view.isVisible
 import com.getstream.sdk.chat.utils.extensions.isDirectMessaging
+import com.getstream.sdk.chat.utils.extensions.showToast
 import io.getstream.chat.android.client.models.Channel
 import io.getstream.chat.android.client.models.Member
 import io.getstream.chat.android.client.models.User
 import io.getstream.chat.android.ui.R
 import io.getstream.chat.android.ui.channel.actions.internal.ChannelActionsDialogFragment
+import io.getstream.chat.android.ui.channel.list.ChannelListView.ChannelClickListener
+import io.getstream.chat.android.ui.channel.list.ChannelListView.ChannelListItemPredicate
+import io.getstream.chat.android.ui.channel.list.ChannelListView.ChannelLongClickListener
+import io.getstream.chat.android.ui.channel.list.ChannelListView.UserClickListener
 import io.getstream.chat.android.ui.channel.list.adapter.ChannelListItem
 import io.getstream.chat.android.ui.channel.list.adapter.viewholder.ChannelListItemViewHolderFactory
 import io.getstream.chat.android.ui.channel.list.adapter.viewholder.SwipeViewHolder
 import io.getstream.chat.android.ui.channel.list.internal.SimpleChannelListView
+import io.getstream.chat.android.ui.channel.list.viewmodel.ChannelListViewModel
 import io.getstream.chat.android.ui.common.extensions.internal.dpToPx
 import io.getstream.chat.android.ui.common.extensions.internal.getFragmentManager
 
@@ -34,6 +40,8 @@ public class ChannelListView @JvmOverloads constructor(
 
     private var loadingView: View = defaultLoadingView()
 
+    private var channelListItemPredicate: ChannelListItemPredicate = ChannelListItemPredicate { true }
+
     private val simpleChannelListView: SimpleChannelListView =
         SimpleChannelListView(context, attrs, defStyleAttr).apply { id = CHANNEL_LIST_VIEW_ID }
 
@@ -42,6 +50,14 @@ public class ChannelListView @JvmOverloads constructor(
     private var channelInfoListener: ChannelClickListener = ChannelClickListener.DEFAULT
 
     private var channelLeaveListener: ChannelClickListener = ChannelClickListener.DEFAULT
+
+    private var errorEventHandler = ErrorEventHandler { errorEvent ->
+        when (errorEvent) {
+            is ChannelListViewModel.ErrorEvent.HideChannelError -> R.string.stream_ui_channel_list_error_hide_channel
+            is ChannelListViewModel.ErrorEvent.DeleteChannelError -> R.string.stream_ui_channel_list_error_delete_channel
+            is ChannelListViewModel.ErrorEvent.LeaveChannelError -> R.string.stream_ui_channel_list_error_leave_channel
+        }.let(::showToast)
+    }
 
     init {
         addView(simpleChannelListView, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT))
@@ -115,7 +131,7 @@ public class ChannelListView @JvmOverloads constructor(
     }
 
     /**
-     * Allows clients to set a custom implementation of [BaseChannelViewHolderFactory]
+     * Allows clients to set a custom implementation of [ChannelListItemViewHolderFactory]
      *
      * @param factory the custom factory to be used when generating item view holders
      */
@@ -200,8 +216,34 @@ public class ChannelListView @JvmOverloads constructor(
         simpleChannelListView.setOnEndReachedListener(listener)
     }
 
+    /**
+     * Allows a client to set a ChannelListItemPredicate to filter ChannelListItems before they are drawn
+     *
+     * @param channelListItemPredicate - ChannelListItemsPredicate used to filter the list of ChannelListItem
+     */
+    public fun setChannelListItemPredicate(channelListItemPredicate: ChannelListItemPredicate) {
+        this.channelListItemPredicate = channelListItemPredicate
+        simpleChannelListView.currentChannelItemList()?.let(::setChannels)
+    }
+
+    public fun setErrorEventHandler(handler: ErrorEventHandler) {
+        this.errorEventHandler = handler
+    }
+
+    public fun showError(errorEvent: ChannelListViewModel.ErrorEvent) {
+        errorEventHandler.onErrorEvent(errorEvent)
+    }
+
     public fun setChannels(channels: List<ChannelListItem>) {
-        simpleChannelListView.setChannels(channels)
+        val filteredChannels = channels.filter(channelListItemPredicate::predicate)
+
+        if (filteredChannels.isEmpty()) {
+            showEmptyStateView()
+        } else {
+            hideEmptyStateView()
+        }
+
+        simpleChannelListView.setChannels(filteredChannels)
     }
 
     public fun hideLoadingView() {
@@ -209,6 +251,7 @@ public class ChannelListView @JvmOverloads constructor(
     }
 
     public fun showLoadingView() {
+        hideEmptyStateView()
         this.loadingView.isVisible = true
     }
 
@@ -220,11 +263,11 @@ public class ChannelListView @JvmOverloads constructor(
         this.simpleChannelListView.showLoadingMore(false)
     }
 
-    public fun showEmptyStateView() {
+    private fun showEmptyStateView() {
         this.emptyStateView.isVisible = true
     }
 
-    public fun hideEmptyStateView() {
+    private fun hideEmptyStateView() {
         this.emptyStateView.isVisible = false
     }
 
@@ -326,6 +369,18 @@ public class ChannelListView @JvmOverloads constructor(
 
     public fun interface EndReachedListener {
         public fun onEndReached()
+    }
+
+    /**
+     * Predicate object with a filter condition for ChannelListItem. Used to filter a list of ChannelListItem
+     * before applying it to ChannelListView.
+     */
+    public fun interface ChannelListItemPredicate {
+        public fun predicate(channelListItem: ChannelListItem): Boolean
+    }
+
+    public fun interface ErrorEventHandler {
+        public fun onErrorEvent(errorEvent: ChannelListViewModel.ErrorEvent)
     }
 
     public interface SwipeListener {

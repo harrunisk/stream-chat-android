@@ -13,9 +13,11 @@ import io.getstream.chat.android.client.ChatClient
 import io.getstream.chat.android.client.events.NotificationChannelMutesUpdatedEvent
 import io.getstream.chat.android.client.models.name
 import io.getstream.chat.android.client.subscribeFor
+import io.getstream.chat.android.livedata.utils.EventObserver
 import io.getstream.chat.ui.sample.R
 import io.getstream.chat.ui.sample.common.initToolbar
 import io.getstream.chat.ui.sample.common.navigateSafely
+import io.getstream.chat.ui.sample.common.showToast
 import io.getstream.chat.ui.sample.databinding.FragmentChatInfoBinding
 import io.getstream.chat.ui.sample.feature.common.ConfirmationDialogFragment
 
@@ -59,7 +61,6 @@ class ChatInfoFragment : Fragment() {
                 findNavController().popBackStack(R.id.homeFragment, false)
             }
         }
-
         viewModel.state.observe(viewLifecycleOwner) { state ->
             if (state.loading) {
                 binding.optionsRecyclerView.isVisible = false
@@ -70,6 +71,16 @@ class ChatInfoFragment : Fragment() {
             binding.optionsRecyclerView.isVisible = true
             binding.progressBar.isVisible = false
         }
+        viewModel.errorEvents.observe(
+            viewLifecycleOwner,
+            EventObserver {
+                when (it) {
+                    is ChatInfoViewModel.ErrorEvent.BlockUserError -> R.string.chat_info_error_block_user
+                    is ChatInfoViewModel.ErrorEvent.DeleteChannelError -> R.string.chat_info_error_delete_channel
+                    is ChatInfoViewModel.ErrorEvent.MuteChannelError -> R.string.chat_info_error_mute_channel
+                }.let(::showToast)
+            }
+        )
     }
 
     private fun buildChatInfoItems(state: ChatInfoViewModel.State): List<ChatInfoItem> {
@@ -80,12 +91,7 @@ class ChatInfoFragment : Fragment() {
             }
 
             if (state.channelExists) {
-                add(ChatInfoItem.Option.Stateful.Notifications(isChecked = state.notificationsEnabled))
-
-                if (state.member != null) {
-                    add(ChatInfoItem.Option.Stateful.MuteUser(isChecked = state.isMemberMuted))
-                    add(ChatInfoItem.Option.Stateful.Block(isChecked = state.isMemberBlocked))
-                }
+                add(ChatInfoItem.Option.Stateful.MuteDistinctChannel(isChecked = state.channelMuted))
             }
 
             add(ChatInfoItem.Option.SharedMedia)
@@ -106,10 +112,7 @@ class ChatInfoFragment : Fragment() {
         adapter.setChatInfoStatefulOptionChangedListener { option, isChecked ->
             viewModel.onAction(
                 when (option) {
-                    is ChatInfoItem.Option.Stateful.Notifications -> ChatInfoViewModel.Action.OptionNotificationClicked(
-                        isChecked
-                    )
-                    is ChatInfoItem.Option.Stateful.MuteUser -> ChatInfoViewModel.Action.OptionMuteUserClicked(isChecked)
+                    is ChatInfoItem.Option.Stateful.MuteDistinctChannel -> ChatInfoViewModel.Action.OptionMuteDistinctChannelClicked(isChecked)
                     is ChatInfoItem.Option.Stateful.Block -> ChatInfoViewModel.Action.OptionBlockUserClicked(isChecked)
                     else -> throw IllegalStateException("Chat info option $option is not supported!")
                 }

@@ -16,10 +16,26 @@
             tools:node="merge"
             >
             <meta-data
+                android:name="io.getstream.chat.android.ui.common.internal.ChatUIInitializer"
+                android:value="androidx.startup"
+                />
+            <meta-data
                 android:name="io.getstream.chat.android.ui.common.internal.ImageLoaderFactoryInitializer"
                 android:value="androidx.startup"
                 />
         </provider>
-        <activity android:name=".gallery.AttachmentGalleryActivity" />
+
+        <activity
+            android:name=".gallery.AttachmentGalleryActivity"
+            android:theme="@style/StreamUiAttachmentGalleryActivityStyle"
+            />
+        <activity
+            android:name=".gallery.AttachmentMediaActivity"
+            android:theme="@style/StreamUiAttachmentMediaActivityStyle"
+            />
+        <activity
+            android:name=".gallery.AttachmentActivity"
+            android:theme="@style/StreamUiAttachmentActivityStyle"
+            />
     </application>
 </manifest>

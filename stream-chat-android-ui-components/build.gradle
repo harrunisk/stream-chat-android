@@ -2,8 +2,6 @@ import com.getstream.sdk.chat.Dependencies
 import com.getstream.sdk.chat.Configuration
 
 apply plugin: 'com.android.library'
-apply plugin: 'com.github.dcendents.android-maven'
-apply plugin: 'com.hiya.jacoco-android'
 apply plugin: 'kotlin-android'
 apply plugin: 'kotlin-kapt'
 apply plugin: 'kotlin-parcelize'
@@ -16,16 +14,11 @@ ext {
     PUBLISH_ARTIFACT_ID = 'stream-chat-android-ui-components'
 }
 
-apply from: "${rootProject.projectDir}/scripts/publish-mavencentral.gradle"
+apply from: "${rootDir}/scripts/publish-module.gradle"
+apply from: "${rootDir}/scripts/android.gradle"
 
 android {
-    compileSdkVersion Configuration.compileSdkVersion
-
     defaultConfig {
-        minSdkVersion Configuration.minSdkVersion
-        targetSdkVersion Configuration.targetSdkVersion
-        versionName Configuration.versionName
-
         vectorDrawables.useSupportLibrary = true
     }
 
@@ -33,14 +26,6 @@ android {
 
     buildFeatures {
         viewBinding true
-    }
-
-    compileOptions {
-        sourceCompatibility JavaVersion.VERSION_1_8
-        targetCompatibility JavaVersion.VERSION_1_8
-    }
-    kotlinOptions {
-        jvmTarget = '1.8'
     }
 
     testOptions {
@@ -83,7 +68,7 @@ dependencies {
     implementation Dependencies.androidLegacySupport
     implementation Dependencies.constraintLayout
     implementation Dependencies.materialComponents
-    implementation Dependencies.fragmentKtx
+    implementation Dependencies.androidxFragmentKtx
     implementation Dependencies.androidxViewPager2
     implementation Dependencies.androidxCoreKtx
     implementation Dependencies.lottie
@@ -92,6 +77,13 @@ dependencies {
     implementation Dependencies.coilGif
     implementation Dependencies.coilVideo
     implementation Dependencies.androidxStartup
+    implementation Dependencies.stfalconImageViewer
+
+    // Markdown
+    implementation Dependencies.markwonCore
+    implementation Dependencies.markwonLinkify
+    implementation Dependencies.markwonextStrikethrough
+    implementation Dependencies.markwonImage
 
     // Tests
     testImplementation project(":stream-chat-android-test")
@@ -100,8 +92,10 @@ dependencies {
     testImplementation Dependencies.junitJupiterParams
     testRuntimeOnly Dependencies.junitJupiterEngine
     testRuntimeOnly Dependencies.junitVintageEngine
-    testImplementation Dependencies.burst
     testImplementation Dependencies.kluent
     testImplementation Dependencies.mockitoKotlin
     testImplementation Dependencies.truth
+
+    dokkaHtmlPlugin(Dependencies.dokkasaurus)
+    dokkaHtmlPartialPlugin(Dependencies.dokkasaurus)
 }

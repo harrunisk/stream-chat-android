@@ -6,22 +6,17 @@ import com.getstream.sdk.chat.createUser
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.doAnswer
 import com.nhaarman.mockitokotlin2.doReturn
-import com.nhaarman.mockitokotlin2.eq
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.verify
+import com.nhaarman.mockitokotlin2.whenever
 import io.getstream.chat.android.client.call.Call
 import io.getstream.chat.android.client.models.Channel
 import io.getstream.chat.android.client.utils.Result
 import io.getstream.chat.android.livedata.ChatDomain
 import io.getstream.chat.android.livedata.controller.QueryChannelsController
-import io.getstream.chat.android.livedata.usecase.QueryChannels
-import io.getstream.chat.android.livedata.usecase.QueryChannelsLoadMore
-import io.getstream.chat.android.livedata.usecase.UseCaseHelper
 import io.getstream.chat.android.test.InstantTaskExecutorExtension
 import io.getstream.chat.android.test.TestCall
 import io.getstream.chat.android.test.TestObserver
-import org.amshove.kluent.When
-import org.amshove.kluent.calling
 import org.amshove.kluent.shouldBeEqualTo
 import org.amshove.kluent.shouldBeInstanceOf
 import org.junit.jupiter.api.Test
@@ -55,8 +50,7 @@ internal class ChannelListViewModelTest {
     @Test
     fun `Should load more channels when list is scrolled to the end region`() {
         // given
-        val queryChannelsLoadMore: QueryChannelsLoadMore = mock()
-        val viewModel = Fixture().givenMoreChannelsQuery(queryChannelsLoadMore)
+        val viewModel = Fixture()
             .givenInitialChannelList(mockChannels)
             .givenMoreChannels(moreChannels)
             .please()
@@ -69,7 +63,6 @@ internal class ChannelListViewModelTest {
         // then
         val result = mockObserver.lastObservedValue.shouldBeInstanceOf<ChannelsViewModel.State.Result>()
         result.channels shouldBeEqualTo mockChannels + moreChannels
-        verify(queryChannelsLoadMore).invoke(any(), eq(ChannelsViewModel.DEFAULT_SORT), any(), any())
     }
 
     companion object {
@@ -81,9 +74,6 @@ internal class ChannelListViewModelTest {
 private class Fixture {
     private val user = createUser()
     private val chatDomain: ChatDomain = mock()
-    private val useCases: UseCaseHelper = mock()
-    private val queryChannels: QueryChannels = mock()
-    private var queryChannelsLoadMore: QueryChannelsLoadMore = mock()
     private val queryChannelsControllerResult: Result<QueryChannelsController> = mock()
     private val queryChannelsCall = TestCall<QueryChannelsController>(queryChannelsControllerResult)
     private val queryChannelsController: QueryChannelsController = mock()
@@ -92,22 +82,14 @@ private class Fixture {
     private val channelsState = MutableLiveData<QueryChannelsController.ChannelsState>()
 
     init {
-        When calling chatDomain.currentUser doReturn user
-        When calling chatDomain.useCases doReturn useCases
-        When calling useCases.queryChannels doReturn queryChannels
-        When calling queryChannels.invoke(
-            any(),
-            eq(ChannelsViewModel.DEFAULT_SORT),
-            any(),
-            any()
-        ) doReturn queryChannelsCall
-        When calling queryChannelsControllerResult.isSuccess doReturn true
-        When calling queryChannelsControllerResult.data() doReturn queryChannelsController
-        When calling useCases.queryChannelsLoadMore doReturn queryChannelsLoadMore
-        When calling queryChannelsController.channels doReturn channelsLiveData
-        When calling queryChannelsController.channelsState doReturn channelsState
-        When calling queryChannelsController.loading doReturn MutableLiveData()
-        When calling queryChannelsController.loadingMore doReturn MutableLiveData()
+        whenever(chatDomain.currentUser) doReturn user
+        whenever(chatDomain.queryChannels(any(), any(), any(), any())) doReturn queryChannelsCall
+        whenever(queryChannelsControllerResult.isSuccess) doReturn true
+        whenever(queryChannelsControllerResult.data()) doReturn queryChannelsController
+        whenever(queryChannelsController.channels) doReturn channelsLiveData
+        whenever(queryChannelsController.channelsState) doReturn channelsState
+        whenever(queryChannelsController.loading) doReturn MutableLiveData()
+        whenever(queryChannelsController.loadingMore) doReturn MutableLiveData()
     }
 
     fun givenNoChannelsAvailable(): Fixture = apply {
@@ -121,16 +103,12 @@ private class Fixture {
         return this
     }
 
-    fun givenMoreChannelsQuery(queryChannelsLoadMore: QueryChannelsLoadMore): Fixture {
-        this.queryChannelsLoadMore = queryChannelsLoadMore
-        When calling useCases.queryChannelsLoadMore doReturn queryChannelsLoadMore
-        return this
-    }
-
     fun givenMoreChannels(moreChannels: List<Channel>): Fixture {
         val mockCall: Call<List<Channel>> = mock()
-        When calling queryChannelsLoadMore.invoke(any(), any(), any(), any()) doReturn mockCall
-        When calling mockCall.enqueue() doAnswer {
+        whenever(chatDomain.queryChannelsLoadMore(any(), any(), any(), any())) doReturn mockCall
+        whenever(chatDomain.queryChannelsLoadMore(any(), any(), any())) doReturn mockCall
+        whenever(chatDomain.queryChannelsLoadMore(any(), any())) doReturn mockCall
+        whenever(mockCall.enqueue()) doAnswer {
             val channels = (channelsLiveData.value ?: emptyList()) + moreChannels
             channelsLiveData.postValue(channels)
             channelsState.postValue(QueryChannelsController.ChannelsState.Result(channels))

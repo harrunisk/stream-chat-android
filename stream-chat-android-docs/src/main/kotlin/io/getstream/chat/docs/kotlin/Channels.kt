@@ -4,13 +4,15 @@ import android.os.Handler
 import android.os.Looper
 import android.util.Log
 import io.getstream.chat.android.client.ChatClient
+import io.getstream.chat.android.client.api.models.FilterObject
+import io.getstream.chat.android.client.api.models.NeutralFilterObject
 import io.getstream.chat.android.client.api.models.Pagination.LESS_THAN
 import io.getstream.chat.android.client.api.models.QueryChannelRequest
 import io.getstream.chat.android.client.api.models.QueryChannelsRequest
 import io.getstream.chat.android.client.api.models.QuerySort
 import io.getstream.chat.android.client.channel.ChannelClient
 import io.getstream.chat.android.client.channel.subscribeFor
-import io.getstream.chat.android.client.events.ChannelsMuteEvent
+import io.getstream.chat.android.client.events.NotificationChannelMutesUpdatedEvent
 import io.getstream.chat.android.client.events.UserStartWatchingEvent
 import io.getstream.chat.android.client.events.UserStopWatchingEvent
 import io.getstream.chat.android.client.models.Channel
@@ -20,7 +22,6 @@ import io.getstream.chat.android.client.models.Member
 import io.getstream.chat.android.client.models.Message
 import io.getstream.chat.android.client.models.User
 import io.getstream.chat.android.client.subscribeFor
-import io.getstream.chat.android.client.utils.FilterObject
 import io.getstream.chat.docs.StaticInstances.TAG
 
 class Channels(val client: ChatClient, val channelClient: ChannelClient) {
@@ -281,6 +282,42 @@ class Channels(val client: ChatClient, val channelClient: ChannelClient) {
      * @see <a href="https://getstream.io/chat/docs/channel_update/?language=kotlin">Updating a Channel</a>
      */
     inner class UpdatingAChannel {
+
+        /**
+         * @see <a href="https://getstream.io/chat/docs/android/channel_update/?language=kotlin#partial-update">Partial Update</a>
+         */
+        fun partialUpdate() {
+            // Here's a channel with some custom field data that might be useful
+            val channelClient = client.channel(channelType = "messaging", channelId = "general")
+
+            channelClient.create(
+                members = listOf("thierry", "tomasso"),
+                extraData = mapOf(
+                    "source" to "user",
+                    "source_detail" to mapOf("user_id" to 123),
+                    "channel_detail" to mapOf(
+                        "topic" to "Plants and Animals",
+                        "rating" to "pg"
+                    )
+                )
+            ).execute()
+
+            // let's change the source of this channel
+            channelClient.updatePartial(set = mapOf("source" to "system")).execute()
+
+            // since it's system generated we no longer need source_detail
+            channelClient.updatePartial(unset = listOf("source_detail")).execute()
+
+            // and finally update one of the nested fields in the channel_detail
+            channelClient.updatePartial(set = mapOf("channel_detail.topic" to "Nature")).execute()
+
+            // and maybe we decide we no longer need a rating
+            channelClient.updatePartial(unset = listOf("channel_detail.rating")).execute()
+        }
+
+        /**
+         * @see <a href="https://getstream.io/chat/docs/android/channel_update/?language=kotlin#full-update-(overwrite)">Full Update (overwrite)</a>
+         */
         fun fullUpdate() {
             val channelClient = client.channel("messaging", "general")
 
@@ -492,6 +529,20 @@ class Channels(val client: ChatClient, val channelClient: ChannelClient) {
                 }
             }
         }
+
+        /**
+         * @see <a href="https://getstream.io/chat/docs/android/channel_delete/?language=kotlin#truncating-a-channel">Truncating a Channel</a>
+         */
+        fun truncatingAChannel() {
+            // Removes all of the messages of the channel but doesn't affect the channel data or members
+            channelClient.truncate().enqueue { result ->
+                if (result.isSuccess) {
+                    // Channel is truncated
+                } else {
+                    // Handle result.error()
+                }
+            }
+        }
     }
 
     /**
@@ -502,9 +553,10 @@ class Channels(val client: ChatClient, val channelClient: ChannelClient) {
         /**
          * @see <a href="https://getstream.io/chat/docs/muting_channels/?language=kotlin#channel-mute">Channel Mute</a>
          */
-        // TODO code in this method doesn't match the CMS, review it
         fun channelMute() {
-            client.muteChannel("channel-type", "channel-id").enqueue { result ->
+            // Mute a channel
+            val channelClient = client.channel("messaging", "general")
+            channelClient.mute().enqueue { result ->
                 if (result.isSuccess) {
                     // Channel is muted
                 } else {
@@ -517,14 +569,14 @@ class Channels(val client: ChatClient, val channelClient: ChannelClient) {
                 .enqueue { result ->
                     if (result.isSuccess) {
                         val user = result.data().user
-                        // Mutes contains the list of channel mutes
+                        // Result contains the list of channel mutes
                         val mutes: List<ChannelMute> = user.channelMutes
                     }
                 }
 
             // Get updates about muted channels
-            client.subscribeFor<ChannelsMuteEvent> { event ->
-                val mutes: List<ChannelMute> = event.channelsMute
+            client.subscribeFor<NotificationChannelMutesUpdatedEvent> { event ->
+                val mutes: List<ChannelMute> = event.me.channelMutes
             }
         }
 
@@ -616,7 +668,7 @@ class Channels(val client: ChatClient, val channelClient: ChannelClient) {
             val filterByPendingInvite = Filters.eq("invite", "pending")
 
             // Query all the members
-            val filterByNone = FilterObject()
+            val filterByNone = NeutralFilterObject
 
             // Results can also be orderd with the QuerySort param
             // For example, this will order results by member creation time, descending

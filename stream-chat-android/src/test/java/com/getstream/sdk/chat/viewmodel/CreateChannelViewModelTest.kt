@@ -10,15 +10,16 @@ import io.getstream.chat.android.client.ChatClient
 import io.getstream.chat.android.client.call.Call
 import io.getstream.chat.android.client.models.Channel
 import io.getstream.chat.android.client.utils.Result
+import io.getstream.chat.android.core.internal.coroutines.DispatcherProvider
 import io.getstream.chat.android.livedata.ChatDomain
-import io.getstream.chat.android.livedata.usecase.CreateChannel
-import io.getstream.chat.android.livedata.usecase.UseCaseHelper
 import io.getstream.chat.android.test.InstantTaskExecutorExtension
+import io.getstream.chat.android.test.TestCall
 import io.getstream.chat.android.test.TestCoroutineExtension
 import io.getstream.chat.android.test.observeAll
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runBlockingTest
 import org.amshove.kluent.shouldContainSame
+import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -35,27 +36,24 @@ private val CHANNEL = createChannel(CID)
 @ExtendWith(InstantTaskExecutorExtension::class)
 internal class CreateChannelViewModelTest {
 
-    @JvmField
-    @RegisterExtension
-    val testCoroutines = TestCoroutineExtension()
-
     private val chatClient: ChatClient = mock()
     private val chatDomain: ChatDomain = mock()
-    private val useCases: UseCaseHelper = mock()
-    private val createChannel: CreateChannel = mock()
-    private val createChannelCall: Call<Channel> = mock()
     private val createChannelResult: Result<Channel> = mock()
+    private val createChannelCall: Call<Channel> = TestCall(createChannelResult)
 
     @BeforeEach
     fun setup() {
         whenever(chatDomain.currentUser) doReturn CURRENT_USER
-        whenever(chatDomain.useCases) doReturn useCases
-        whenever(useCases.createChannel) doReturn createChannel
-        whenever(createChannel.invoke(any())) doReturn createChannelCall
-        whenever(createChannelCall.execute()) doReturn createChannelResult
+        whenever(chatDomain.createChannel(any())) doReturn createChannelCall
         whenever(createChannelResult.data()) doReturn CHANNEL
         whenever(createChannelResult.isError) doReturn false
         whenever(createChannelResult.isSuccess) doReturn true
+        DispatcherProvider.set(testCoroutines.dispatcher, testCoroutines.dispatcher)
+    }
+
+    @AfterEach
+    fun teardown() {
+        DispatcherProvider.reset()
     }
 
     /** [provideChannelName] */
@@ -107,6 +105,10 @@ internal class CreateChannelViewModelTest {
         }
 
     companion object {
+        @JvmField
+        @RegisterExtension
+        val testCoroutines = TestCoroutineExtension()
+
         @JvmStatic
         fun provideChannelName() = listOf(
             Arguments.of(""),

@@ -1,5 +1,6 @@
 package io.getstream.chat.android.ui.message.list.options.message.internal
 
+import android.graphics.drawable.ColorDrawable
 import android.os.Bundle
 import android.view.Gravity
 import android.view.LayoutInflater
@@ -19,16 +20,14 @@ import io.getstream.chat.android.ui.common.extensions.internal.getDimension
 import io.getstream.chat.android.ui.common.internal.FullScreenDialogFragment
 import io.getstream.chat.android.ui.databinding.StreamUiDialogMessageOptionsBinding
 import io.getstream.chat.android.ui.message.list.MessageListView
+import io.getstream.chat.android.ui.message.list.MessageListViewStyle
 import io.getstream.chat.android.ui.message.list.adapter.BaseMessageItemViewHolder
 import io.getstream.chat.android.ui.message.list.adapter.MessageListItemViewHolderFactory
+import io.getstream.chat.android.ui.message.list.adapter.MessageListListenerContainerImpl
 import io.getstream.chat.android.ui.message.list.adapter.internal.MessageListItemViewTypeMapper
-import io.getstream.chat.android.ui.message.list.adapter.internal.MessageListListenerContainerImpl
+import io.getstream.chat.android.ui.message.list.adapter.viewholder.attachment.AttachmentViewFactory
 import io.getstream.chat.android.ui.message.list.adapter.viewholder.internal.MessagePlainTextViewHolder
-import io.getstream.chat.android.ui.message.list.adapter.viewholder.internal.OnlyFileAttachmentsViewHolder
-import io.getstream.chat.android.ui.message.list.adapter.viewholder.internal.OnlyMediaAttachmentsViewHolder
-import io.getstream.chat.android.ui.message.list.adapter.viewholder.internal.PlainTextWithFileAttachmentsViewHolder
-import io.getstream.chat.android.ui.message.list.adapter.viewholder.internal.PlainTextWithMediaAttachmentsViewHolder
-import io.getstream.chat.android.ui.message.list.internal.MessageListItemStyle
+import io.getstream.chat.android.ui.message.list.adapter.viewholder.internal.TextAndAttachmentsViewHolder
 import java.io.Serializable
 
 internal class MessageOptionsDialogFragment : FullScreenDialogFragment() {
@@ -42,12 +41,10 @@ internal class MessageOptionsDialogFragment : FullScreenDialogFragment() {
         requireArguments().getSerializable(ARG_OPTIONS_MODE) as OptionsMode
     }
 
+    private val style by lazy { messageListViewStyle!! }
+
     private val configuration by lazy {
         requireArguments().getSerializable(ARG_OPTIONS_CONFIG) as MessageOptionsView.Configuration
-    }
-
-    private val itemStyle by lazy {
-        requireArguments().getSerializable(ARG_OPTIONS_ITEM_STYLE) as MessageListItemStyle
     }
 
     private val messageItem: MessageListItem.MessageItem by lazy {
@@ -63,6 +60,7 @@ internal class MessageOptionsDialogFragment : FullScreenDialogFragment() {
 
     private var reactionClickHandler: ReactionClickHandler? = null
     private var confirmDeleteMessageClickHandler: ConfirmDeleteMessageClickHandler? = null
+    private var confirmFlagMessageClickHandler: ConfirmFlagMessageClickHandler? = null
     private var messageOptionsHandlers: MessageOptionsHandlers? = null
 
     override fun onCreateView(
@@ -90,6 +88,7 @@ internal class MessageOptionsDialogFragment : FullScreenDialogFragment() {
 
     override fun onDestroyView() {
         super.onDestroyView()
+        messageListViewStyle = null
         _binding = null
     }
 
@@ -97,6 +96,8 @@ internal class MessageOptionsDialogFragment : FullScreenDialogFragment() {
         super.onDestroy()
         reactionClickHandler = null
         messageOptionsHandlers = null
+        confirmDeleteMessageClickHandler = null
+        confirmFlagMessageClickHandler = null
     }
 
     fun setReactionClickHandler(reactionClickHandler: ReactionClickHandler) {
@@ -105,6 +106,10 @@ internal class MessageOptionsDialogFragment : FullScreenDialogFragment() {
 
     fun setConfirmDeleteMessageClickHandler(confirmDeleteMessageClickHandler: ConfirmDeleteMessageClickHandler) {
         this.confirmDeleteMessageClickHandler = confirmDeleteMessageClickHandler
+    }
+
+    fun setConfirmFlagMessageClickHandler(confirmFlagMessageClickHandler: ConfirmFlagMessageClickHandler) {
+        this.confirmFlagMessageClickHandler = confirmFlagMessageClickHandler
     }
 
     fun setMessageOptionsHandlers(messageOptionsHandlers: MessageOptionsHandlers) {
@@ -127,12 +132,22 @@ internal class MessageOptionsDialogFragment : FullScreenDialogFragment() {
         }
     }
 
+    override fun onStart() {
+        super.onStart()
+        dialog?.window?.setBackgroundDrawable(ColorDrawable(style.optionsOverlayDimColor))
+    }
+
     private fun setupEditReactionsView() {
         with(binding.editReactionsView) {
-            setMessage(message, messageItem.isMine)
-            setReactionClickListener {
-                reactionClickHandler?.onReactionClick(message, it)
-                dismiss()
+            applyStyle(style.itemStyle.editReactionsViewStyle)
+            if (configuration.reactionsEnabled) {
+                setMessage(message, messageItem.isMine)
+                setReactionClickListener {
+                    reactionClickHandler?.onReactionClick(message, it)
+                    dismiss()
+                }
+            } else {
+                isVisible = false
             }
         }
     }
@@ -140,8 +155,10 @@ internal class MessageOptionsDialogFragment : FullScreenDialogFragment() {
     private fun setupMessageView() {
         viewHolder = MessageListItemViewHolderFactory()
             .apply {
-                decoratorProvider = MessageOptionsDecoratorProvider(itemStyle)
+                decoratorProvider = MessageOptionsDecoratorProvider(style.itemStyle, currentUser)
                 setListenerContainer(MessageListListenerContainerImpl())
+                setAttachmentViewFactory(AttachmentViewFactory())
+                setMessageListItemStyle(style.itemStyle)
             }
             .createViewHolder(
                 binding.messageContainer,
@@ -164,22 +181,42 @@ internal class MessageOptionsDialogFragment : FullScreenDialogFragment() {
     private fun setupUserReactionsView() {
         with(binding.userReactionsView) {
             isVisible = true
+            configure(style)
             setMessage(message, currentUser)
         }
+    }
+
+    private fun isMessageAuthorMuted(): Boolean {
+        return currentUser.mutes.any { mute -> mute.target.id == message.user.id }
     }
 
     private fun setupMessageOptions() {
         with(binding.messageOptionsView) {
             isVisible = true
-            configure(configuration, messageItem.isTheirs, messageItem.message.syncStatus)
+            val isMessageAuthorMuted = isMessageAuthorMuted()
+            configure(
+                configuration = configuration,
+                style = style,
+                isMessageTheirs = messageItem.isTheirs,
+                syncStatus = messageItem.message.syncStatus,
+                isMessageAuthorMuted = isMessageAuthorMuted,
+            )
             updateLayoutParams<LinearLayout.LayoutParams> {
                 gravity = if (messageItem.isMine) Gravity.END else Gravity.START
             }
-            messageOptionsHandlers?.let(::setupOptionsClickListeners)
+            messageOptionsHandlers?.let { messageOptionsHandlers ->
+                setupOptionsClickListeners(
+                    messageOptionsHandlers = messageOptionsHandlers,
+                    isMessageAuthorMuted = isMessageAuthorMuted,
+                )
+            }
         }
     }
 
-    private fun setupOptionsClickListeners(messageOptionsHandlers: MessageOptionsHandlers) {
+    private fun setupOptionsClickListeners(
+        messageOptionsHandlers: MessageOptionsHandlers,
+        isMessageAuthorMuted: Boolean,
+    ) {
         binding.messageOptionsView.run {
             setThreadListener {
                 messageOptionsHandlers.threadReplyHandler.onStartThread(message)
@@ -198,11 +235,21 @@ internal class MessageOptionsDialogFragment : FullScreenDialogFragment() {
                 dismiss()
             }
             setFlagMessageListener {
-                messageOptionsHandlers.flagClickHandler.onMessageFlag(message)
+                if (style.deleteConfirmationEnabled) {
+                    confirmFlagMessageClickHandler?.onConfirmFlagMessage(message) {
+                        messageOptionsHandlers.flagClickHandler.onMessageFlag(message)
+                    }
+                } else {
+                    messageOptionsHandlers.flagClickHandler.onMessageFlag(message)
+                }
                 dismiss()
             }
             setMuteUserListener {
-                messageOptionsHandlers.muteClickHandler.onUserMute(message.user)
+                if (isMessageAuthorMuted) {
+                    messageOptionsHandlers.unmuteClickHandler.onUserUnmute(message.user)
+                } else {
+                    messageOptionsHandlers.muteClickHandler.onUserMute(message.user)
+                }
                 dismiss()
             }
             setBlockUserListener {
@@ -214,7 +261,7 @@ internal class MessageOptionsDialogFragment : FullScreenDialogFragment() {
                 dismiss()
             }
             setDeleteMessageListener {
-                if (configuration.deleteConfirmationEnabled) {
+                if (style.deleteConfirmationEnabled) {
                     confirmDeleteMessageClickHandler?.onConfirmDeleteMessage(message) {
                         messageOptionsHandlers.deleteClickHandler.onMessageDelete(message)
                     }
@@ -232,10 +279,7 @@ internal class MessageOptionsDialogFragment : FullScreenDialogFragment() {
 
         when (val viewHolder = viewHolder) {
             is MessagePlainTextViewHolder -> viewHolder.binding.messageContainer
-            is PlainTextWithMediaAttachmentsViewHolder -> viewHolder.binding.mediaAttachmentsGroupView
-            is OnlyMediaAttachmentsViewHolder -> viewHolder.binding.mediaAttachmentsGroupView
-            is OnlyFileAttachmentsViewHolder -> viewHolder.binding.fileAttachmentsView
-            is PlainTextWithFileAttachmentsViewHolder -> viewHolder.binding.fileAttachmentsView
+            is TextAndAttachmentsViewHolder -> viewHolder.binding.messageContainer
             else -> null
         }?.addOnLayoutChangeListener { _, left, _, right, _, _, _, _, _ ->
             with(binding) {
@@ -264,12 +308,17 @@ internal class MessageOptionsDialogFragment : FullScreenDialogFragment() {
         }
     }
 
+    internal fun interface ConfirmFlagMessageClickHandler {
+        fun onConfirmFlagMessage(message: Message, confirmCallback: () -> Unit)
+    }
+
     internal class MessageOptionsHandlers(
         val threadReplyHandler: MessageListView.ThreadStartHandler,
         val retryHandler: MessageListView.MessageRetryHandler,
         val editClickHandler: MessageListView.MessageEditHandler,
         val flagClickHandler: MessageListView.MessageFlagHandler,
         val muteClickHandler: MessageListView.UserMuteHandler,
+        val unmuteClickHandler: MessageListView.UserUnmuteHandler,
         val blockClickHandler: MessageListView.UserBlockHandler,
         val deleteClickHandler: MessageListView.MessageDeleteHandler,
         val replyClickHandler: MessageListView.MessageReplyHandler,
@@ -285,21 +334,23 @@ internal class MessageOptionsDialogFragment : FullScreenDialogFragment() {
 
         private const val ARG_OPTIONS_MODE = "optionsMode"
         private const val ARG_OPTIONS_CONFIG = "optionsConfig"
-        private const val ARG_OPTIONS_ITEM_STYLE = "optionsMessageItemStyle"
+
+        internal var messageListViewStyle: MessageListViewStyle? = null
 
         var messageArg: Message? = null
 
         fun newReactionOptionsInstance(
             message: Message,
-            style: MessageListItemStyle,
+            configuration: MessageOptionsView.Configuration,
+            style: MessageListViewStyle,
         ): MessageOptionsDialogFragment {
-            return newInstance(OptionsMode.REACTION_OPTIONS, message, null, style)
+            return newInstance(OptionsMode.REACTION_OPTIONS, message, configuration, style)
         }
 
         fun newMessageOptionsInstance(
             message: Message,
             configuration: MessageOptionsView.Configuration,
-            style: MessageListItemStyle,
+            style: MessageListViewStyle,
         ): MessageOptionsDialogFragment {
             return newInstance(OptionsMode.MESSAGE_OPTIONS, message, configuration, style)
         }
@@ -307,14 +358,14 @@ internal class MessageOptionsDialogFragment : FullScreenDialogFragment() {
         private fun newInstance(
             optionsMode: OptionsMode,
             message: Message,
-            configuration: MessageOptionsView.Configuration?,
-            style: MessageListItemStyle,
+            configuration: MessageOptionsView.Configuration,
+            style: MessageListViewStyle,
         ): MessageOptionsDialogFragment {
+            messageListViewStyle = style
             return MessageOptionsDialogFragment().apply {
                 arguments = bundleOf(
                     ARG_OPTIONS_MODE to optionsMode,
-                    ARG_OPTIONS_CONFIG to configuration,
-                    ARG_OPTIONS_ITEM_STYLE to style
+                    ARG_OPTIONS_CONFIG to configuration
                 )
                 // pass message via static field
                 messageArg = message

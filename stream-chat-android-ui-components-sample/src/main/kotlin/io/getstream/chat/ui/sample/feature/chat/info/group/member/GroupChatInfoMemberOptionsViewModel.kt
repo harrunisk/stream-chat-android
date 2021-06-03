@@ -7,13 +7,10 @@ import androidx.lifecycle.Transformations
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import io.getstream.chat.android.client.ChatClient
 import io.getstream.chat.android.client.api.models.QuerySort
 import io.getstream.chat.android.client.call.await
-import io.getstream.chat.android.client.channel.ChannelClient
 import io.getstream.chat.android.client.models.Channel
 import io.getstream.chat.android.client.models.Filters
-import io.getstream.chat.android.client.utils.FilterObject
 import io.getstream.chat.android.livedata.ChatDomain
 import io.getstream.chat.android.livedata.controller.QueryChannelsController
 import io.getstream.chat.android.livedata.utils.Event
@@ -21,29 +18,24 @@ import io.getstream.chat.ui.sample.common.isDraft
 import kotlinx.coroutines.launch
 
 class GroupChatInfoMemberOptionsViewModel(
-    cid: String,
+    private val cid: String,
     private val memberId: String,
     private val chatDomain: ChatDomain = ChatDomain.instance(),
-    chatClient: ChatClient = ChatClient.instance(),
 ) : ViewModel() {
 
-    private val channelClient: ChannelClient = chatClient.channel(cid)
     private val _events = MutableLiveData<Event<UiEvent>>()
     private val _state: MediatorLiveData<State> = MediatorLiveData()
+    private val _errorEvents: MutableLiveData<Event<ErrorEvent>> = MutableLiveData()
     val events: LiveData<Event<UiEvent>> = _events
     val state: LiveData<State> = _state
+    val errorEvents: LiveData<Event<ErrorEvent>> = _errorEvents
 
     init {
         viewModelScope.launch {
-            val result = chatDomain.useCases.queryChannels(
+            val result = chatDomain.queryChannels(
                 filter = Filters.and(
                     Filters.eq("type", "messaging"),
-                    FilterObject(
-                        data = mutableMapOf(
-                            "distinct" to true,
-                            "members" to listOf(memberId, chatDomain.currentUser.id),
-                        ),
-                    ),
+                    Filters.distinct(listOf(memberId, chatDomain.currentUser.id)),
                 ),
                 sort = QuerySort.desc(Channel::lastUpdated),
                 messageLimit = 0,
@@ -100,11 +92,11 @@ class GroupChatInfoMemberOptionsViewModel(
 
     private fun removeFromChannel() {
         viewModelScope.launch {
-            val result = channelClient.removeMembers(memberId).await()
+            val result = chatDomain.removeMembers(cid, memberId).await()
             if (result.isSuccess) {
                 _events.value = Event(UiEvent.Dismiss)
             } else {
-                // TODO: Handle error
+                _errorEvents.postValue(Event(ErrorEvent.RemoveMemberError))
             }
         }
     }
@@ -120,6 +112,10 @@ class GroupChatInfoMemberOptionsViewModel(
         object Dismiss : UiEvent()
         data class RedirectToChat(val cid: String) : UiEvent()
         object RedirectToChatPreview : UiEvent()
+    }
+
+    sealed class ErrorEvent {
+        object RemoveMemberError : ErrorEvent()
     }
 }
 

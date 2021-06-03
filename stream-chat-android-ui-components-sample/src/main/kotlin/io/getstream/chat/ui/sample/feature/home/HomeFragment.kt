@@ -18,6 +18,7 @@ import io.getstream.chat.android.livedata.utils.EventObserver
 import io.getstream.chat.android.ui.avatar.AvatarView
 import io.getstream.chat.android.ui.channel.list.header.viewmodel.ChannelListHeaderViewModel
 import io.getstream.chat.android.ui.channel.list.header.viewmodel.bindView
+import io.getstream.chat.ui.sample.BuildConfig
 import io.getstream.chat.ui.sample.R
 import io.getstream.chat.ui.sample.application.EXTRA_CHANNEL_ID
 import io.getstream.chat.ui.sample.application.EXTRA_CHANNEL_TYPE
@@ -31,7 +32,7 @@ class HomeFragment : Fragment() {
 
     private var _binding: FragmentHomeBinding? = null
     private val binding get() = _binding!!
-    private val viewModel: HomeFragmentViewModel by viewModels()
+    private val homeViewModel: HomeFragmentViewModel by viewModels()
     private val channelListHeaderViewModel: ChannelListHeaderViewModel by viewModels()
 
     private lateinit var avatarView: AvatarView
@@ -51,8 +52,8 @@ class HomeFragment : Fragment() {
         parseNotificationData()
         setupBottomNavigation()
         setupNavigationDrawer()
-        viewModel.state.observe(viewLifecycleOwner, ::renderState)
-        viewModel.events.observe(
+        homeViewModel.state.observe(viewLifecycleOwner, ::renderState)
+        homeViewModel.events.observe(
             viewLifecycleOwner,
             EventObserver {
                 navigateSafely(R.id.action_to_userLoginFragment)
@@ -76,6 +77,9 @@ class HomeFragment : Fragment() {
                 val channelId = it.getStringExtra(EXTRA_CHANNEL_ID)
                 val cid = "$channelType:$channelId"
                 val messageId = it.getStringExtra(EXTRA_MESSAGE_ID)
+
+                requireActivity().intent = null
+
                 findNavController().navigateSafely(HomeFragmentDirections.actionOpenChat(cid, messageId))
             }
         }
@@ -138,8 +142,9 @@ class HomeFragment : Fragment() {
         }
 
         binding.signOutTextView.setOnClickListener {
-            viewModel.onUiAction(HomeFragmentViewModel.UiAction.LogoutClicked)
+            homeViewModel.onUiAction(HomeFragmentViewModel.UiAction.LogoutClicked)
         }
+        binding.versionName.text = BuildConfig.VERSION_NAME
     }
 
     private fun renderState(state: HomeFragmentViewModel.State) {

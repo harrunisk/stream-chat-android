@@ -13,6 +13,7 @@ import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.navigation.findNavController
 import com.getstream.sdk.chat.utils.Utils
+import io.getstream.chat.android.client.extensions.isAnonymousChannel
 import io.getstream.chat.android.ui.channel.list.viewmodel.ChannelListViewModel
 import io.getstream.chat.android.ui.channel.list.viewmodel.bindView
 import io.getstream.chat.android.ui.channel.list.viewmodel.factory.ChannelListViewModelFactory
@@ -48,6 +49,9 @@ class ChannelListFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         setupOnClickListeners()
+        viewModel.bindView(binding.channelsView, viewLifecycleOwner)
+        searchViewModel.bindView(binding.searchResultListView, this)
+
         binding.channelsView.apply {
             view as ViewGroup // for use as a parent in inflation
 
@@ -86,7 +90,8 @@ class ChannelListFragment : Fragment() {
 
             setChannelInfoClickListener { channel ->
                 val direction = when {
-                    channel.members.size > 2 -> HomeFragmentDirections.actionHomeFragmentToGroupChatInfoFragment(channel.cid)
+                    channel.members.size > 2 || channel.isAnonymousChannel() ->
+                        HomeFragmentDirections.actionHomeFragmentToGroupChatInfoFragment(channel.cid)
 
                     else -> HomeFragmentDirections.actionHomeFragmentToChatInfoFragment(channel.cid)
                 }
@@ -99,8 +104,6 @@ class ChannelListFragment : Fragment() {
             setChannelLeaveClickListener { channel ->
                 viewModel.leaveChannel(channel)
             }
-
-            viewModel.bindView(this, viewLifecycleOwner)
         }
 
         binding.searchInputView.apply {
@@ -118,7 +121,6 @@ class ChannelListFragment : Fragment() {
             }
         }
 
-        searchViewModel.bindView(binding.searchResultListView, this)
         binding.searchResultListView.setSearchResultSelectedListener { message ->
             requireActivity().findNavController(R.id.hostFragmentContainer)
                 .navigateSafely(HomeFragmentDirections.actionOpenChat(message.cid, message.id))

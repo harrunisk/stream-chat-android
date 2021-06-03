@@ -6,39 +6,49 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
-import android.graphics.Bitmap
-import android.graphics.Canvas
 import android.graphics.Color
-import android.graphics.drawable.BitmapDrawable
-import android.graphics.drawable.Drawable
-import android.media.RingtoneManager
 import android.os.Build
 import androidx.annotation.RequiresApi
 import androidx.core.app.NotificationCompat
 import androidx.core.app.RemoteInput
 import com.google.firebase.FirebaseApp
-import com.google.firebase.iid.FirebaseInstanceId
+import com.google.firebase.messaging.FirebaseMessaging
 import com.google.firebase.messaging.RemoteMessage
 import io.getstream.chat.android.client.R
-import io.getstream.chat.android.client.events.ChatEvent
-import io.getstream.chat.android.client.logger.ChatLogger
+import io.getstream.chat.android.client.events.NewMessageEvent
+import io.getstream.chat.android.client.models.Channel
+import io.getstream.chat.android.client.models.Message
+import io.getstream.chat.android.client.models.name
 import io.getstream.chat.android.client.notifications.DeviceRegisteredListener
 import io.getstream.chat.android.client.notifications.FirebaseMessageParser
 import io.getstream.chat.android.client.notifications.FirebaseMessageParserImpl
 import io.getstream.chat.android.client.notifications.NotificationLoadDataListener
 import io.getstream.chat.android.client.receivers.NotificationMessageReceiver
 
+/**
+ * Class responsible for handling chat notifications.
+ */
 public open class ChatNotificationHandler @JvmOverloads constructor(
     protected val context: Context,
-    public val config: NotificationConfig = NotificationConfig()
+    public val config: NotificationConfig = NotificationConfig(),
 ) {
-    private val logger = ChatLogger.get("ChatNotificationHandler")
     private val firebaseMessageParserImpl: FirebaseMessageParser by lazy { FirebaseMessageParserImpl(config) }
 
-    public open fun onChatEvent(event: ChatEvent): Boolean {
-        return false
+    /**
+     * Handles showing notification after receiving [NewMessageEvent] from other users.
+     * Default implementation loads necessary data and displays notification even if app is in foreground.
+     *
+     * @return false if notification should be handled internally
+     */
+    public open fun onChatEvent(event: NewMessageEvent): Boolean {
+        return true
     }
 
+    /**
+     * Override this method to customize remote message handling
+     *
+     * @return false if remote message should be handled internally
+     */
     public open fun onFirebaseMessage(message: RemoteMessage): Boolean {
         return false
     }
@@ -53,11 +63,10 @@ public open class ChatNotificationHandler @JvmOverloads constructor(
 
     @RequiresApi(api = Build.VERSION_CODES.O)
     public open fun createNotificationChannel(): NotificationChannel {
-        logger.logI("createNotificationChannel()")
         return NotificationChannel(
             getNotificationChannelId(),
             getNotificationChannelName(),
-            NotificationManager.IMPORTANCE_DEFAULT
+            NotificationManager.IMPORTANCE_DEFAULT,
         ).apply {
             setShowBadge(true)
             importance = NotificationManager.IMPORTANCE_HIGH
@@ -73,7 +82,7 @@ public open class ChatNotificationHandler @JvmOverloads constructor(
                 400,
                 300,
                 200,
-                400
+                400,
             )
         }
     }
@@ -83,9 +92,32 @@ public open class ChatNotificationHandler @JvmOverloads constructor(
     public open fun getNotificationChannelName(): String =
         context.getString(config.notificationChannelName)
 
+    @Deprecated(
+        message = "Use NotificationConfig.smallIcon instead",
+        replaceWith = ReplaceWith("NotificationConfig.smallIcon"),
+        level = DeprecationLevel.WARNING,
+    )
     public open fun getSmallIcon(): Int = config.smallIcon
+
+    @Deprecated(
+        message = "Use NotificationConfig.firebaseMessageIdKey instead",
+        replaceWith = ReplaceWith("NotificationConfig.firebaseMessageIdKey"),
+        level = DeprecationLevel.WARNING,
+    )
     public open fun getFirebaseMessageIdKey(): String = config.firebaseMessageIdKey
+
+    @Deprecated(
+        message = "Use NotificationConfig.firebaseChannelIdKey instead",
+        replaceWith = ReplaceWith("NotificationConfig.firebaseChannelIdKey"),
+        level = DeprecationLevel.WARNING,
+    )
     public open fun getFirebaseChannelIdKey(): String = config.firebaseChannelIdKey
+
+    @Deprecated(
+        message = "Use NotificationConfig.firebaseChannelTypeKey instead",
+        replaceWith = ReplaceWith("NotificationConfig.firebaseChannelTypeKey"),
+        level = DeprecationLevel.WARNING,
+    )
     public open fun getFirebaseChannelTypeKey(): String = config.firebaseChannelTypeKey
 
     public open fun getErrorCaseNotificationTitle(): String =
@@ -95,87 +127,92 @@ public open class ChatNotificationHandler @JvmOverloads constructor(
         context.getString(config.errorCaseNotificationContent)
 
     public open fun buildErrorCaseNotification(): Notification {
-        val defaultSoundUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
-        val notificationBuilder = getNotificationBuilder()
-        val intent = PendingIntent.getActivity(
-            context,
-            getRequestCode(),
-            getErrorCaseIntent(),
-            PendingIntent.FLAG_UPDATE_CURRENT
-        )
-
-        return notificationBuilder.setContentTitle(getErrorCaseNotificationTitle())
-            .setContentText(getErrorCaseNotificationContent())
-            .setPriority(NotificationCompat.PRIORITY_HIGH)
-            .setCategory(NotificationCompat.CATEGORY_MESSAGE)
-            .setShowWhen(true)
-            .setContentIntent(intent)
-            .setSound(defaultSoundUri)
-            .build()
+        return getNotificationBuilder(
+            contentTitle = getErrorCaseNotificationTitle(),
+            contentText = getErrorCaseNotificationContent(),
+            groupKey = getErrorNotificationGroupKey(),
+            intent = getErrorCaseIntent(),
+        ).build()
     }
 
     public open fun buildNotification(
         notificationId: Int,
-        channelName: String,
-        messageText: String,
-        messageId: String,
-        channelType: String,
-        channelId: String
-    ): Notification {
-        val defaultSoundUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
-        val notificationBuilder = getNotificationBuilder()
-
-        val intent = PendingIntent.getActivity(
-            context,
-            getRequestCode(),
-            getNewMessageIntent(messageId, channelType, channelId),
-            PendingIntent.FLAG_UPDATE_CURRENT
-        )
-
-        notificationBuilder.setContentTitle(channelName)
-            .setContentText(messageText)
-            .setPriority(NotificationCompat.PRIORITY_HIGH)
-            .setCategory(NotificationCompat.CATEGORY_MESSAGE)
-            .setShowWhen(true)
-            .setContentIntent(intent)
-            .setSound(defaultSoundUri)
-
-        notificationBuilder.apply {
+        channel: Channel,
+        message: Message
+    ): NotificationCompat.Builder {
+        return getNotificationBuilder(
+            contentTitle = channel.name,
+            contentText = message.text,
+            groupKey = getNotificationGroupKey(channelType = channel.type, channelId = channel.id),
+            intent = getNewMessageIntent(messageId = message.id, channelType = channel.type, channelId = channel.id),
+        ).apply {
             addAction(
                 getReadAction(
-                    preparePendingIntent(
+                    prepareActionPendingIntent(
                         notificationId,
-                        messageId,
-                        channelId,
-                        channelType,
-                        NotificationMessageReceiver.ACTION_READ
+                        message.id,
+                        channel.id,
+                        channel.type,
+                        NotificationMessageReceiver.ACTION_READ,
                     )
                 )
             )
             addAction(
                 getReplyAction(
-                    preparePendingIntent(
+                    prepareActionPendingIntent(
                         notificationId,
-                        messageId,
-                        channelId,
-                        channelType,
-                        NotificationMessageReceiver.ACTION_REPLY
+                        message.id,
+                        channel.id,
+                        channel.type,
+                        NotificationMessageReceiver.ACTION_REPLY,
                     )
                 )
             )
         }
-
-        return notificationBuilder.build()
     }
 
+    public open fun buildNotificationGroupSummary(channel: Channel, message: Message): NotificationCompat.Builder {
+        return getNotificationBuilder(
+            contentTitle = channel.name,
+            contentText = context.getString(config.notificationGroupSummaryContentText),
+            groupKey = getNotificationGroupKey(channelType = channel.type, channelId = channel.id),
+            intent = getNewMessageIntent(messageId = message.id, channelType = channel.type, channelId = channel.id),
+        ).apply {
+            setGroupSummary(true)
+        }
+    }
+
+    public open fun buildErrorNotificationGroupSummary(): Notification {
+        return getNotificationBuilder(
+            contentTitle = context.getString(config.errorNotificationGroupSummaryTitle),
+            contentText = context.getString(config.errorNotificationGroupSummaryContentText),
+            groupKey = getErrorNotificationGroupKey(),
+            getErrorCaseIntent(),
+        ).apply {
+            setGroupSummary(true)
+        }.build()
+    }
+
+    public open fun getNotificationGroupKey(channelType: String, channelId: String): String {
+        return "$channelType:$channelId"
+    }
+
+    public open fun getNotificationGroupSummaryId(channelType: String, channelId: String): Int {
+        return getNotificationGroupKey(channelType = channelType, channelId = channelId).hashCode()
+    }
+
+    public open fun getErrorNotificationGroupKey(): String = ERROR_NOTIFICATION_GROUP_KEY
+
+    public open fun getErrorNotificationGroupSummaryId(): Int = getErrorNotificationGroupKey().hashCode()
+
     private fun getRequestCode(): Int {
-        return 1220999987
+        return System.currentTimeMillis().toInt()
     }
 
     public open fun getNewMessageIntent(
         messageId: String,
         channelType: String,
-        channelId: String
+        channelId: String,
     ): Intent {
         return context.packageManager!!.getLaunchIntentForPackage(context.packageName)!!
     }
@@ -185,32 +222,44 @@ public open class ChatNotificationHandler @JvmOverloads constructor(
     }
 
     public open fun getFirebaseMessageParser(): FirebaseMessageParser = firebaseMessageParserImpl
-    internal fun isValidRemoteMessage(message: RemoteMessage): Boolean = getFirebaseMessageParser().isValidRemoteMessage(message)
+    internal fun isValidRemoteMessage(message: RemoteMessage): Boolean =
+        getFirebaseMessageParser().isValidRemoteMessage(message)
 
-    private fun drawableToBitmap(drawable: Drawable): Bitmap {
-        if (drawable is BitmapDrawable) {
-            return drawable.bitmap
-        }
-        val bitmap =
-            Bitmap.createBitmap(drawable.intrinsicWidth, drawable.intrinsicHeight, Bitmap.Config.ARGB_8888)
-        val canvas = Canvas(bitmap)
-        drawable.setBounds(0, 0, canvas.width, canvas.height)
-        drawable.draw(canvas)
-        return bitmap
-    }
+    private fun getNotificationBuilder(
+        contentTitle: String,
+        contentText: String,
+        groupKey: String,
+        intent: Intent,
+    ): NotificationCompat.Builder {
+        val contentIntent = PendingIntent.getActivity(
+            context,
+            getRequestCode(),
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT,
+        )
 
-    private fun getNotificationBuilder(): NotificationCompat.Builder {
         return NotificationCompat.Builder(context, getNotificationChannelId())
-            .setAutoCancel(true)
-            .setSmallIcon(getSmallIcon())
             .setDefaults(NotificationCompat.DEFAULT_ALL)
+            .setAutoCancel(true)
+            .setSmallIcon(config.smallIcon)
+            .setContentTitle(contentTitle)
+            .setContentText(contentText)
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setCategory(NotificationCompat.CATEGORY_MESSAGE)
+            .setShowWhen(true)
+            .setContentIntent(contentIntent)
+            .apply {
+                if (config.shouldGroupNotifications) {
+                    setGroup(groupKey)
+                }
+            }
     }
 
     private fun getReadAction(pendingIntent: PendingIntent): NotificationCompat.Action {
         return NotificationCompat.Action.Builder(
             android.R.drawable.ic_menu_view,
             context.getString(R.string.stream_chat_notification_read),
-            pendingIntent
+            pendingIntent,
         ).build()
     }
 
@@ -229,12 +278,12 @@ public open class ChatNotificationHandler @JvmOverloads constructor(
             .build()
     }
 
-    private fun preparePendingIntent(
+    private fun prepareActionPendingIntent(
         notificationId: Int,
         messageId: String,
         channelId: String,
         type: String,
-        actionType: String
+        actionType: String,
     ): PendingIntent {
         val notifyIntent = Intent(context, NotificationMessageReceiver::class.java)
 
@@ -250,14 +299,18 @@ public open class ChatNotificationHandler @JvmOverloads constructor(
             context,
             0,
             notifyIntent,
-            PendingIntent.FLAG_UPDATE_CURRENT
+            PendingIntent.FLAG_UPDATE_CURRENT,
         )
     }
 
-    public open fun getFirebaseInstanceId(): FirebaseInstanceId? =
+    public open fun getFirebaseMessaging(): FirebaseMessaging? =
         if (config.useProvidedFirebaseInstance && FirebaseApp.getApps(context).isNotEmpty()) {
-            FirebaseInstanceId.getInstance()
+            FirebaseMessaging.getInstance()
         } else {
             null
         }
+
+    private companion object {
+        private const val ERROR_NOTIFICATION_GROUP_KEY = "error_notification_group_key"
+    }
 }

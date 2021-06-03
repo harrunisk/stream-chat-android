@@ -14,15 +14,6 @@ class MessageListItemAdapter(
 
     var isThread: Boolean = false
 
-    @Deprecated(
-        message = "Use submitList instead",
-        replaceWith = ReplaceWith("submitList(newEntities)"),
-        level = DeprecationLevel.ERROR
-    )
-    fun replaceEntities(newEntities: List<MessageListItem>) {
-        submitList(newEntities)
-    }
-
     override fun getItemId(position: Int): Long = getItem(position).getStableId()
 
     override fun getItemViewType(position: Int): Int {

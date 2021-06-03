@@ -28,7 +28,6 @@ internal class ChannelActionsViewModel(
 
         viewModelScope.launch {
             chatDomain
-                .useCases
                 .watchChannel(cid, 0)
                 .await()
                 .data()
@@ -38,15 +37,6 @@ internal class ChannelActionsViewModel(
                     }
                 }
         }
-    }
-
-    data class State(
-        val members: List<Member> = listOf(),
-        val canDeleteChannel: Boolean = false,
-    )
-
-    sealed class Action {
-        data class UpdateMembers(val members: List<Member>) : Action()
     }
 
     fun onAction(action: Action) {
@@ -66,5 +56,14 @@ internal class ChannelActionsViewModel(
             members = members.filter { isGroup || !it.user.isCurrentUser() },
             canDeleteChannel = canDeleteChannel,
         )
+    }
+
+    data class State(
+        val members: List<Member> = listOf(),
+        val canDeleteChannel: Boolean = false,
+    )
+
+    sealed class Action {
+        data class UpdateMembers(val members: List<Member>) : Action()
     }
 }

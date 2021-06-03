@@ -8,19 +8,31 @@ import io.getstream.chat.android.client.api.AuthenticatedApi
 import io.getstream.chat.android.client.api.ChatApi
 import io.getstream.chat.android.client.api.ChatClientConfig
 import io.getstream.chat.android.client.api.GsonChatApi
-import io.getstream.chat.android.client.api.HeadersInterceptor
-import io.getstream.chat.android.client.api.HttpLoggingInterceptor
 import io.getstream.chat.android.client.api.RetrofitAnonymousApi
 import io.getstream.chat.android.client.api.RetrofitApi
 import io.getstream.chat.android.client.api.RetrofitCallAdapterFactory
 import io.getstream.chat.android.client.api.RetrofitCdnApi
-import io.getstream.chat.android.client.api.TokenAuthInterceptor
+import io.getstream.chat.android.client.api.interceptor.ApiKeyInterceptor
+import io.getstream.chat.android.client.api.interceptor.HeadersInterceptor
+import io.getstream.chat.android.client.api.interceptor.HttpLoggingInterceptor
+import io.getstream.chat.android.client.api.interceptor.TokenAuthInterceptor
+import io.getstream.chat.android.client.api2.ChannelApi
+import io.getstream.chat.android.client.api2.DeviceApi
+import io.getstream.chat.android.client.api2.GeneralApi
+import io.getstream.chat.android.client.api2.GuestApi
 import io.getstream.chat.android.client.api2.MessageApi
+import io.getstream.chat.android.client.api2.ModerationApi
 import io.getstream.chat.android.client.api2.MoshiApi
 import io.getstream.chat.android.client.api2.MoshiChatApi
+import io.getstream.chat.android.client.api2.UserApi
+import io.getstream.chat.android.client.clientstate.SocketStateService
+import io.getstream.chat.android.client.clientstate.UserStateService
+import io.getstream.chat.android.client.helpers.QueryChannelsPostponeHelper
 import io.getstream.chat.android.client.logger.ChatLogger
 import io.getstream.chat.android.client.network.NetworkStateProvider
 import io.getstream.chat.android.client.notifications.ChatNotifications
+import io.getstream.chat.android.client.notifications.ChatNotificationsImpl
+import io.getstream.chat.android.client.notifications.NoOpChatNotifications
 import io.getstream.chat.android.client.notifications.handler.ChatNotificationHandler
 import io.getstream.chat.android.client.parser.ChatParser
 import io.getstream.chat.android.client.parser.GsonChatParser
@@ -32,8 +44,11 @@ import io.getstream.chat.android.client.token.TokenManagerImpl
 import io.getstream.chat.android.client.uploader.FileUploader
 import io.getstream.chat.android.client.uploader.StreamFileUploader
 import io.getstream.chat.android.client.utils.UuidGeneratorImpl
+import io.getstream.chat.android.core.internal.coroutines.DispatcherProvider
+import kotlinx.coroutines.CoroutineScope
 import okhttp3.OkHttpClient
 import retrofit2.Retrofit
+import java.util.concurrent.Executor
 import java.util.concurrent.TimeUnit
 
 internal open class BaseChatModule(
@@ -42,6 +57,7 @@ internal open class BaseChatModule(
     private val notificationsHandler: ChatNotificationHandler,
     private val fileUploader: FileUploader? = null,
     private val tokenManager: TokenManager = TokenManagerImpl(),
+    private val callbackExecutor: Executor?,
 ) {
 
     private val defaultLogger: ChatLogger = ChatLogger.Builder(config.loggerConfig).build()
@@ -53,11 +69,21 @@ internal open class BaseChatModule(
         buildNotification(notificationsHandler, api())
     }
     private val defaultApi by lazy { buildApi(config) }
-    private val defaultSocket by lazy { buildSocket(config, gsonParser) }
+    private val defaultSocket by lazy {
+        buildSocket(config, if (config.enableMoshi) moshiParser else gsonParser)
+    }
     private val defaultFileUploader by lazy {
-        StreamFileUploader(
-            config.apiKey,
-            buildRetrofitCdnApi()
+        StreamFileUploader(buildRetrofitCdnApi())
+    }
+
+    private val networkScope: CoroutineScope = CoroutineScope(DispatcherProvider.IO)
+    val socketStateService: SocketStateService = SocketStateService()
+    val userStateService: UserStateService = UserStateService()
+    val queryChannelsPostponeHelper: QueryChannelsPostponeHelper by lazy {
+        QueryChannelsPostponeHelper(
+            api(),
+            socketStateService,
+            networkScope,
         )
     }
 
@@ -85,7 +111,11 @@ internal open class BaseChatModule(
         handler: ChatNotificationHandler,
         api: ChatApi,
     ): ChatNotifications {
-        return ChatNotifications.create(handler, api, appContext)
+        return if (handler.config.pushNotificationsEnabled) {
+            ChatNotificationsImpl(handler, api, appContext)
+        } else {
+            NoOpChatNotifications(handler)
+        }
     }
 
     private fun buildRetrofit(
@@ -101,7 +131,7 @@ internal open class BaseChatModule(
             .baseUrl(endpoint)
             .client(okHttpClient)
             .also(parser::configRetrofit)
-            .addCallAdapterFactory(RetrofitCallAdapterFactory.create(parser))
+            .addCallAdapterFactory(RetrofitCallAdapterFactory.create(parser, callbackExecutor))
             .build()
     }
 
@@ -118,11 +148,11 @@ internal open class BaseChatModule(
     ): OkHttpClient.Builder {
         return baseClientBuilder()
             // timeouts
-            .callTimeout(timeout, TimeUnit.MILLISECONDS)
             .connectTimeout(timeout, TimeUnit.MILLISECONDS)
             .writeTimeout(timeout, TimeUnit.MILLISECONDS)
             .readTimeout(timeout, TimeUnit.MILLISECONDS)
             // interceptors
+            .addInterceptor(ApiKeyInterceptor(config.apiKey))
             .addInterceptor(HeadersInterceptor(getAnonymousProvider(config, isAnonymousApi)))
             .addInterceptor(HttpLoggingInterceptor())
             .addInterceptor(
@@ -156,28 +186,33 @@ internal open class BaseChatModule(
             chatConfig.wssUrl,
             tokenManager,
             parser,
-            NetworkStateProvider(appContext.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager)
+            NetworkStateProvider(appContext.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager),
+            networkScope,
         )
     }
 
     @Suppress("RemoveExplicitTypeArguments")
     private fun buildApi(chatConfig: ChatClientConfig): ChatApi {
-        val gsonChatApi = GsonChatApi(
-            chatConfig.apiKey,
-            buildRetrofitApi<RetrofitApi>(),
-            buildRetrofitApi<RetrofitAnonymousApi>(),
-            UuidGeneratorImpl(),
-            fileUploader ?: defaultFileUploader
-        )
-
         return if (chatConfig.enableMoshi) {
             MoshiChatApi(
-                chatConfig.apiKey,
-                gsonChatApi,
+                fileUploader ?: defaultFileUploader,
+                buildRetrofitApi<UserApi>(),
+                buildRetrofitApi<GuestApi>(),
                 buildRetrofitApi<MessageApi>(),
+                buildRetrofitApi<ChannelApi>(),
+                buildRetrofitApi<DeviceApi>(),
+                buildRetrofitApi<ModerationApi>(),
+                buildRetrofitApi<GeneralApi>(),
+                networkScope,
             )
         } else {
-            gsonChatApi
+            GsonChatApi(
+                buildRetrofitApi<RetrofitApi>(),
+                buildRetrofitApi<RetrofitAnonymousApi>(),
+                UuidGeneratorImpl(),
+                fileUploader ?: defaultFileUploader,
+                networkScope,
+            )
         }
     }
 

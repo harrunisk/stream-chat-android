@@ -2,12 +2,10 @@ package io.getstream.chat.android.livedata.usecase
 
 import androidx.annotation.CheckResult
 import io.getstream.chat.android.client.call.Call
-import io.getstream.chat.android.client.call.CoroutineCall
 import io.getstream.chat.android.client.models.Message
-import io.getstream.chat.android.livedata.ChatDomainImpl
-import io.getstream.chat.android.livedata.utils.validateCid
+import io.getstream.chat.android.livedata.ChatDomain
 
-public interface ShuffleGiphy {
+public sealed interface ShuffleGiphy {
     /**
      * Performs giphy shuffle operation. Removes the original "ephemeral" message from local storage.
      * Returns new "ephemeral" message with new giphy url.
@@ -19,14 +17,6 @@ public interface ShuffleGiphy {
     public operator fun invoke(message: Message): Call<Message>
 }
 
-internal class ShuffleGiphyImpl(private val domainImpl: ChatDomainImpl) : ShuffleGiphy {
-    override operator fun invoke(message: Message): Call<Message> {
-        val cid = message.cid
-        validateCid(cid)
-
-        val channelController = domainImpl.channel(cid)
-        return CoroutineCall(domainImpl.scope) {
-            channelController.shuffleGiphy(message)
-        }
-    }
+internal class ShuffleGiphyImpl(private val chatDomain: ChatDomain) : ShuffleGiphy {
+    override operator fun invoke(message: Message): Call<Message> = chatDomain.shuffleGiphy(message)
 }

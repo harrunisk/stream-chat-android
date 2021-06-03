@@ -2,16 +2,12 @@ package io.getstream.chat.android.livedata.usecase
 
 import androidx.annotation.CheckResult
 import io.getstream.chat.android.client.call.Call
-import io.getstream.chat.android.client.call.CoroutineCall
 import io.getstream.chat.android.client.models.Attachment
-import io.getstream.chat.android.client.models.Channel
 import io.getstream.chat.android.client.models.Message
-import io.getstream.chat.android.client.models.name
-import io.getstream.chat.android.livedata.ChatDomainImpl
-import io.getstream.chat.android.livedata.utils.validateCid
+import io.getstream.chat.android.livedata.ChatDomain
 import java.io.File
 
-public interface SendMessage {
+public sealed interface SendMessage {
     /**
      * Sends the message. Immediately adds the message to local storage
      * API call to send the message is retried according to the retry policy specified on the chatDomain
@@ -36,41 +32,9 @@ public interface SendMessage {
     ): Call<Message>
 }
 
-internal class SendMessageImpl(private val domainImpl: ChatDomainImpl) : SendMessage {
+internal class SendMessageImpl(private val chatDomain: ChatDomain) : SendMessage {
     override operator fun invoke(
         message: Message,
         attachmentTransformer: ((at: Attachment, file: File) -> Attachment)?,
-    ): Call<Message> {
-        val cid = message.cid
-        validateCid(cid)
-
-        return CoroutineCall(domainImpl.scope) {
-            val channelController = domainImpl.channel(cid)
-
-            populateMentions(message, channelController.toChannel())
-
-            if (message.replyMessageId != null) {
-                channelController.replyMessage(null)
-            }
-            channelController.sendMessage(message, attachmentTransformer)
-        }
-    }
-
-    private fun populateMentions(
-        message: Message,
-        channel: Channel,
-    ) {
-        if ('@' !in message.text) {
-            return
-        }
-
-        val text = message.text.toLowerCase()
-        message.mentionedUsersIds = channel.members.mapNotNullTo(mutableListOf()) { member ->
-            if (text.contains("@${member.user.name.toLowerCase()}")) {
-                member.user.id
-            } else {
-                null
-            }
-        }
-    }
+    ): Call<Message> = chatDomain.sendMessage(message, attachmentTransformer)
 }

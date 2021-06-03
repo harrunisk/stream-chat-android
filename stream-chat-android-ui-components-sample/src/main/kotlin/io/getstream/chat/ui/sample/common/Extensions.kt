@@ -2,18 +2,17 @@ package io.getstream.chat.ui.sample.common
 
 import android.app.Activity
 import android.content.Context
-import android.view.ContextThemeWrapper
 import android.view.inputmethod.InputMethodManager
 import android.widget.EditText
 import android.widget.Toast
 import androidx.annotation.ColorRes
 import androidx.annotation.DimenRes
 import androidx.annotation.IdRes
+import androidx.annotation.StringRes
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.Toolbar
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
-import androidx.fragment.app.FragmentManager
 import androidx.navigation.NavController
 import androidx.navigation.NavDirections
 import androidx.navigation.fragment.findNavController
@@ -25,6 +24,10 @@ import io.getstream.chat.ui.sample.R
 
 fun Activity.showToast(text: String) {
     Toast.makeText(this, text, Toast.LENGTH_SHORT).show()
+}
+
+fun Fragment.showToast(@StringRes resId: Int) {
+    showToast(getString(resId))
 }
 
 fun Fragment.showToast(text: String) {
@@ -99,14 +102,6 @@ fun BottomNavigationView.setBadgeNumber(@IdRes menuItemId: Int, badgeNumber: Int
         backgroundColor = context.getColorFromRes(R.color.stream_ui_accent_red)
         isVisible = badgeNumber > 0
         number = badgeNumber
-    }
-}
-
-fun Context?.getFragmentManager(): FragmentManager? {
-    return when (this) {
-        is AppCompatActivity -> supportFragmentManager
-        is ContextThemeWrapper -> baseContext.getFragmentManager()
-        else -> null
     }
 }
 

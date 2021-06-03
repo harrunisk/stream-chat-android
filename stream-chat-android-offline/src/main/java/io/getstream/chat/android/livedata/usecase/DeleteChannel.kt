@@ -2,10 +2,9 @@ package io.getstream.chat.android.livedata.usecase
 
 import androidx.annotation.CheckResult
 import io.getstream.chat.android.client.call.Call
-import io.getstream.chat.android.client.call.CoroutineCall
-import io.getstream.chat.android.livedata.ChatDomainImpl
+import io.getstream.chat.android.livedata.ChatDomain
 
-public interface DeleteChannel {
+public sealed interface DeleteChannel {
     /**
      * Deletes the channel with the specified id
      *
@@ -15,10 +14,6 @@ public interface DeleteChannel {
     public operator fun invoke(cid: String): Call<Unit>
 }
 
-internal class DeleteChannelImpl(private val domainImpl: ChatDomainImpl) : DeleteChannel {
-    override operator fun invoke(cid: String): Call<Unit> {
-        return CoroutineCall(domainImpl.scope) {
-            domainImpl.channel(cid).delete()
-        }
-    }
+internal class DeleteChannelImpl(private val chatDomain: ChatDomain) : DeleteChannel {
+    override operator fun invoke(cid: String): Call<Unit> = chatDomain.deleteChannel(cid)
 }

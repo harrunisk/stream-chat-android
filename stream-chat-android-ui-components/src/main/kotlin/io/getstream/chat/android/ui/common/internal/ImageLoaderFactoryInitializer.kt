@@ -8,7 +8,6 @@ import coil.decode.GifDecoder
 import coil.decode.ImageDecoderDecoder
 import com.getstream.sdk.chat.coil.StreamCoil
 import com.getstream.sdk.chat.coil.StreamImageLoaderFactory
-import io.getstream.chat.android.ui.avatar.internal.AvatarBitmapFactory
 
 @Suppress("unused")
 internal class ImageLoaderFactoryInitializer : Initializer<ImageLoaderFactory> {
@@ -18,12 +17,12 @@ internal class ImageLoaderFactoryInitializer : Initializer<ImageLoaderFactory> {
                 // duplicated as we can not extend component
                 // registry of existing image loader builder
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-                    add(ImageDecoderDecoder())
+                    add(ImageDecoderDecoder(context))
                 } else {
                     add(GifDecoder())
                 }
 
-                add(AvatarFetcher(AvatarBitmapFactory(context)))
+                add(AvatarFetcher())
             }
         }.apply {
             StreamCoil.setImageLoader(this)

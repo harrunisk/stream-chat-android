@@ -8,9 +8,8 @@ import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.navigation.fragment.navArgs
-import com.getstream.sdk.chat.ChatUI
-import com.getstream.sdk.chat.utils.Utils
 import io.getstream.chat.android.livedata.ChatDomain
+import io.getstream.chat.android.ui.ChatUI
 import io.getstream.chat.android.ui.gallery.AttachmentGalleryDestination
 import io.getstream.chat.android.ui.gallery.AttachmentGalleryItem
 import io.getstream.chat.ui.sample.common.initToolbar
@@ -71,9 +70,7 @@ class ChatInfoSharedMediaFragment : Fragment() {
         binding.mediaAttachmentGridView.setMediaClickListener {
             val attachmentGalleryItems = binding.mediaAttachmentGridView.getAttachments()
             attachmentGalleryDestination.setData(attachmentGalleryItems, it)
-            ChatUI.instance()
-                .navigator
-                .navigate(attachmentGalleryDestination)
+            ChatUI.navigator.navigate(attachmentGalleryDestination)
         }
         binding.mediaAttachmentGridView.setOnLoadMoreListener {
             viewModel.onAction(ChatInfoSharedAttachmentsViewModel.Action.LoadMoreRequested)
@@ -123,7 +120,7 @@ class ChatInfoSharedMediaFragment : Fragment() {
 
     private fun showLoading() {
         with(binding) {
-            toolbar.elevation = ACTION_BAR_ELEVATION
+            separator.isVisible = true
             progressBar.isVisible = true
             mediaAttachmentGridView.isVisible = false
             emptyStateView.isVisible = false
@@ -133,7 +130,7 @@ class ChatInfoSharedMediaFragment : Fragment() {
 
     private fun showResults(attachmentGalleryItems: List<AttachmentGalleryItem>) {
         with(binding) {
-            toolbar.elevation = 0f
+            separator.isVisible = false
             progressBar.isVisible = false
             mediaAttachmentGridView.isVisible = true
             emptyStateView.isVisible = false
@@ -144,15 +141,11 @@ class ChatInfoSharedMediaFragment : Fragment() {
 
     private fun showEmptyState() {
         with(binding) {
-            toolbar.elevation = ACTION_BAR_ELEVATION
+            separator.isVisible = true
             progressBar.isVisible = false
             emptyStateView.isVisible = true
             mediaAttachmentGridView.isVisible = false
             mediaAttachmentGridView.disablePagination()
         }
-    }
-
-    companion object {
-        private val ACTION_BAR_ELEVATION = Utils.dpToPx(4).toFloat()
     }
 }

@@ -8,18 +8,26 @@ import io.getstream.chat.android.client.utils.RetroError
 import io.getstream.chat.android.client.utils.RetroSuccess
 import io.getstream.chat.android.client.utils.verifyError
 import io.getstream.chat.android.client.utils.verifySuccess
-import org.junit.Before
-import org.junit.Test
+import io.getstream.chat.android.test.TestCoroutineExtension
+import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.extension.RegisterExtension
 import org.mockito.Mockito
 
 internal class DevicesApiCallsTests {
 
+    companion object {
+        @JvmField
+        @RegisterExtension
+        val testCoroutines = TestCoroutineExtension()
+    }
+
     lateinit var mock: MockClientBuilder
     lateinit var client: ChatClient
 
-    @Before
+    @BeforeEach
     fun before() {
-        mock = MockClientBuilder()
+        mock = MockClientBuilder(testCoroutines.scope)
         client = mock.build()
     }
 
@@ -30,8 +38,6 @@ internal class DevicesApiCallsTests {
 
         Mockito.`when`(
             mock.retrofitApi.getDevices(
-                mock.apiKey,
-                mock.userId,
                 mock.connectionId
             )
         ).thenReturn(RetroSuccess(GetDevicesResponse(listOf(device))).toRetrofitCall())
@@ -46,8 +52,6 @@ internal class DevicesApiCallsTests {
 
         Mockito.`when`(
             mock.retrofitApi.getDevices(
-                mock.apiKey,
-                mock.userId,
                 mock.connectionId
             )
         ).thenReturn(RetroError<GetDevicesResponse>(mock.serverErrorCode).toRetrofitCall())
@@ -65,8 +69,6 @@ internal class DevicesApiCallsTests {
 
         Mockito.`when`(
             mock.retrofitApi.addDevices(
-                mock.apiKey,
-                mock.userId,
                 mock.connectionId,
                 request
             )
@@ -85,8 +87,6 @@ internal class DevicesApiCallsTests {
 
         Mockito.`when`(
             mock.retrofitApi.addDevices(
-                mock.apiKey,
-                mock.userId,
                 mock.connectionId,
                 request
             )
@@ -105,8 +105,6 @@ internal class DevicesApiCallsTests {
         Mockito.`when`(
             mock.retrofitApi.deleteDevice(
                 device.id,
-                mock.apiKey,
-                mock.userId,
                 mock.connectionId
             )
         ).thenReturn(RetroSuccess(CompletableResponse()).toRetrofitCall())
@@ -124,8 +122,6 @@ internal class DevicesApiCallsTests {
         Mockito.`when`(
             mock.retrofitApi.deleteDevice(
                 device.id,
-                mock.apiKey,
-                mock.userId,
                 mock.connectionId
             )
         ).thenReturn(RetroError<CompletableResponse>(mock.serverErrorCode).toRetrofitCall())

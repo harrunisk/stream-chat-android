@@ -12,38 +12,51 @@ import io.getstream.chat.android.client.models.ChannelMute
 import io.getstream.chat.android.client.models.Member
 import io.getstream.chat.android.livedata.ChatDomain
 import io.getstream.chat.android.livedata.utils.Event
+import io.getstream.chat.android.ui.common.extensions.isOwnerOrAdmin
 import io.getstream.chat.ui.sample.common.name
 import kotlinx.coroutines.launch
 
 class GroupChatInfoViewModel(
     private val cid: String,
     private val chatDomain: ChatDomain = ChatDomain.instance(),
-    private val chatClient: ChatClient = ChatClient.instance()
+    chatClient: ChatClient = ChatClient.instance(),
 ) : ViewModel() {
 
     private val channelClient: ChannelClient = chatClient.channel(cid)
     private val _state = MediatorLiveData<State>()
     private val _events = MutableLiveData<Event<UiEvent>>()
+    private val _errorEvents: MutableLiveData<Event<ErrorEvent>> = MutableLiveData()
     val events: LiveData<Event<UiEvent>> = _events
     val state: LiveData<State> = _state
+    val errorEvents: LiveData<Event<ErrorEvent>> = _errorEvents
 
     init {
         _state.value = INITIAL_STATE
-        chatDomain.useCases.getChannelController(cid).enqueue { result ->
+        chatDomain.getChannelController(cid).enqueue { result ->
             if (result.isSuccess) {
                 val controller = result.data()
                 // Update channel mute status
-                updateChannelMuteStatus(chatDomain.currentUser.channelMutes)
+                chatDomain.user.value?.channelMutes?.let(::updateChannelMuteStatus)
 
                 // Update members
-                _state.addSource(controller.members) { members ->
-                    updateMembers(members)
+                _state.addSource(controller.members, this::updateMembers)
+
+                getOwnerOrAdmin(controller.members.value)?.let { member ->
+                    _state.value = _state.value?.copy(
+                        isCurrentUserOwnerOrAdmin = chatDomain.currentUser.id == member.getUserId()
+                    )
                 }
 
                 _state.addSource(controller.channelData) { channelData ->
                     _state.value = _state.value?.copy(channelName = channelData.name)
                 }
             }
+        }
+    }
+
+    private fun getOwnerOrAdmin(members: List<Member>?): Member? {
+        return members?.firstOrNull { member ->
+            member.isOwnerOrAdmin
         }
     }
 
@@ -69,18 +82,18 @@ class GroupChatInfoViewModel(
         viewModelScope.launch {
             val result = channelClient.update(message = null, mapOf("name" to name)).await()
             if (result.isError) {
-                // TODO: Handle error
+                _errorEvents.postValue(Event(ErrorEvent.ChangeGroupNameError))
             }
         }
     }
 
     private fun leaveChannel() {
         viewModelScope.launch {
-            val result = chatDomain.useCases.leaveChannel(cid).await()
+            val result = chatDomain.leaveChannel(cid).await()
             if (result.isSuccess) {
                 _events.value = Event(UiEvent.RedirectToHome)
             } else {
-                // TODO: Handle error
+                _errorEvents.postValue(Event(ErrorEvent.LeaveChannelError))
             }
         }
     }
@@ -107,8 +120,7 @@ class GroupChatInfoViewModel(
                 channelClient.unmute().await()
             }
             if (result.isError) {
-                // Handle error in a better way
-                _state.value = _state.value!!.copy(channelMuted = !isEnabled)
+                _errorEvents.postValue(Event(ErrorEvent.MuteChannelError))
             }
         }
     }
@@ -119,6 +131,7 @@ class GroupChatInfoViewModel(
         val channelMuted: Boolean,
         val shouldExpandMembers: Boolean?,
         val membersToShowCount: Int,
+        val isCurrentUserOwnerOrAdmin: Boolean,
     )
 
     sealed class Action {
@@ -135,6 +148,12 @@ class GroupChatInfoViewModel(
         object RedirectToHome : UiEvent()
     }
 
+    sealed class ErrorEvent {
+        object ChangeGroupNameError : ErrorEvent()
+        object MuteChannelError : ErrorEvent()
+        object LeaveChannelError : ErrorEvent()
+    }
+
     companion object {
         const val COLLAPSED_MEMBERS_COUNT = 5
 
@@ -143,7 +162,8 @@ class GroupChatInfoViewModel(
             channelName = "",
             channelMuted = false,
             shouldExpandMembers = null,
-            membersToShowCount = 0
+            membersToShowCount = 0,
+            false,
         )
     }
 }

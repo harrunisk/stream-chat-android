@@ -48,7 +48,7 @@
         <item name="android:layout_height">@dimen/stream_ui_avatar_size_large</item>
         <item name="streamUiAvatarTextSize">@dimen/stream_ui_avatar_text_size_large</item>
         <item name="streamUiAvatarOnlineIndicatorEnabled">true</item>
-        <item name="streamUiAvatarOnlineIndicatorPosition">bottom</item>
+        <item name="streamUiAvatarOnlineIndicatorPosition">bottomRight</item>
     </style>
 
     <style name="StreamUiChatInfoAvatarStyle" parent="StreamUiBaseAvatarStyle">
@@ -201,6 +201,15 @@
         <item name="android:textColor">@color/stream_ui_text_color_primary</item>
     </style>
 
+    <style name="StreamUiTextAppearance.Caption1Bold">
+        <item name="fontFamily">@font/roboto_bold</item>
+        <item name="android:fontFamily">@font/roboto_bold</item>
+        <item name="android:textStyle">normal</item>
+        <item name="android:textAllCaps">false</item>
+        <item name="android:textSize">12sp</item>
+        <item name="android:textColor">@color/stream_ui_text_color_primary</item>
+    </style>
+
     <style name="StreamUiTextAppearance.Body">
         <item name="fontFamily">@font/roboto_medium</item>
         <item name="android:fontFamily">@font/roboto_medium</item>
@@ -244,5 +253,58 @@
         <item name="android:textAllCaps">false</item>
         <item name="android:textSize">22sp</item>
         <item name="android:textColor">@color/stream_ui_text_color_primary</item>
+    </style>
+
+    <style name="StreamUiAttachmentGalleryActivityStyle" parent="Theme.MaterialComponents.DayNight.NoActionBar" />
+
+    <style name="StreamUiAttachmentMediaActivityStyle" parent="Theme.MaterialComponents.DayNight.NoActionBar" />
+
+    <style name="StreamUiAttachmentActivityStyle" parent="Theme.MaterialComponents.DayNight.NoActionBar" />
+
+    <style name="StreamUiTheme" parent="Theme.MaterialComponents.DayNight">
+        <item name="streamUiValidTheme">true</item>
+        <item name="streamUiMessageListItemAvatarStyle">@style/StreamUi.MessageList.Item.Avatar</item>
+        <item name="streamUiChannelListItemAvatarStyle">@style/StreamUi.ChannelList.Item.Avatar</item>
+
+        <item name="streamUiGlobalAvatarBorderColor">@color/stream_ui_white</item>
+        <item name="streamUiGlobalAvatarOnlineIndicatorColor">@color/stream_ui_accent_green</item>
+        <item name="streamUiGlobalAvatarTextColor">@color/stream_ui_white</item>
+
+    </style>
+
+    <style name="StreamUi" >
+        <!--Common styles properties-->
+    </style>
+
+    <style name="StreamUi.BaseAvatar">
+        <!--Common styles properties for BaseAvatar-->
+        <item name="streamUiAvatarBorderColor">?attr/streamUiGlobalAvatarBorderColor</item>
+        <item name="streamUiAvatarTextColor">?attr/streamUiGlobalAvatarTextColor</item>
+        <item name="streamUiAvatarOnlineIndicatorEnabled">true</item>
+        <item name="streamUiAvatarOnlineIndicatorPosition">topRight</item>
+        <item name="streamUiAvatarBorderWidth">0dp</item>
+        <item name="streamUiAvatarOnlineIndicatorColor">?attr/streamUiGlobalAvatarOnlineIndicatorColor</item>
+        <item name="streamUiAvatarOnlineIndicatorBorderColor">@color/stream_ui_white</item>
+    </style>
+
+    <style name="StreamUi.MessageList.Item.Avatar" parent="StreamUi.BaseAvatar">
+        <!--Style properties for Avatar inside of MessageList Item-->
+        <item name="android:layout_width">@dimen/stream_ui_avatar_size_small</item>
+        <item name="android:layout_height">@dimen/stream_ui_avatar_size_small</item>
+        <item name="android:layout_marginTop">8dp</item>
+        <item name="android:layout_marginEnd">8dp</item>
+        <item name="android:layout_marginBottom">8dp</item>
+        <item name="streamUiAvatarTextSize">@dimen/stream_ui_avatar_initials</item>
+    </style>
+
+    <style name="StreamUi.ChannelList.Item.Avatar" parent="StreamUi.BaseAvatar">
+        <!--Style properties for Avatar inside of MessageList Item-->
+        <item name="android:layout_width">@dimen/stream_ui_avatar_size_medium</item>
+        <item name="android:layout_height">@dimen/stream_ui_avatar_size_medium</item>
+        <item name="streamUiAvatarTextSize">@dimen/stream_ui_avatar_text_size_medium</item>
+        <item name="streamUiAvatarOnlineIndicatorEnabled">true</item>
+        <item name="android:layout_marginStart">8dp</item>
+        <item name="android:layout_marginTop">12dp</item>
+        <item name="android:layout_marginBottom">12dp</item>
     </style>
 </resources>

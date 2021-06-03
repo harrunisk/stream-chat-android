@@ -2,12 +2,10 @@ package io.getstream.chat.android.livedata.usecase
 
 import androidx.annotation.CheckResult
 import io.getstream.chat.android.client.call.Call
-import io.getstream.chat.android.client.call.CoroutineCall
 import io.getstream.chat.android.client.models.Message
-import io.getstream.chat.android.livedata.ChatDomainImpl
-import io.getstream.chat.android.livedata.utils.validateCid
+import io.getstream.chat.android.livedata.ChatDomain
 
-public interface DeleteMessage {
+public sealed interface DeleteMessage {
     /**
      * Deletes the specified message, request is retried according to the retry policy specified on the chatDomain
      * @param message the message to mark as deleted
@@ -17,14 +15,6 @@ public interface DeleteMessage {
     public operator fun invoke(message: Message): Call<Message>
 }
 
-internal class DeleteMessageImpl(private val domainImpl: ChatDomainImpl) : DeleteMessage {
-    override operator fun invoke(message: Message): Call<Message> {
-        val cid = message.cid
-        validateCid(cid)
-
-        val channelController = domainImpl.channel(cid)
-        return CoroutineCall(domainImpl.scope) {
-            channelController.deleteMessage(message)
-        }
-    }
+internal class DeleteMessageImpl(private val chatDomain: ChatDomain) : DeleteMessage {
+    override operator fun invoke(message: Message): Call<Message> = chatDomain.deleteMessage(message)
 }

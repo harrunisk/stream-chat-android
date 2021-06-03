@@ -1,38 +1,31 @@
 import com.getstream.sdk.chat.Dependencies
+import com.getstream.sdk.chat.sidebar.GenerateSidebar
 
-apply plugin: 'com.pascalwelsch.gitversioner'
 apply plugin: "com.github.ben-manes.versions"
 apply plugin: "org.jlleitschuh.gradle.ktlint"
-apply plugin: 'io.codearte.nexus-staging'
+apply plugin: 'io.github.gradle-nexus.publish-plugin'
 apply plugin: 'binary-compatibility-validator'
 apply plugin: 'org.jetbrains.dokka'
+apply from: "${rootDir}/scripts/sample-app-versioner.gradle"
 
 buildscript {
     repositories {
         maven { url "https://plugins.gradle.org/m2/" }
         google()
         mavenCentral()
-        maven {
-            url 'https://maven.pkg.jetbrains.space/kotlin/p/dokka/dev'
-            content {
-                includeGroup('org.jetbrains.dokka')
-            }
-        }
     }
 
     dependencies {
         classpath Dependencies.androidGradlePlugin
         classpath Dependencies.kotlinGradlePlugin
         classpath Dependencies.googleServicesPlugin
-        classpath Dependencies.jacoco
-        classpath Dependencies.androidMavenGradlePlugin
         classpath Dependencies.androidJunit5GradlePlugin
         classpath Dependencies.gitversionerPlugin
-        classpath Dependencies.firebasePlugin
+        classpath Dependencies.firebaseCrashlyticsPlugin
         classpath Dependencies.ktlintPlugin
         classpath Dependencies.gradleVersionsPlugin
         classpath Dependencies.navigationSafeArgsGradlePlugin
-        classpath Dependencies.gradleNexusStagingPlugin
+        classpath Dependencies.gradleNexusPublishPlugin
         classpath Dependencies.dokka
         classpath Dependencies.kotlinBinaryValidator
     }
@@ -42,48 +35,20 @@ allprojects {
     repositories {
         google()
         mavenCentral()
-        mavenLocal()
-        jcenter() {
-            content {
-
-                // Remove when https://github.com/google/ExoPlayer/issues/5246 is closed
-                includeGroup("com.google.android.exoplayer")
-
-                // Remove when https://github.com/facebook/flipper/issues/1775 is closed
-                includeGroup("com.facebook.flipper")
-
-                includeModule("net.yslibrary.keyboardvisibilityevent", "keyboardvisibilityevent")
-                includeModule("me.relex", "photodraweeview")
-                // https://youtrack.jetbrains.com/issue/IDEA-261387
-                includeModule("org.jetbrains.trove4j", "trove4j")
-
-                // Remove when https://github.com/korlibs/korte/issues/13 is closed
-                includeModule("com.soywiz.korlibs.korte", "korte-jvm")
-
-                // Remove when https://github.com/Kotlin/kotlinx.html/issues/81 is closed
-                includeModule("org.jetbrains.kotlinx", "kotlinx-html-jvm")
-
-                //Remove when https://github.com/JetBrains/markdown/issues/64 is closed
-                includeModule("org.jetbrains", "markdown")
-
-                // Remove when https://github.com/MarkusAmshove/Kluent/issues/190 is closed
-                includeGroup("org.amshove.kluent")
-            }
-        }
         maven {
             url "https://jitpack.io"
             content {
                 includeModule("com.github.chrisbanes", "PhotoView")
                 includeModule("com.github.duanhong169", "drawabletoolbox")
 
-                // Remove when https://github.com/mrmike/Ok2Curl/issues/60 is closed
+                // https://github.com/mrmike/Ok2Curl/issues/60
                 includeModule("com.github.mrmike", "ok2curl")
-            }
-        }
-        maven {
-            url 'https://maven.pkg.jetbrains.space/kotlin/p/dokka/dev'
-            content {
-                includeGroup('org.jetbrains.dokka')
+
+                // https://github.com/brianwernick/ExoMedia/issues/723
+                includeModule("com.github.brianwernick", "ExoMedia")
+
+                // https://github.com/stfalcon-studio/StfalconImageViewer/issues/69
+                includeModule("com.github.stfalcon-studio", "StfalconImageViewer")
             }
         }
     }
@@ -93,13 +58,15 @@ task clean(type: Delete) {
     delete rootProject.buildDir
 }
 
-gitVersioner {
-    def branches = ['develop', 'main']
-    baseBranch branchName in branches ? branchName : branches[0]
-    yearFactor 100
-    formatter = { gitVersioner ->
-        "1.${gitVersioner.versionCode}.${gitVersioner.featureBranchCommitCount}.${gitVersioner.currentSha1Short}"
-    }
+// Use the default greeting
+tasks.register('docusaurusSidebar', GenerateSidebar) {
+    inputDir = file("build/dokka/htmlMultiModule")
+    outputDir = file("docusaurus/docs/Android/Dokka")
+    modulesFilterInput = [
+            'stream-chat-android-client',
+            'stream-chat-android-offline',
+            'stream-chat-android-ui-components',
+    ]
 }
 
 dependencyUpdates {
@@ -125,3 +92,5 @@ apiValidation {
             'io.getstream.chat.android.core.internal.InternalStreamChatApi',
     ]
 }
+
+apply from: "${rootDir}/scripts/publish-root.gradle"

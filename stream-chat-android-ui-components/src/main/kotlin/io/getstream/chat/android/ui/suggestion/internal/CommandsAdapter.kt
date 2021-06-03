@@ -1,41 +1,33 @@
 package io.getstream.chat.android.ui.suggestion.internal
 
 import android.view.ViewGroup
-import androidx.recyclerview.widget.DiffUtil
-import androidx.recyclerview.widget.ListAdapter
-import androidx.recyclerview.widget.RecyclerView
-import com.getstream.sdk.chat.utils.extensions.inflater
 import io.getstream.chat.android.client.models.Command
 import io.getstream.chat.android.ui.R
+import io.getstream.chat.android.ui.common.extensions.internal.streamThemeInflater
+import io.getstream.chat.android.ui.common.internal.SimpleListAdapter
+import io.getstream.chat.android.ui.common.style.TextStyle
 import io.getstream.chat.android.ui.databinding.StreamUiItemCommandBinding
 
 internal class CommandsAdapter(
-    private val onCommandSelected: (Command) -> Unit
-) : ListAdapter<Command, CommandsAdapter.CommandViewHolder>(
-    object : DiffUtil.ItemCallback<Command>() {
-        override fun areItemsTheSame(oldItem: Command, newItem: Command): Boolean {
-            return oldItem.name == newItem.name
-        }
-
-        override fun areContentsTheSame(oldItem: Command, newItem: Command): Boolean {
-            return oldItem == newItem
-        }
-    }
-) {
+    var commandsNameStyle: TextStyle? = null,
+    var commandsDescriptionStyle: TextStyle? = null,
+    private val onCommandSelected: (Command) -> Unit,
+) : SimpleListAdapter<Command, CommandsAdapter.CommandViewHolder>() {
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): CommandViewHolder {
         return StreamUiItemCommandBinding
-            .inflate(parent.inflater, parent, false)
-            .let { CommandViewHolder(it, onCommandSelected) }
-    }
+            .inflate(parent.streamThemeInflater, parent, false)
+            .let { binding ->
+                commandsNameStyle?.apply(binding.commandNameTextView)
+                commandsDescriptionStyle?.apply(binding.commandQueryTextView)
 
-    override fun onBindViewHolder(holder: CommandViewHolder, position: Int) {
-        return holder.bind(getItem(position))
+                CommandViewHolder(binding, onCommandSelected)
+            }
     }
 
     class CommandViewHolder(
         private val binding: StreamUiItemCommandBinding,
-        private val onCommandClicked: (Command) -> Unit
-    ) : RecyclerView.ViewHolder(binding.root) {
+        private val onCommandClicked: (Command) -> Unit,
+    ) : SimpleListAdapter.ViewHolder<Command>(binding.root) {
 
         lateinit var command: Command
 
@@ -43,10 +35,10 @@ internal class CommandsAdapter(
             binding.root.setOnClickListener { onCommandClicked(command) }
         }
 
-        fun bind(command: Command) {
+        override fun bind(command: Command) {
             this.command = command
             binding.apply {
-                commandNameTextView.text = command.name.capitalize()
+                commandNameTextView.text = command.name.replaceFirstChar(Char::uppercase)
                 commandQueryTextView.text = itemView.context.getString(
                     R.string.stream_ui_command_command_template,
                     command.name,

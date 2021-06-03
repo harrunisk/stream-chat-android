@@ -1,9 +1,9 @@
 package io.getstream.chat.android.livedata.controller
 
 import androidx.lifecycle.LiveData
+import io.getstream.chat.android.client.api.models.FilterObject
 import io.getstream.chat.android.client.api.models.QuerySort
 import io.getstream.chat.android.client.models.Channel
-import io.getstream.chat.android.client.utils.FilterObject
 import io.getstream.chat.android.livedata.ChatDomainImpl
 
 /**
@@ -14,15 +14,17 @@ import io.getstream.chat.android.livedata.ChatDomainImpl
  * - .loadingMore if we're currently loading more channels
  *
  */
-public interface QueryChannelsController {
+public sealed interface QueryChannelsController {
     /**
      * The filter used for this query
      */
     public val filter: FilterObject
+
     /**
      * The sort used for this query
      */
     public val sort: QuerySort<Channel>
+
     /**
      * When the NotificationAddedToChannelEvent is triggered the newChannelEventFilter
      * determines if the channel should be added to the query or not.
@@ -62,6 +64,8 @@ public interface QueryChannelsController {
      * If we are currently loading more channels
      */
     public val loadingMore: LiveData<Boolean>
+
+    public val mutedChannelIds: LiveData<List<String>>
 
     public sealed class ChannelsState {
         /** The QueryChannelsController is initialized but no query is currently running.

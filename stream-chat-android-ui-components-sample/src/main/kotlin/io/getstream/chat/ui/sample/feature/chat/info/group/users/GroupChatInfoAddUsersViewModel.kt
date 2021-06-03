@@ -2,6 +2,7 @@ package io.getstream.chat.ui.sample.feature.chat.info.group.users
 
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
+import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import io.getstream.chat.android.client.ChatClient
@@ -11,32 +12,45 @@ import io.getstream.chat.android.client.models.Filters
 import io.getstream.chat.android.client.models.Member
 import io.getstream.chat.android.client.models.User
 import io.getstream.chat.android.livedata.ChatDomain
+import io.getstream.chat.android.livedata.controller.ChannelController
+import io.getstream.chat.android.livedata.utils.Event
 import kotlinx.coroutines.launch
 
 class GroupChatInfoAddUsersViewModel(
     cid: String,
     chatDomain: ChatDomain = ChatDomain.instance(),
-    chatClient: ChatClient = ChatClient.instance()
+    chatClient: ChatClient = ChatClient.instance(),
 ) : ViewModel() {
 
     private val channelClient = chatClient.channel(cid)
-    private var members: LiveData<List<Member>> = MutableLiveData(emptyList())
+    private var members: List<Member> = emptyList()
     private val _state: MutableLiveData<State> = MutableLiveData(INITIAL_STATE)
     private val _userAddedState: MutableLiveData<Boolean> = MutableLiveData(false)
+    private val _errorEvents: MutableLiveData<Event<ErrorEvent>> = MutableLiveData()
     private var isLoadingMore: Boolean = false
     val state: LiveData<State> = _state
     val userAddedState: LiveData<Boolean> = _userAddedState
+    val errorEvents: LiveData<Event<ErrorEvent>> = _errorEvents
+    private var channelController: ChannelController? = null
+
+    private val observer = Observer<List<Member>> { members = it }
 
     init {
         viewModelScope.launch {
-            val result = chatDomain.useCases.getChannelController(cid).await()
+            val result = chatDomain.getChannelController(cid).await()
             if (result.isSuccess) {
-                members = result.data().members
+                channelController = result.data()
+                channelController?.members?.observeForever(observer)
                 viewModelScope.launch {
                     fetchUsers()
                 }
             }
         }
+    }
+
+    override fun onCleared() {
+        channelController?.members?.removeObserver(observer)
+        super.onCleared()
     }
 
     fun onAction(action: Action) {
@@ -53,7 +67,7 @@ class GroupChatInfoAddUsersViewModel(
             if (response.isSuccess) {
                 _userAddedState.value = true
             } else {
-                // TODO: Handle error
+                _errorEvents.postValue(Event(ErrorEvent.AddMemberError))
             }
         }
     }
@@ -84,7 +98,10 @@ class GroupChatInfoAddUsersViewModel(
     }
 
     private suspend fun fetchUsers() {
-        val currentMembers = members.value ?: return
+        if (members.isEmpty()) {
+            return
+        }
+        val currentMembers = members
         val currentState = _state.value!!
         val filter = if (currentState.query.isEmpty()) {
             Filters.nin("id", currentMembers.map { it.getUserId() })
@@ -128,6 +145,10 @@ class GroupChatInfoAddUsersViewModel(
         data class UserClicked(val user: User) : Action()
         data class SearchQueryChanged(val query: String) : Action()
         object LoadMoreRequested : Action()
+    }
+
+    sealed class ErrorEvent {
+        object AddMemberError : ErrorEvent()
     }
 
     companion object {

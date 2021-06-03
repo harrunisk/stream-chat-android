@@ -12,9 +12,11 @@ import io.getstream.chat.android.ui.channel.list.ChannelListViewStyle
 import io.getstream.chat.android.ui.channel.list.adapter.ChannelListItem
 import io.getstream.chat.android.ui.channel.list.adapter.internal.ChannelListItemAdapter
 import io.getstream.chat.android.ui.channel.list.adapter.viewholder.ChannelListItemViewHolderFactory
+import io.getstream.chat.android.ui.channel.list.adapter.viewholder.ChannelListListenerContainerImpl
 import io.getstream.chat.android.ui.channel.list.adapter.viewholder.internal.ChannelItemSwipeListener
-import io.getstream.chat.android.ui.channel.list.adapter.viewholder.internal.ChannelListListenerContainerImpl
 import io.getstream.chat.android.ui.common.extensions.internal.cast
+import io.getstream.chat.android.ui.common.extensions.internal.getDrawableCompat
+import io.getstream.chat.android.ui.common.internal.SnapToTopDataObserver
 
 internal class SimpleChannelListView @JvmOverloads constructor(
     context: Context,
@@ -24,7 +26,7 @@ internal class SimpleChannelListView @JvmOverloads constructor(
 
     private val layoutManager: ScrollPauseLinearLayoutManager
     private val scrollListener: EndReachedScrollListener = EndReachedScrollListener()
-    private val dividerDecoration: SimpleVerticalListDivider = SimpleVerticalListDivider()
+    private val dividerDecoration: SimpleVerticalListDivider = SimpleVerticalListDivider(context)
 
     private var endReachedListener: ChannelListView.EndReachedListener? = null
 
@@ -66,7 +68,12 @@ internal class SimpleChannelListView @JvmOverloads constructor(
         adapter = ChannelListItemAdapter(viewHolderFactory)
 
         this.setAdapter(adapter)
+
+        adapter.registerAdapterDataObserver(SnapToTopDataObserver(this))
     }
+
+    internal fun currentChannelItemList(): List<ChannelListItem>? =
+        if (::adapter.isInitialized) adapter.currentList else null
 
     fun setViewHolderFactory(viewHolderFactory: ChannelListItemViewHolderFactory) {
         check(::adapter.isInitialized.not()) { "Adapter was already initialized, please set ChannelListItemViewHolderFactory first" }
@@ -99,7 +106,7 @@ internal class SimpleChannelListView @JvmOverloads constructor(
     }
 
     fun setItemSeparator(@DrawableRes drawableResource: Int) {
-        dividerDecoration.drawableResource = drawableResource
+        dividerDecoration.drawable = context.getDrawableCompat(drawableResource)!!
     }
 
     fun setItemSeparatorHeight(height: Int) {

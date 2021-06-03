@@ -16,6 +16,10 @@
         <item quantity="one">%1d Member, %2d Online</item>
         <item quantity="other">%1d Members, %2d Online</item>
     </plurals>
+    <string name="stream_ui_channel_option_delete_confirmation_title">Delete Channel</string>
+    <string name="stream_ui_channel_option_delete_confirmation_message">Are you sure you want to permanently delete this conversation?</string>
+    <string name="stream_ui_channel_option_delete_positive_button">Delete</string>
+    <string name="stream_ui_channel_option_delete_negative_button">Cancel</string>
 
     <!--ChannelsHeaderView-->
     <string name="stream_ui_channels_header_view_online_title">Stream Chat</string>
@@ -23,6 +27,9 @@
 
     <!--Channel List View-->
     <string name="stream_ui_stream_channel_unknown_title">Channel without name</string>
+    <string name="stream_ui_channel_list_error_hide_channel">Failed to hide channel</string>
+    <string name="stream_ui_channel_list_error_delete_channel">Failed to delete channel</string>
+    <string name="stream_ui_channel_list_error_leave_channel">Failed to leave channel</string>
 
     <!--Channel List Item View-->
     <string name="stream_ui_channel_display_name_self">You</string>
@@ -49,7 +56,8 @@
     <string name="stream_ui_message_list_header_try_again">Try Again</string>
     <string name="stream_ui_message_list_header_typing">is typing</string>
     <string name="stream_ui_message_list_header_online">Online</string>
-    <string name="stream_ui_message_list_header_last_seen">Last seen %s</string>
+    <string name="stream_ui_message_list_header_last_seen_template">Last seen %s</string>
+    <string name="stream_ui_message_list_header_last_seen_just_now">Last seen just now</string>
     <string name="stream_ui_message_list_header_group_member_count_with_online">%s, %d Online</string>
     <plurals name="stream_ui_message_list_header_group_member_count">
         <item quantity="one">%1d Member</item>
@@ -74,11 +82,20 @@
     <!-- Message list -->
     <string name="stream_ui_message_deleted_label">Message deleted</string>
     <string name="stream_ui_attachments_more_count_prefix">+%d</string>
-    <string name="stream_ui_send_label">Send</string>
-    <string name="stream_ui_cancel_label">Cancel</string>
     <string name="stream_ui_attachment_downloading_started">Download started</string>
     <string name="stream_ui_title_thread_reply">Thread Reply</string>
     <string name="stream_ui_subtitle_thread">with %s</string>
+    <string name="stream_ui_file_too_big">File too big</string>
+    <string name="stream_ui_message_list_error_mute_user">Failed to mute user</string>
+    <string name="stream_ui_message_list_error_unmute_user">Failed to unmute user</string>
+    <string name="stream_ui_message_list_error_block_user">Failed to block user</string>
+    <string name="stream_ui_message_list_error_flag_message">Failed to flag message</string>
+
+    <!-- Send Giphy view -->
+    <string name="stream_ui_giphy_title">Giphy</string>
+    <string name="stream_ui_giphy_send_button">Send</string>
+    <string name="stream_ui_giphy_cancel_button">Cancel</string>
+    <string name="stream_ui_giphy_shuffle_button">Shuffle</string>
 
     <!-- Message options -->
     <string name="stream_ui_message_option_reply">Reply</string>
@@ -87,13 +104,18 @@
     <string name="stream_ui_message_option_copy">Copy Message</string>
     <string name="stream_ui_message_option_edit">Edit Message</string>
     <string name="stream_ui_message_option_flag">Flag Message</string>
-    <string name="stream_ui_message_option_mute">Mute</string>
+    <string name="stream_ui_message_option_mute">Mute User</string>
+    <string name="stream_ui_message_option_unmute">Unmute User</string>
     <string name="stream_ui_message_option_block_user">Block user</string>
     <string name="stream_ui_message_option_delete_user">Delete Message</string>
     <string name="stream_ui_message_option_delete_confirmation_title">Delete Message</string>
     <string name="stream_ui_message_option_delete_confirmation_message">Are you sure you want to permanently delete this message?</string>
     <string name="stream_ui_message_option_delete_positive_button">Delete</string>
     <string name="stream_ui_message_option_delete_negative_button">Cancel</string>
+    <string name="stream_ui_message_option_flag_confirmation_title">Flag Message</string>
+    <string name="stream_ui_message_option_flag_confirmation_message">Do you want to send a copy of this message to a moderator for further investigation?</string>
+    <string name="stream_ui_message_option_flag_positive_button">Flag</string>
+    <string name="stream_ui_message_option_flag_negative_button">Cancel</string>
 
     <!-- Attachment options -->
     <string name="stream_ui_attachment_option_reply">Reply</string>
@@ -150,4 +172,6 @@
     <string name="stream_ui_upload_complete">Upload complete, processing…</string>
     <string name="stream_ui_upload_sending">Uploading %d / %d …</string>
     <string name="stream_ui_upload_sending_percentage">%s / %s</string>
+
+    <string name="stream_ui_medium_font">sans-serif-medium</string>
 </resources>

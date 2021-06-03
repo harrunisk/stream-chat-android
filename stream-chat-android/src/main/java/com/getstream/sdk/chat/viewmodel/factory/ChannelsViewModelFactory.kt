@@ -3,10 +3,10 @@ package com.getstream.sdk.chat.viewmodel.factory
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import com.getstream.sdk.chat.viewmodel.channels.ChannelsViewModel
+import io.getstream.chat.android.client.api.models.FilterObject
 import io.getstream.chat.android.client.api.models.QuerySort
 import io.getstream.chat.android.client.models.Channel
 import io.getstream.chat.android.client.models.Filters
-import io.getstream.chat.android.client.utils.FilterObject
 import io.getstream.chat.android.livedata.ChatDomain
 
 /**
@@ -23,7 +23,7 @@ public class ChannelsViewModelFactory @JvmOverloads constructor(
     private val filter: FilterObject = Filters.and(
         Filters.eq("type", "messaging"),
         Filters.`in`("members", listOf(ChatDomain.instance().currentUser.id)),
-        Filters.ne("draft", true)
+        Filters.or(Filters.notExists("draft"), Filters.ne("draft", true)),
     ),
     private val sort: QuerySort<Channel> = ChannelsViewModel.DEFAULT_SORT,
     private val limit: Int = 30

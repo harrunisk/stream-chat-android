@@ -1,10 +1,12 @@
 @file:JvmName("MessageInputViewModelBinding")
 
-package io.getstream.chat.android.ui.message.input
+package io.getstream.chat.android.ui.message.input.viewmodel
 
 import androidx.lifecycle.LifecycleOwner
 import com.getstream.sdk.chat.viewmodel.MessageInputViewModel
+import io.getstream.chat.android.client.models.Member
 import io.getstream.chat.android.client.models.Message
+import io.getstream.chat.android.ui.message.input.MessageInputView
 import io.getstream.chat.android.ui.message.input.MessageInputView.ChatMode.DIRECT_CHAT
 import io.getstream.chat.android.ui.message.input.MessageInputView.ChatMode.GROUP_CHAT
 import java.io.File
@@ -12,10 +14,17 @@ import java.io.File
 /**
  * Binds [MessageInputView] with [MessageInputViewModel], updating the view's state
  * based on data provided by the ViewModel, and forwarding View events to the ViewModel.
+ *
+ * This function sets listeners on the view and ViewModel. Call this method
+ * before setting any additional listeners on these objects yourself.
  */
 @JvmName("bind")
 public fun MessageInputViewModel.bindView(view: MessageInputView, lifecycleOwner: LifecycleOwner) {
-    members.observe(lifecycleOwner, view::setMembers)
+    val handler = MessageInputView.DefaultUserLookupHandler(emptyList())
+    view.setUserLookupHandler(handler)
+    members.observe(lifecycleOwner) { members ->
+        handler.users = members.map(Member::user)
+    }
     commands.observe(lifecycleOwner, view::setCommands)
     maxMessageLength.observe(lifecycleOwner, view::setMaxMessageLength)
     getActiveThread().observe(lifecycleOwner) {
@@ -26,6 +35,11 @@ public fun MessageInputViewModel.bindView(view: MessageInputView, lifecycleOwner
         }
     }
     editMessage.observe(lifecycleOwner) { message ->
+        message?.let {
+            view.inputMode = MessageInputView.InputMode.Edit(it)
+        }
+    }
+    messageToEdit.observe(lifecycleOwner) { message ->
         message?.let {
             view.inputMode = MessageInputView.InputMode.Edit(it)
         }
@@ -60,7 +74,7 @@ public fun MessageInputViewModel.bindView(view: MessageInputView, lifecycleOwner
                 parentMessage: Message,
                 message: String,
                 alsoSendToChannel: Boolean,
-                attachmentsFiles: List<File>
+                attachmentsFiles: List<File>,
             ) {
                 viewModel.sendMessageWithAttachments(message, attachmentsFiles) {
                     this.parentId = parentMessage.id

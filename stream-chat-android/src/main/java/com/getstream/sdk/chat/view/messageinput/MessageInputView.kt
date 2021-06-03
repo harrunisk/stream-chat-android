@@ -80,7 +80,7 @@ open class MessageInputView(context: Context, attrs: AttributeSet?) : RelativeLa
         override fun sendToThread(
             parentMessage: Message,
             messageText: String,
-            alsoSendToChannel: Boolean
+            alsoSendToChannel: Boolean,
         ) {
             throw IllegalStateException("MessageInputView#messageSendHandler needs to be configured to send messages")
         }
@@ -89,7 +89,7 @@ open class MessageInputView(context: Context, attrs: AttributeSet?) : RelativeLa
             parentMessage: Message,
             message: String,
             alsoSendToChannel: Boolean,
-            attachmentsFiles: List<File>
+            attachmentsFiles: List<File>,
         ) {
             throw IllegalStateException("MessageInputView#messageSendHandler needs to be configured to send messages")
         }
@@ -175,6 +175,7 @@ open class MessageInputView(context: Context, attrs: AttributeSet?) : RelativeLa
         style.inputBackgroundText.apply(binding.tvUploadCamera)
         binding.rvMedia.layoutManager = gridLayoutManager
         binding.rvMedia.addItemDecoration(gridSpacingItemDecoration)
+        binding.rvSuggestions.background = style.suggestionsBackground
     }
 
     private fun configOnClickListener() {
@@ -297,7 +298,7 @@ open class MessageInputView(context: Context, attrs: AttributeSet?) : RelativeLa
         parentMessage: Message,
         message: String,
         alsoSendToChannel: Boolean,
-        attachmentFiles: List<File>
+        attachmentFiles: List<File>,
     ) {
         messageSendHandler.sendToThreadWithAttachments(
             parentMessage,
@@ -324,7 +325,7 @@ open class MessageInputView(context: Context, attrs: AttributeSet?) : RelativeLa
 
     private fun sendGifFromKeyboard(
         inputContentInfo: InputContentInfoCompat,
-        flags: Int
+        flags: Int,
     ): Boolean {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q &&
             flags and InputConnectionCompat.INPUT_CONTENT_GRANT_READ_URI_PERMISSION != 0
@@ -335,13 +336,14 @@ open class MessageInputView(context: Context, attrs: AttributeSet?) : RelativeLa
                 return false
             }
         }
+        val title = inputContentInfo.contentUri.pathSegments.lastOrNull() ?: AttachmentMetaData.DEFAULT_ATTACHMENT_TITLE
         messageInputController.setSelectedAttachments(
             setOf(
                 AttachmentMetaData(
                     uri = inputContentInfo.contentUri,
                     type = ModelType.attach_image,
                     mimeType = ModelType.attach_mime_gif,
-                    title = inputContentInfo.description.label.toString(),
+                    title = title,
                 )
             )
         )
@@ -414,7 +416,7 @@ open class MessageInputView(context: Context, attrs: AttributeSet?) : RelativeLa
     }
 
     internal fun showAttachmentsMenu() {
-        binding.root.setBackgroundResource(R.drawable.stream_round_thread_toolbar)
+        binding.root.background = style.attachmentsMenuBackground
         binding.clTitle.visibility = View.VISIBLE
         binding.btnClose.visibility = View.VISIBLE
         binding.clAddFile.visibility = View.GONE
@@ -446,7 +448,7 @@ open class MessageInputView(context: Context, attrs: AttributeSet?) : RelativeLa
             parentMessage: Message,
             message: String,
             alsoSendToChannel: Boolean,
-            attachmentsFiles: List<File>
+            attachmentsFiles: List<File>,
         )
 
         public fun editMessage(oldMessage: Message, newMessageText: String)

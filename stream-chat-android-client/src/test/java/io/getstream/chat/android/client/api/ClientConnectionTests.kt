@@ -1,16 +1,16 @@
 package io.getstream.chat.android.client.api
 
 import com.nhaarman.mockitokotlin2.anyOrNull
-import com.nhaarman.mockitokotlin2.argThat
 import com.nhaarman.mockitokotlin2.doAnswer
 import com.nhaarman.mockitokotlin2.mock
-import com.nhaarman.mockitokotlin2.reset
 import com.nhaarman.mockitokotlin2.whenever
 import io.getstream.chat.android.client.ChatClient
 import io.getstream.chat.android.client.call.Call
-import io.getstream.chat.android.client.errors.ChatError
+import io.getstream.chat.android.client.clientstate.SocketStateService
+import io.getstream.chat.android.client.clientstate.UserStateService
 import io.getstream.chat.android.client.events.ConnectedEvent
 import io.getstream.chat.android.client.events.DisconnectedEvent
+import io.getstream.chat.android.client.helpers.QueryChannelsPostponeHelper
 import io.getstream.chat.android.client.logger.ChatLogLevel
 import io.getstream.chat.android.client.logger.ChatLogger
 import io.getstream.chat.android.client.models.ConnectionData
@@ -22,14 +22,21 @@ import io.getstream.chat.android.client.socket.SocketListener
 import io.getstream.chat.android.client.token.FakeTokenManager
 import io.getstream.chat.android.client.uploader.FileUploader
 import io.getstream.chat.android.client.utils.UuidGeneratorImpl
-import org.junit.Before
-import org.junit.Test
-import org.mockito.Mockito.never
+import io.getstream.chat.android.test.TestCoroutineExtension
+import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.extension.RegisterExtension
 import org.mockito.Mockito.times
 import org.mockito.Mockito.verify
 import java.util.Date
 
 internal class ClientConnectionTests {
+
+    companion object {
+        @JvmField
+        @RegisterExtension
+        val testCoroutines = TestCoroutineExtension()
+    }
 
     private val userId = "test-id"
     private val connectionId = "connection-id"
@@ -67,8 +74,11 @@ internal class ClientConnectionTests {
     private lateinit var initCallback: Call.Callback<ConnectionData>
     private lateinit var socketListener: SocketListener
 
-    @Before
+    @BeforeEach
     fun before() {
+        val socketStateService = SocketStateService()
+        val userStateService = UserStateService()
+        val queryChannelsPostponeHelper = QueryChannelsPostponeHelper(mock(), socketStateService, testCoroutines.scope)
         socket = mock()
         retrofitApi = mock()
         retrofitAnonymousApi = mock()
@@ -77,11 +87,11 @@ internal class ClientConnectionTests {
         notificationsManager = mock()
         initCallback = mock()
         api = GsonChatApi(
-            config.apiKey,
             retrofitApi,
             retrofitAnonymousApi,
             UuidGeneratorImpl(),
             fileUploader,
+            testCoroutines.scope
         )
 
         whenever(socket.addListener(anyOrNull())) doAnswer { invocationOnMock ->
@@ -94,7 +104,11 @@ internal class ClientConnectionTests {
             api,
             socket,
             notificationsManager,
-            tokenManager = FakeTokenManager(token)
+            tokenManager = FakeTokenManager(token),
+            socketStateService = socketStateService,
+            queryChannelsPostponeHelper = queryChannelsPostponeHelper,
+            userStateService = userStateService,
+            encryptedPushNotificationsConfigStore = mock(),
         )
     }
 
@@ -103,20 +117,6 @@ internal class ClientConnectionTests {
         client.connectUser(user, token).enqueue()
 
         verify(socket, times(1)).connect(user)
-    }
-
-    @Test
-    fun `Should not connect and report error when user is already set`() {
-        client.connectUser(user, token).enqueue()
-        socketListener.onEvent(connectedEvent)
-        reset(socket)
-
-        client.connectUser(user, token).enqueue(initCallback)
-
-        verify(socket, never()).connect(user)
-
-        val error = ChatError("User cannot be set until previous one is disconnected.")
-        verify(initCallback).onResult(argThat { this.error().message == error.message })
     }
 
     @Test
