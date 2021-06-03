@@ -1,6 +1,6 @@
 package com.getstream.sdk.chat
 
-private const val ANDROID_GRADLE_PLUGIN_VERSION = "4.2.1"
+private const val ANDROID_GRADLE_PLUGIN_VERSION = "4.1.3"
 private const val ANDROID_JUNIT5_GRADLE_PLUGIN_VERSION = "1.7.1.1"
 private const val ANDROID_LEGACY_SUPPORT = "1.0.0"
 private const val ANDROIDX_ACTIVITY_KTX_VERSION = "1.2.3"
