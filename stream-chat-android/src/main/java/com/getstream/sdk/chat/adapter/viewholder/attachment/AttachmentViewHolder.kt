@@ -129,14 +129,14 @@ internal class AttachmentViewHolder(
         mediaBinding.tvMediaDes.isVisible = !firstAttachment.text.isNullOrEmpty()
         mediaBinding.tvMediaTitle.isVisible = !firstAttachment.title.isNullOrEmpty()
         mediaBinding.tvMediaPlay.isVisible = type == ModelType.attach_video
-        if (firstAttachment.mimeType == ModelType.attach_mime_mp4 || firstAttachment.mimeType == ModelType.attach_mime_m4a || firstAttachment.mimeType == ModelType.attach_mime_mov)
-        {
-            mediaBinding.tvMediaPlay.visibility = View.VISIBLE
-        }
 
         if (attachUrl.isNullOrEmpty()) {
-            mediaBinding.root.isVisible = false
-            return
+            if (firstAttachment.mimeType == ModelType.attach_mime_mp4 || firstAttachment.mimeType == ModelType.attach_mime_m4a || firstAttachment.mimeType == ModelType.attach_mime_mov) {
+                mediaBinding.tvMediaPlay.visibility = View.VISIBLE
+            } else {
+                mediaBinding.root.isVisible = false
+                return
+            }
         }
         mediaBinding.root.isVisible = true
 
@@ -144,13 +144,16 @@ internal class AttachmentViewHolder(
         configImageThumbBackground()
         configClickListeners()
 
-        if (!attachUrl.contains("https:")) {
-            attachUrl = "https:$attachUrl"
+        attachUrl?.let {
+            if (!attachUrl!!.contains("https:")) {
+                attachUrl = "https:$attachUrl"
+            }
+
+            mediaBinding.ivMediaThumb.load(
+                data = ChatUI.instance().urlSigner.signImageUrl(attachUrl)
+            )
         }
 
-        mediaBinding.ivMediaThumb.load(
-            data = ChatUI.instance().urlSigner.signImageUrl(attachUrl)
-        )
 
         if (messageItem.message.type != ModelType.message_ephemeral) {
             mediaBinding.tvMediaTitle.text = firstAttachment.title
