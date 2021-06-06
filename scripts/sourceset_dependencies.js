@@ -1,1 +1,1 @@
-sourceset_dependencies = '{":stream-chat-android:dokkaHtmlPartial/androidTestRelease":[],":stream-chat-android:dokkaHtmlPartial/debug":[],":stream-chat-android:dokkaHtmlPartial/main":[],":stream-chat-android:dokkaHtmlPartial/release":[],":stream-chat-android-core:dokkaHtmlPartial/main":[],":stream-chat-android-ui-common:dokkaHtmlPartial/androidTestRelease":[],":stream-chat-android-ui-common:dokkaHtmlPartial/debug":[],":stream-chat-android-ui-common:dokkaHtmlPartial/main":[],":stream-chat-android-ui-common:dokkaHtmlPartial/release":[]}'
+sourceset_dependencies = '{}'
