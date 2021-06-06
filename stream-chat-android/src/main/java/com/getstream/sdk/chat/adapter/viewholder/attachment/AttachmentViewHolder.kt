@@ -126,6 +126,14 @@ internal class AttachmentViewHolder(
             }
         }
 
+        mediaBinding.tvMediaDes.isVisible = !firstAttachment.text.isNullOrEmpty()
+        mediaBinding.tvMediaTitle.isVisible = !firstAttachment.title.isNullOrEmpty()
+        mediaBinding.tvMediaPlay.isVisible = type == ModelType.attach_video
+        if (firstAttachment.mimeType == ModelType.attach_mime_mp4 || firstAttachment.mimeType == ModelType.attach_mime_m4a || firstAttachment.mimeType == ModelType.attach_mime_mov)
+        {
+            mediaBinding.tvMediaPlay.visibility = View.VISIBLE
+        }
+
         if (attachUrl.isNullOrEmpty()) {
             mediaBinding.root.isVisible = false
             return
@@ -148,10 +156,6 @@ internal class AttachmentViewHolder(
             mediaBinding.tvMediaTitle.text = firstAttachment.title
         }
         mediaBinding.tvMediaDes.text = firstAttachment.text
-
-        mediaBinding.tvMediaDes.isVisible = !firstAttachment.text.isNullOrEmpty()
-        mediaBinding.tvMediaTitle.isVisible = !firstAttachment.title.isNullOrEmpty()
-        mediaBinding.tvMediaPlay.isVisible = type == ModelType.attach_video
     }
 
     private fun configAttachViewBackground(view: View) {

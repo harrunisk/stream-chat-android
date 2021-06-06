@@ -28,7 +28,7 @@ public open class AttachmentDestination(
         var type: String? = attachment.type
 
         when (attachment.type) {
-            ModelType.attach_file, ModelType.attach_video -> {
+            ModelType.attach_file, ModelType.attach_video, ModelType.attach_media -> {
                 loadFile(attachment)
                 return
             }
