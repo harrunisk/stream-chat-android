@@ -121,6 +121,7 @@ $dokka.location:com.getstream.sdk.chat.model/ModelType/attach_giphy/#/PointingTo
 $dokka.location:com.getstream.sdk.chat.model/ModelType/attach_image/#/PointingToDeclaration/stream-chat-android-ui-common/com.getstream.sdk.chat.model/-model-type/attach_image.html
 $dokka.location:com.getstream.sdk.chat.model/ModelType/attach_imgur/#/PointingToDeclaration/stream-chat-android-ui-common/com.getstream.sdk.chat.model/-model-type/attach_imgur.html
 $dokka.location:com.getstream.sdk.chat.model/ModelType/attach_link/#/PointingToDeclaration/stream-chat-android-ui-common/com.getstream.sdk.chat.model/-model-type/attach_link.html
+$dokka.location:com.getstream.sdk.chat.model/ModelType/attach_media/#/PointingToDeclaration/stream-chat-android-ui-common/com.getstream.sdk.chat.model/-model-type/attach_media.html
 $dokka.location:com.getstream.sdk.chat.model/ModelType/attach_mime_7z/#/PointingToDeclaration/stream-chat-android-ui-common/com.getstream.sdk.chat.model/-model-type/attach_mime_7z.html
 $dokka.location:com.getstream.sdk.chat.model/ModelType/attach_mime_csv/#/PointingToDeclaration/stream-chat-android-ui-common/com.getstream.sdk.chat.model/-model-type/attach_mime_csv.html
 $dokka.location:com.getstream.sdk.chat.model/ModelType/attach_mime_doc/#/PointingToDeclaration/stream-chat-android-ui-common/com.getstream.sdk.chat.model/-model-type/attach_mime_doc.html
